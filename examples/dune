@@ -1,0 +1,16 @@
+
+(executable
+ (name hello)
+ (public_name ocaml-canvas-hello)
+ (modes byte_complete native js)
+ (modules hello)
+ (libraries ocaml-canvas)
+)
+
+(executable
+ (name test_canvas)
+ (public_name ocaml-canvas-test)
+ (modes byte_complete native js)
+ (modules test_canvas)
+ (libraries ocaml-canvas)
+)

@@ -1,0 +1,33 @@
+(include_subdirs unqualified)
+
+(env
+ (dev (c_flags -O0 -g -ggdb -fstrict-aliasing -Wstrict-aliasing))
+ (release (c_flags -O2 -DNDEBUG -fstrict-aliasing -Wstrict-aliasing)))
+
+(library
+ (name ocaml_canvas)
+ (public_name ocaml-canvas)
+ (synopsis "Portable OCaml Canvas library")
+ (wrapped false)
+ (foreign_stubs
+  (language c)
+  (names config util unicode point rect list hashtable event
+         gdi_keyboard gdi_backend gdi_target gdi_window gdi_surface
+         qtz_keyboard qtz_backend qtz_target qtz_window qtz_surface
+         x11_keysym x11_keyboard x11_backend x11_target x11_window x11_surface
+         wl_backend wl_target wl_window wl_surface xdg-shell-protocol
+         window surface
+         path arc polygon polygonize poly_render
+         font_desc gdi_font qtz_font ft_font font
+         transform state
+         canvas backend
+         ml_convert ml_canvas)
+  (flags (:standard) (:include ccopt.sexp)))
+ (c_library_flags (:standard) (:include cclib.sexp))
+ (js_of_ocaml
+  (javascript_files implem/event.js implem/translate.js
+                    stubs/ml_tags.js stubs/ml_convert.js stubs/ml_canvas.js)))
+
+(rule
+ (targets ccopt.sexp cclib.sexp)
+ (action (run ./discover/discover.exe)))

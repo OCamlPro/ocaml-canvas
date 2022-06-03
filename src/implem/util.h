@@ -1,0 +1,54 @@
+/**************************************************************************/
+/*                                                                        */
+/*    Copyright 2022 OCamlPro                                             */
+/*                                                                        */
+/*  All rights reserved. This file is distributed under the terms of the  */
+/*  GNU Lesser General Public License version 2.1, with the special       */
+/*  exception on linking described in the file LICENSE.                   */
+/*                                                                        */
+/**************************************************************************/
+
+#ifndef __UTIL_H
+#define __UTIL_H
+
+#include <stdint.h>
+#include <wchar.h>
+
+#define swap(t,a,b) do { \
+  t tmp = (a); \
+  (a) = (b); \
+  (b) = tmp; \
+} while (0)
+
+#undef min
+#undef max
+#define min(a,b) ((a) < (b) ? (a) : (b))
+#define max(a,b) ((a) > (b) ? (a) : (b))
+
+#define min4(a,b,c,d) (min(min(a,b),min(c,d)))
+#define max4(a,b,c,d) (max(max(a,b),max(c,d)))
+
+#define clip(a,b,c) ((a) < (b) ? (b) : (a) > (c) ? (c) : b)
+
+int16_t
+clip_i32_to_i16(
+  int32_t i);
+
+uint16_t
+clip_ui32_to_ui16(
+  uint32_t i);
+
+int
+numbits(
+  uint64_t i);
+
+int32_t
+fastround(
+  double d);
+
+// Normalize the angle a between [0; 2Pi[
+double
+normalize_angle(
+  double a);
+
+#endif /* __UTIL_H */

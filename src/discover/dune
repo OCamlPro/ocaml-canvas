@@ -1,0 +1,6 @@
+
+(include_subdirs no)
+
+(executable
+ (name discover)
+ (libraries dune-configurator))

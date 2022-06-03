@@ -1,0 +1,378 @@
+/**************************************************************************/
+/*                                                                        */
+/*    Copyright 2022 OCamlPro                                             */
+/*                                                                        */
+/*  All rights reserved. This file is distributed under the terms of the  */
+/*  GNU Lesser General Public License version 2.1, with the special       */
+/*  exception on linking described in the file LICENSE.                   */
+/*                                                                        */
+/**************************************************************************/
+
+#ifndef __CANVAS_H
+#define __CANVAS_H
+
+#include <stdint.h>
+#include <stdbool.h>
+
+#include "tuples.h"
+#include "color.h"
+#include "image_data.h"
+#include "font_desc.h"
+
+typedef struct canvas_t canvas_t;
+
+canvas_t *
+canvas_create_framed(
+  const char *title,
+  int32_t x,
+  int32_t y,
+  int32_t width,
+  int32_t height);
+
+canvas_t *
+canvas_create_frameless(
+  int32_t x,
+  int32_t y,
+  int32_t width,
+  int32_t height);
+
+canvas_t *
+canvas_create_offscreen(
+  int32_t width,
+  int32_t height);
+
+void
+canvas_destroy(
+  canvas_t *canvas);
+
+
+
+/* Visibility */
+
+void
+canvas_show(
+  canvas_t *canvas);
+
+void
+canvas_hide(
+  canvas_t *canvas);
+
+
+
+/* Configuration */
+
+int32_t
+canvas_get_id(
+  const canvas_t *canvas);
+
+void *
+canvas_get_user_data(
+  canvas_t *canvas);
+
+void
+canvas_set_user_data(
+  canvas_t *canvas,
+  void *data);
+
+pair_t(int32_t)
+canvas_get_size(
+  const canvas_t *canvas);
+
+void
+canvas_set_size(
+  canvas_t *canvas,
+  int32_t width,
+  int32_t height);
+
+void
+_canvas_set_size_internal(
+  canvas_t *canvas,
+  int32_t width,
+  int32_t height);
+
+pair_t(int32_t)
+canvas_get_position(
+  const canvas_t *canvas);
+
+void
+canvas_set_position(
+  canvas_t *canvas,
+  int32_t x,
+  int32_t y);
+
+
+
+/* State */
+
+bool
+canvas_save(
+  canvas_t *canvas);
+
+void
+canvas_restore(
+  canvas_t *canvas);
+
+
+
+/* Transform */
+
+void
+canvas_set_transform(
+  canvas_t *canvas,
+  double a,
+  double b,
+  double c,
+  double d,
+  double e,
+  double f);
+
+void
+canvas_transform(
+  canvas_t *canvas,
+  double a,
+  double b,
+  double c,
+  double d,
+  double e,
+  double f);
+
+void
+canvas_translate(
+  canvas_t *canvas,
+  double x,
+  double y);
+
+void
+canvas_scale(
+  canvas_t *canvas,
+  double x,
+  double y);
+
+void
+canvas_shear(
+  canvas_t *canvas,
+  double x,
+  double y);
+
+void
+canvas_rotate(
+  canvas_t *canvas,
+  double a);
+
+
+
+/* Style / config */
+
+uint32_t
+canvas_get_line_width(
+  const canvas_t *canvas);
+
+void
+canvas_set_line_width(
+  canvas_t *canvas,
+  double line_width);
+
+color_t_
+canvas_get_fill_color(
+  const canvas_t *c);
+
+void
+canvas_set_fill_color(
+  canvas_t *c,
+  color_t_ color);
+
+color_t_
+canvas_get_stroke_color(
+  const canvas_t *c);
+
+void
+canvas_set_stroke_color(
+  canvas_t *c,
+  color_t_ color);
+
+void
+canvas_set_font(
+  canvas_t *c,
+  const char *family,
+  double size,
+  font_slant_t slant,
+  int32_t weight);
+
+
+
+/* Paths */
+
+bool
+canvas_clear_path(
+  canvas_t *c);
+
+void
+canvas_close_path(
+  canvas_t *c);
+
+void
+canvas_move_to(
+  canvas_t *c,
+  double x,
+  double y);
+
+void
+canvas_line_to(
+  canvas_t *c,
+  double x,
+  double y);
+
+void
+canvas_arc(
+  canvas_t *c,
+  double x,
+  double y,
+  double r,
+  double di,
+  double df,
+  bool cc);
+
+void
+canvas_arc_to(
+  canvas_t *c,
+  double x1,
+  double y1,
+  double x2,
+  double y2,
+  double r);
+
+void
+canvas_quadratic_curve_to(
+  canvas_t *c,
+  double cp1x,
+  double cp1y,
+  double x,
+  double y);
+
+void
+canvas_bezier_curve_to(
+  canvas_t *c,
+  double cp1x,
+  double cp1y,
+  double cp2x,
+  double cp2y,
+  double x,
+  double y);
+
+void
+canvas_rect(
+  canvas_t *c,
+  double x,
+  double y,
+  double width,
+  double height);
+
+void
+canvas_ellipse(
+  canvas_t *c,
+  double x,
+  double y,
+  double rx,
+  double ry,
+  double r,
+  double di,
+  double df,
+  bool cc);
+
+
+
+/* Path stroking/filling */
+
+void
+canvas_fill(
+  canvas_t *c,
+  bool non_zero);
+
+void
+canvas_stroke(
+  canvas_t *c);
+
+
+
+/* Immediate drawing */
+
+void
+canvas_fill_rect(
+  canvas_t *c,
+  double x,
+  double y,
+  double width,
+  double height);
+
+void
+canvas_stroke_rect(
+  canvas_t *c,
+  double x,
+  double y,
+  double width,
+  double height);
+
+void
+canvas_fill_text(
+  canvas_t *c,
+  const char *text,
+  double x,
+  double y,
+  double max_width);
+
+void
+canvas_stroke_text(
+  canvas_t *c,
+  const char *text,
+  double x,
+  double y,
+  double max_width);
+
+void
+canvas_blit(
+  canvas_t *dc,
+  int32_t dx,
+  int32_t dy,
+  const canvas_t *sc,
+  int32_t sx,
+  int32_t sy,
+  int32_t width,
+  int32_t height);
+
+
+
+/* Direct pixel access */
+
+color_t_
+canvas_get_pixel(
+  const canvas_t *c,
+  int32_t x,
+  int32_t y);
+
+void
+canvas_set_pixel(
+  canvas_t *c,
+  int32_t x,
+  int32_t y,
+  color_t_ color);
+
+image_data_t
+canvas_get_image_data(
+  const canvas_t *c,
+  int32_t sx,
+  int32_t sy,
+  int32_t width,
+  int32_t height);
+
+void
+canvas_set_image_data(
+  canvas_t *c,
+  int32_t dx,
+  int32_t dy,
+  const image_data_t *data,
+  int32_t sx,
+  int32_t sy,
+  int32_t width,
+  int32_t height);
+
+#endif /* __CANVAS_H */
