@@ -14,3 +14,19 @@
  (modules test_canvas)
  (libraries ocaml-canvas)
 )
+
+(executable
+ (name gradients)
+ (public_name ocaml-canvas-gradients)
+ (modes byte_complete native js)
+ (modules gradients)
+ (libraries ocaml-canvas)
+)
+
+(executable
+ (name snake)
+ (public_name ocaml-canvas-snake)
+ (modes byte_complete native js)
+ (modules snake)
+ (libraries ocaml-canvas)
+)
