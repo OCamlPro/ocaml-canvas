@@ -133,7 +133,7 @@ backend_init(
     case_GDI(result = gdi_backend_init());
     case_QUARTZ(result = qtz_backend_init());
     case_X11(result = x11_backend_init());
-    case_WAYLAND(/*result = wl_backend_init()*/);
+    case_WAYLAND(result = wl_backend_init());
     default_ignore();
   }
 

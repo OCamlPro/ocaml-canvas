@@ -15,6 +15,8 @@
 #include "xdg-shell-client-protocol.h"
 
 #include "../window_internal.h"
+#include "wl_surface.h"
+
 
 typedef struct wl_window_t {
 
@@ -25,6 +27,7 @@ typedef struct wl_window_t {
   struct wl_surface *wl_surface;
   struct xdg_surface *xdg_surface;
   struct xdg_toplevel *xdg_toplevel;
+  struct wl_callback *wl_callback;
 //  struct wl_buffer *wl_buffer;
 
 } wl_window_t;

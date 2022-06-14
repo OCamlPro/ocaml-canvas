@@ -22,6 +22,10 @@
 
 typedef struct wl_backend_t {
 
+
+  //Look up hashmap
+  hashtable_t *surf_to_win;
+
   bool running;
   event_listener_t *listener;
 

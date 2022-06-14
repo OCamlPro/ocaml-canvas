@@ -13,8 +13,8 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <sys/mman.h>
 
-#include <wayland-client.h>
 
 #include "../color.h"
 #include "wl_target.h"

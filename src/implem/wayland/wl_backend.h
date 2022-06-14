@@ -40,7 +40,7 @@ wl_backend_remove_window(
 
 wl_window_t *
 wl_backend_get_window(
-  int wid);
+  const struct wl_surface *surf);
 
 void
 wl_backend_set_listener(

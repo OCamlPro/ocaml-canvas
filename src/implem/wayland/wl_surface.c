@@ -20,8 +20,9 @@
 #include <time.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <sys/mman.h>
 #include <wayland-client.h>
+#include <sys/mman.h>
+
 
 #include "../config.h"
 #include "../color.h"
@@ -33,10 +34,6 @@ typedef struct surface_impl_wl_t {
   impl_type_t type;
   struct wl_buffer *wl_buffer;
   struct wl_surface *wl_surface;
-
-  //data for destruction
-  uint8_t* color_data;
-  uint32_t color_data_size;
 } surface_impl_wl_t;
 
 static void
@@ -131,9 +128,9 @@ surface_create_wl_impl(
   impl->wl_buffer = wl_buffer;
   impl->wl_surface = wl_target->wl_surface;
   *data = (color_t_ *)pool_data;
-  impl->color_data = (uint8_t*)pool_data;
-  impl->color_data_size = width * height * 4;
-
+  wl_surface_attach(impl->wl_surface, impl->wl_buffer, 0, 0);
+  wl_surface_damage(impl->wl_surface,0,0,width,height);
+  wl_surface_commit(impl->wl_surface);
 
   return impl;
 }
@@ -145,7 +142,6 @@ surface_destroy_wl_impl(
   assert(impl != NULL);
   assert(impl->type == IMPL_WAYLAND);
 
-  munmap(impl->color_data,impl->color_data_size);
   wl_buffer_destroy(impl->wl_buffer);
   wl_surface_destroy(impl->wl_surface);
 
@@ -219,9 +215,6 @@ surface_resize_wl_impl(
   _raw_surface_copy(*s_data,s_width,s_height,*d_data,d_width,d_height);
   //Delete old data
   munmap(s_data,s_width * s_height * 4);
-  //Fill impl
-  impl->color_data = (uint8_t*)d_data;
-  impl->color_data_size = d_width * d_height * 4;
   return true;
 }
 
@@ -236,8 +229,8 @@ surface_present_wl_impl(
   assert(present_data != NULL);
   assert(width > 0);
   assert(height > 0);
-
   wl_surface_attach(impl->wl_surface, impl->wl_buffer, 0, 0);
+  wl_surface_damage(impl->wl_surface,0,0,width,height);
   wl_surface_commit(impl->wl_surface);
 }
 

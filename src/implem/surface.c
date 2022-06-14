@@ -137,7 +137,12 @@ surface_destroy(
   }
 
   if (s->data) {
-    free(s->data);
+    switch_IMPL() {
+      case_WAYLAND(munmap(s->data,s->width * s->height * 4));
+      default:
+        free(s->data);
+        break;
+    }
   }
 
   free(s);
@@ -191,7 +196,12 @@ surface_resize(
 
     _surface_copy_to_buffer(s, data, width, height);
 
-    free(s->data);
+    switch_IMPL() {
+      case_WAYLAND(munmap(s->data,s->width * s->height * 4));
+      default:
+        free(s->data);
+        break;
+    }
 
   } else {
 

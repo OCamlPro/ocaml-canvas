@@ -29,22 +29,22 @@
 
 wl_backend_t *wl_back = NULL;
 
-/*
+
 static hash_t
-_x11_wid_hash(
-  const xcb_window_t *wid)
+_wl_wid_hash(
+  const struct wl_surface *surf)
 {
-  return (hash_t)(uintptr_t)*wid;
+  return (hash_t)(uintptr_t)surf;
 }
 
 static bool
-_x11_wid_equal(
-  const xcb_window_t *wid1,
-  const xcb_window_t *wid2)
+_wl_wid_equal(
+  const struct wl_surface *surf1,
+  const struct wl_surface *surf2)
 {
-  return (*wid1) == (*wid2);
+  return (surf1) == (surf2);
 }
-*/
+
 
 
 static void
@@ -130,6 +130,11 @@ _wl_xdg_toplevel_close_handler(
   void *data,
   struct xdg_toplevel *xdg_toplevel)
 {
+  struct wl_window_t *wl_window = data;
+  event_t evt;
+  evt.type = EVENT_CLOSE;
+  evt.target = wl_window;
+  event_notify(wl_back->listener,&evt);
   printf("top level close\n");
 }
 
@@ -158,6 +163,8 @@ _wl_pointer_enter_handler(
                         wl_back->cursor_surface,
                         wl_back->cursor_image->hotspot_x,
                         wl_back->cursor_image->hotspot_y);
+  event_t evt;
+  
 }
 
 static void
@@ -178,7 +185,7 @@ _wl_pointer_motion_handler(
   wl_fixed_t x,
   wl_fixed_t y)
 {
-
+  
 }
 
 static void
@@ -190,6 +197,7 @@ _wl_pointer_button_handler(
   uint32_t button,
   uint32_t state)
 {
+  
   printf("button: 0x%x state: %d\n", button, state);
 }
 
@@ -231,15 +239,15 @@ wl_backend_init(
   }
 
   /* Map from WL windows IDs to window objects */
-/*
-  wl_back->wid_to_win = ht_new((key_hash_fun_t *)_wl_wid_hash,
+
+  wl_back->surf_to_win = ht_new((key_hash_fun_t *)_wl_wid_hash,
                                 (key_equal_fun_t *)_wl_wid_equal,
                                 32);
-  if (wl_back->wid_to_win == NULL) {
+  if (wl_back->surf_to_win == NULL) {
     wl_backend_terminate();
     return false;
   }
-*/
+
 
 
   /* Connect to Wayland server */
@@ -252,9 +260,6 @@ wl_backend_init(
   /* Get registry */
   wl_back->registry = wl_display_get_registry(wl_back->display);
   wl_registry_add_listener(wl_back->registry, &_wl_registry_listener, wl_back);
-
-  /* Is this necessary ? */
-  //wl_display_dispatch(wl_back->display); // Process incoming events
 
   /* Force sync so registry listener are run (this calls dispatch until sync processed) */
   wl_display_roundtrip(wl_back->display); /* Block until requests processed by server */
@@ -312,26 +317,63 @@ wl_backend_terminate(
   wl_display_roundtrip(wl_back->display);
   wl_display_disconnect(wl_back->display);
 
-/*
-  if (wl_back->wid_to_win != NULL) {
-    ht_delete(wl_back->wid_to_win);
+
+  if (wl_back->surf_to_win != NULL) {
+    ht_delete(wl_back->surf_to_win);
   }
-*/
+
 
   free(wl_back);
 
   wl_back = NULL;
 }
 
+//TODO : Clean this up if it's not needed
+static const struct wl_callback_listener wl_callback_listener;
+static void wl_callback_handle_frame(void* data, struct wl_callback* wl_callback, uint32_t time)
+{
+  struct wl_window_t *wl_window = data;
+  wl_callback_destroy(wl_callback);
+  wl_window->wl_callback = wl_surface_frame(wl_window->wl_surface);
+  wl_callback_add_listener(wl_window->wl_callback,&wl_callback_listener,wl_window);
+  //Trigger event
+  event_t evt;
+  evt.type = EVENT_FRAME;
+  //TODO : More precise clock
+  evt.time = time;
+  if (wl_window->base.visible)
+  {
+    //Attaches buffer and commits surface currently attached to this document
+    evt.target = data;
+    if (event_notify(wl_back->listener,&evt))
+    {
+      evt.type = EVENT_PRESENT;
+      event_notify(wl_back->listener,&evt);
+    }
+  }
+  wl_surface_damage(wl_window->wl_surface,0,0,1280,720);
+  wl_surface_commit(wl_window->wl_surface);
+  
+
+
+}
+
+static const struct wl_callback_listener wl_callback_listener = 
+{
+  .done = wl_callback_handle_frame
+};
+
 void
 wl_backend_add_window(
   wl_window_t *w)
 {
   assert(w != NULL);
-/*
-  assert(w->wid != XCB_WINDOW_NONE);
-  ht_add(wl_back->wid_to_win, (void *)&(w->wid), (void *)w);
-*/
+  ht_add(wl_back->surf_to_win,(void*)&(w->wl_surface), (void*)w);
+  //create a callback for the window
+  w->wl_callback = wl_surface_frame(w->wl_surface);
+  wl_callback_add_listener(w->wl_callback,&wl_callback_listener,w);
+  wl_callback_handle_frame(w,w->wl_callback,0);
+  xdg_toplevel_add_listener(w->xdg_toplevel,&_wl_xdg_toplevel_listener,w);
 }
 
 void
@@ -339,20 +381,16 @@ wl_backend_remove_window(
   const wl_window_t *w)
 {
   assert(w != NULL);
-/*
-  assert(w->wid != XCB_WINDOW_NONE);
-  ht_remove(wl_back->wid_to_win, (void *)&(w->wid));
-*/
+  ht_remove(wl_back->surf_to_win,(void*)&(w->wl_surface));
 }
 
 wl_window_t *
 wl_backend_get_window(
-  int wid)
+  const struct wl_surface* wl_surface)
 {
-  assert(wid != 0);
+  assert(wl_surface != 0);
 
-//  return (wl_window_t *)ht_find(wl_back->wid_to_win, (void *)&wid);
-  return NULL;
+  return (wl_window_t *)ht_find(wl_back->surf_to_win, (void *)&wl_surface);
 }
 
 void
@@ -376,14 +414,11 @@ void
 wl_backend_run(
   void)
 {
-//  wl_window_t *w = NULL;
-//  xcb_event_t e;
-//  event_t evt;
 
   wl_back->running = true;
 
   while (wl_display_dispatch(wl_back->display) >= 0) {
-    /* Handle events */
+    //Events are handled separately. This loop is left empty on purpose.
   }
 
 }
