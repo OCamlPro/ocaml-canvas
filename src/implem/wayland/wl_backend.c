@@ -16,36 +16,36 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <time.h>
+
 
 #include <wayland-client.h>
 #include <wayland-cursor.h>
 #include "xdg-shell-client-protocol.h"
+#include <xkbcommon/xkbcommon.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <unistd.h>
 
-#include "../hashtable.h"
+
 #include "../event.h"
 #include "wl_backend.h"
 #include "wl_backend_internal.h"
 #include "wl_window_internal.h"
+#include "wl_keyboard.h"
+
 
 wl_backend_t *wl_back = NULL;
 
 
-static hash_t
-_wl_wid_hash(
-  const struct wl_surface *surf)
+
+int64_t _wl_get_time()
 {
-  return (hash_t)(uintptr_t)surf;
+  struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+  return ts.tv_sec/1000000 + ts.tv_nsec/(1000);
 }
-
-static bool
-_wl_wid_equal(
-  const struct wl_surface *surf1,
-  const struct wl_surface *surf2)
-{
-  return (surf1) == (surf2);
-}
-
-
 
 static void
 _wl_registry_global(
@@ -135,6 +135,7 @@ _wl_xdg_toplevel_close_handler(
   evt.type = EVENT_CLOSE;
   evt.target = wl_window;
   event_notify(wl_back->listener,&evt);
+  
   printf("top level close\n");
 }
 
@@ -159,10 +160,16 @@ _wl_pointer_enter_handler(
   wl_fixed_t y)
 {
   wl_backend_t *wl_back = (wl_backend_t *)data;
+  wl_back->mouse_posx = x;
+  wl_back->mouse_posy = y;
   wl_pointer_set_cursor(pointer, serial,
                         wl_back->cursor_surface,
                         wl_back->cursor_image->hotspot_x,
                         wl_back->cursor_image->hotspot_y);
+  if (surface)
+    wl_back->focus_window = wl_surface_get_user_data(surface);
+  else
+    wl_back->focus_window = NULL;
   event_t evt;
   
 }
@@ -185,7 +192,16 @@ _wl_pointer_motion_handler(
   wl_fixed_t x,
   wl_fixed_t y)
 {
-  
+  wl_backend_t *wl_back = (wl_backend_t *)data;
+  wl_back->mouse_posx = x;
+  wl_back->mouse_posy = y;
+  event_t evt;
+  evt.type = EVENT_CURSOR;
+  evt.time = _wl_get_time();
+  evt.target = wl_back->focus_window;
+  evt.desc.cursor.x = x/256;
+  evt.desc.cursor.y = y/256;
+  event_notify(wl_back->listener, &evt);
 }
 
 static void
@@ -197,7 +213,16 @@ _wl_pointer_button_handler(
   uint32_t button,
   uint32_t state)
 {
-  
+  wl_backend_t *wl_back = (wl_backend_t *)data;
+  event_t evt;
+  evt.type = EVENT_BUTTON;
+  evt.time = _wl_get_time();
+  evt.target = wl_back->focus_window;
+  evt.desc.button.button = (button == 0) ? BUTTON_LEFT : BUTTON_RIGHT;
+  evt.desc.button.state = (state == WL_POINTER_BUTTON_STATE_PRESSED) ? BUTTON_DOWN : BUTTON_UP;
+  evt.desc.button.x = wl_back->mouse_posx / 256;
+  evt.desc.button.y = wl_back->mouse_posy / 256;
+  event_notify(wl_back->listener, &evt);
   printf("button: 0x%x state: %d\n", button, state);
 }
 
@@ -212,6 +237,111 @@ _wl_pointer_axis_handler(
 
 }
 
+
+
+//Keyboard event handlers
+
+static void
+_wl_keyboard_enter_handler(
+  void *data,
+  struct wl_keyboard *keyboard,
+  uint32_t serial,
+  struct wl_surface *surface,
+  struct wl_array *keys
+)
+{
+  wl_backend_t *wl_back = (wl_backend_t *)data;
+  if (surface)
+    wl_back->focus_window = wl_surface_get_user_data(surface);
+  else //happens for some reason when the window gets destroyed
+    wl_back->focus_window = NULL;
+}
+
+static void
+_wl_keyboard_leave_handler(
+  void *data,
+  struct wl_keyboard *keyboard,
+  uint32_t serial,
+  struct wl_surface *surface)
+{
+  wl_back->focus_window = NULL;
+}
+
+static void
+_wl_keyboard_key_handler(
+  void *data,
+  struct wl_keyboard *keyboard,
+  uint32_t serial,
+  uint32_t time,
+  uint32_t key,
+  enum wl_keyboard_key_state state
+)
+{
+  wl_backend_t *wl_back = (wl_backend_t *)data;
+  char buf[128];
+  xkb_state_key_get_utf8(wl_back->xkb_state, key+8, buf, sizeof(buf));
+  event_t evt;
+  evt.target = wl_back->focus_window;
+  evt.time = _wl_get_time();
+  evt.type = EVENT_KEY;
+  evt.desc.key.code = sym_to_keycode[key];
+  evt.desc.key.char_ = buf[0];
+  evt.desc.key.state = (state == WL_KEYBOARD_KEY_STATE_RELEASED) ? KEY_UP : KEY_DOWN;
+  event_notify(wl_back->listener,&evt);
+}
+
+static void
+_wl_keyboard_keymap_handler(
+  void *data,
+  struct wl_keyboard *keyboard,
+  uint32_t format,
+  int32_t fd,
+  uint32_t size
+)
+{
+  assert(format == WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1);
+  wl_backend_t *wl_back = (wl_backend_t *)data;
+  
+  char *map_shm = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
+  assert(map_shm != MAP_FAILED);
+  
+  wl_back->xkb_keymap = xkb_keymap_new_from_string(wl_back->xkb_context,map_shm,XKB_KEYMAP_FORMAT_TEXT_V1,XKB_KEYMAP_COMPILE_NO_FLAGS);
+  munmap(map_shm,size);
+
+  close(fd);
+
+  printf("Set up keymap \n");
+
+  wl_back->xkb_state = xkb_state_new(wl_back->xkb_keymap);
+
+}
+static void
+_wl_keyboard_modifiers_handler(
+  void *data,
+  struct wl_keyboard *wl_keyboard,
+  uint32_t serial,
+  uint32_t depressed,
+  uint32_t latched,
+  uint32_t locked,
+  uint32_t group
+)
+{
+    wl_backend_t *wl_back = (wl_backend_t *)data;
+    xkb_state_update_mask(wl_back->xkb_state,
+        depressed, latched, locked, 0, 0, group);
+}
+static void
+_wl_keyboard_repeat_info_handler(
+  void *data,
+  struct wl_keyboard *wl_keyboard,
+  int32_t rate,
+  int32_t delay
+)
+{
+
+}
+
+
 const struct wl_pointer_listener
 _wl_pointer_listener =
 {
@@ -221,6 +351,18 @@ _wl_pointer_listener =
   .button = _wl_pointer_button_handler,
   .axis = _wl_pointer_axis_handler,
 };
+
+const struct wl_keyboard_listener
+_wl_keyboard_listener =
+{
+  .enter = _wl_keyboard_enter_handler,
+  .key = _wl_keyboard_key_handler,
+  .keymap = _wl_keyboard_keymap_handler,
+  .leave = _wl_keyboard_leave_handler,
+  .modifiers = _wl_keyboard_modifiers_handler,
+  .repeat_info = _wl_keyboard_repeat_info_handler
+};
+
 
 
 
@@ -235,16 +377,6 @@ wl_backend_init(
   /* Allocate the backend object */
   wl_back = (wl_backend_t *)calloc(1, sizeof(wl_backend_t));
   if (wl_back == NULL) {
-    return false;
-  }
-
-  /* Map from WL windows IDs to window objects */
-
-  wl_back->surf_to_win = ht_new((key_hash_fun_t *)_wl_wid_hash,
-                                (key_equal_fun_t *)_wl_wid_equal,
-                                32);
-  if (wl_back->surf_to_win == NULL) {
-    wl_backend_terminate();
     return false;
   }
 
@@ -270,7 +402,15 @@ wl_backend_init(
 
   /* Retrieve the pointer and add listener */
   wl_back->pointer = wl_seat_get_pointer(wl_back->seat);
-  wl_pointer_add_listener(wl_back->pointer, &_wl_pointer_listener, wl_back);
+  if (wl_back->pointer)
+    wl_pointer_add_listener(wl_back->pointer, &_wl_pointer_listener, wl_back);
+  /* Retrieve the keyboard, iinitiate xkb_context and add listener */
+  wl_back->keyboard = wl_seat_get_keyboard(wl_back->seat);
+  if (wl_back->keyboard)
+  {
+    wl_back->xkb_context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+    wl_keyboard_add_listener(wl_back->keyboard,&_wl_keyboard_listener,wl_back);
+  }
 
   /* Force sync */
   wl_display_roundtrip(wl_back->display);
@@ -308,19 +448,23 @@ wl_backend_terminate(
   /* Destroy globals */
   xdg_wm_base_destroy(wl_back->xdg_wm_base);
   wl_shm_destroy(wl_back->shm);
-  wl_pointer_release(wl_back->pointer);
-  wl_pointer_destroy(wl_back->pointer);
+  if (wl_back->pointer) {
+    wl_pointer_release(wl_back->pointer);
+    wl_pointer_destroy(wl_back->pointer);
+  }
+  if (wl_back->keyboard) {
+    wl_keyboard_release(wl_back->keyboard);
+    wl_keyboard_destroy(wl_back->keyboard);
+    xkb_state_ref(wl_back->xkb_state);
+    xkb_keymap_unref(wl_back->xkb_keymap);
+    xkb_context_unref(wl_back->xkb_context);
+  }
   wl_seat_release(wl_back->seat);
   wl_seat_destroy(wl_back->seat);
   wl_compositor_destroy(wl_back->compositor);
   wl_registry_destroy(wl_back->registry);
   wl_display_roundtrip(wl_back->display);
   wl_display_disconnect(wl_back->display);
-
-
-  if (wl_back->surf_to_win != NULL) {
-    ht_delete(wl_back->surf_to_win);
-  }
 
 
   free(wl_back);
@@ -333,14 +477,15 @@ static const struct wl_callback_listener wl_callback_listener;
 static void wl_callback_handle_frame(void* data, struct wl_callback* wl_callback, uint32_t time)
 {
   struct wl_window_t *wl_window = data;
-  wl_callback_destroy(wl_callback);
-  wl_window->wl_callback = wl_surface_frame(wl_window->wl_surface);
-  wl_callback_add_listener(wl_window->wl_callback,&wl_callback_listener,wl_window);
+  if (wl_callback) {
+    wl_callback_destroy(wl_callback);
+    wl_window->wl_callback = wl_surface_frame(wl_window->wl_surface);
+    wl_callback_add_listener(wl_window->wl_callback,&wl_callback_listener,wl_window);
+  }
   //Trigger event
   event_t evt;
   evt.type = EVENT_FRAME;
-  //TODO : More precise clock
-  evt.time = time;
+  evt.time = _wl_get_time();
   if (wl_window->base.visible)
   {
     //Attaches buffer and commits surface currently attached to this document
@@ -368,29 +513,11 @@ wl_backend_add_window(
   wl_window_t *w)
 {
   assert(w != NULL);
-  ht_add(wl_back->surf_to_win,(void*)&(w->wl_surface), (void*)w);
   //create a callback for the window
   w->wl_callback = wl_surface_frame(w->wl_surface);
   wl_callback_add_listener(w->wl_callback,&wl_callback_listener,w);
   wl_callback_handle_frame(w,w->wl_callback,0);
   xdg_toplevel_add_listener(w->xdg_toplevel,&_wl_xdg_toplevel_listener,w);
-}
-
-void
-wl_backend_remove_window(
-  const wl_window_t *w)
-{
-  assert(w != NULL);
-  ht_remove(wl_back->surf_to_win,(void*)&(w->wl_surface));
-}
-
-wl_window_t *
-wl_backend_get_window(
-  const struct wl_surface* wl_surface)
-{
-  assert(wl_surface != 0);
-
-  return (wl_window_t *)ht_find(wl_back->surf_to_win, (void *)&wl_surface);
 }
 
 void

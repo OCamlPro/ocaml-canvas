@@ -35,8 +35,8 @@ let x11_config c =
 
 let wl_config c =
   let cflags, libs =
-    query_or_default c "wayland-client wayland-cursor"
-      [] [ "-lwayland-client"; "-lwayland-cursor" ]
+    query_or_default c "wayland-client wayland-cursor xkbcommon" 
+      [] [ "-lwayland-client"; "-lwayland-cursor"; "-lxkbcommon" ]
   in
   "-DHAS_WAYLAND" :: cflags, "-lrt" :: libs
 

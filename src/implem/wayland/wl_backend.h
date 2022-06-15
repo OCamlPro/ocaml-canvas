@@ -35,14 +35,6 @@ wl_backend_add_window(
   wl_window_t *w);
 
 void
-wl_backend_remove_window(
-  const wl_window_t *w);
-
-wl_window_t *
-wl_backend_get_window(
-  const struct wl_surface *surf);
-
-void
 wl_backend_set_listener(
   event_listener_t *listener);
 

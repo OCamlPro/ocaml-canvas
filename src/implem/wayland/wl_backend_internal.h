@@ -16,15 +16,13 @@
 #include <wayland-client.h>
 #include <wayland-cursor.h>
 #include "xdg-shell-client-protocol.h"
+#include <xkbcommon/xkbcommon.h>
 
 #include "../hashtable.h"
 #include "../event.h"
 
 typedef struct wl_backend_t {
 
-
-  //Look up hashmap
-  hashtable_t *surf_to_win;
 
   bool running;
   event_listener_t *listener;
@@ -35,6 +33,7 @@ typedef struct wl_backend_t {
   struct wl_compositor *compositor;
   struct wl_seat *seat;
   struct wl_pointer *pointer;
+  struct wl_keyboard *keyboard;
   struct wl_shm *shm;
   struct xdg_wm_base *xdg_wm_base;
 
@@ -44,6 +43,16 @@ typedef struct wl_backend_t {
   struct wl_cursor_image *cursor_image;
   struct wl_buffer *cursor_buffer;
   struct wl_surface *cursor_surface;
+  wl_window_t *focus_window;
+
+  /*Keyboard objects*/
+  struct xkb_keymap *xkb_keymap;
+  struct xkb_state *xkb_state;
+  struct xkb_context *xkb_context;
+
+  /*Mouse objects*/
+  wl_fixed_t mouse_posx;
+  wl_fixed_t mouse_posy;
 
 } wl_backend_t;
 

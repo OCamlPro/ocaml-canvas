@@ -80,6 +80,7 @@ wl_window_create(
   window->base.height = clip_i32_to_i16(max(1, height));
 
   window->wl_surface = wl_compositor_create_surface(wl_back->compositor);
+  wl_surface_set_user_data(window->wl_surface,window);
   window->xdg_surface =
     xdg_wm_base_get_xdg_surface(wl_back->xdg_wm_base, window->wl_surface);
   xdg_surface_add_listener(window->xdg_surface, &_wl_xdg_surface_listener, &window);
@@ -99,6 +100,7 @@ wl_window_destroy(
   wl_window_t *window)
 {
   assert(window != NULL);
+  wl_callback_destroy(window->wl_callback);
   xdg_toplevel_destroy(window->xdg_toplevel);
   xdg_surface_destroy(window->xdg_surface);
   wl_surface_destroy(window->wl_surface);
