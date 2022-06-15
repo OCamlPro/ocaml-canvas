@@ -128,9 +128,6 @@ surface_create_wl_impl(
   impl->wl_buffer = wl_buffer;
   impl->wl_surface = wl_target->wl_surface;
   *data = (color_t_ *)pool_data;
-  wl_surface_attach(impl->wl_surface, impl->wl_buffer, 0, 0);
-  wl_surface_damage(impl->wl_surface,0,0,width,height);
-  wl_surface_commit(impl->wl_surface);
 
   return impl;
 }
@@ -206,8 +203,6 @@ surface_resize_wl_impl(
   uint8_t *pool_data = (uint8_t *)mmap(NULL, shm_pool_size,
                                        PROT_READ | PROT_WRITE,
                                        MAP_SHARED, fd, 0);
-
-  
 
   struct wl_shm_pool *pool = wl_shm_create_pool(wl_shm,
                                                 fd, shm_pool_size);

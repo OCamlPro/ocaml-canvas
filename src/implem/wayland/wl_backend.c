@@ -112,44 +112,6 @@ _wl_xdg_wm_base_listener =
 
 
 
-
-
-static void
-_wl_xdg_toplevel_configure_handler(
-  void *data,
-  struct xdg_toplevel *xdg_toplevel,
-  int32_t width,
-  int32_t height,
-  struct wl_array *states)
-{
-  printf("top level configure: %dx%d\n", width, height);
-}
-
-static void
-_wl_xdg_toplevel_close_handler(
-  void *data,
-  struct xdg_toplevel *xdg_toplevel)
-{
-  struct wl_window_t *wl_window = data;
-  event_t evt;
-  evt.type = EVENT_CLOSE;
-  evt.target = wl_window;
-  event_notify(wl_back->listener,&evt);
-  
-  printf("top level close\n");
-}
-
-const struct xdg_toplevel_listener
-_wl_xdg_toplevel_listener =
-{
-  .configure = _wl_xdg_toplevel_configure_handler,
-  .close = _wl_xdg_toplevel_close_handler,
-};
-
-
-
-
-
 static void
 _wl_pointer_enter_handler(
   void *data,
@@ -192,16 +154,18 @@ _wl_pointer_motion_handler(
   wl_fixed_t x,
   wl_fixed_t y)
 {
-  wl_backend_t *wl_back = (wl_backend_t *)data;
-  wl_back->mouse_posx = x;
-  wl_back->mouse_posy = y;
-  event_t evt;
-  evt.type = EVENT_CURSOR;
-  evt.time = _wl_get_time();
-  evt.target = wl_back->focus_window;
-  evt.desc.cursor.x = x/256;
-  evt.desc.cursor.y = y/256;
-  event_notify(wl_back->listener, &evt);
+  if (wl_back->focus_window && wl_back->focus_window->base.visible) {
+    wl_backend_t *wl_back = (wl_backend_t *)data;
+    wl_back->mouse_posx = x;
+    wl_back->mouse_posy = y;
+    event_t evt;
+    evt.type = EVENT_CURSOR;
+    evt.time = _wl_get_time();
+    evt.target = wl_back->focus_window;
+    evt.desc.cursor.x = x/256;
+    evt.desc.cursor.y = y/256;
+    event_notify(wl_back->listener, &evt);
+  }
 }
 
 static void
@@ -213,17 +177,21 @@ _wl_pointer_button_handler(
   uint32_t button,
   uint32_t state)
 {
-  wl_backend_t *wl_back = (wl_backend_t *)data;
-  event_t evt;
-  evt.type = EVENT_BUTTON;
-  evt.time = _wl_get_time();
-  evt.target = wl_back->focus_window;
-  evt.desc.button.button = (button == 0) ? BUTTON_LEFT : BUTTON_RIGHT;
-  evt.desc.button.state = (state == WL_POINTER_BUTTON_STATE_PRESSED) ? BUTTON_DOWN : BUTTON_UP;
-  evt.desc.button.x = wl_back->mouse_posx / 256;
-  evt.desc.button.y = wl_back->mouse_posy / 256;
-  event_notify(wl_back->listener, &evt);
-  printf("button: 0x%x state: %d\n", button, state);
+  //When the focus screen is hidden with a key down event for example, the key up event will still trigger. This check mitigates that.
+  if (wl_back->focus_window && wl_back->focus_window->base.visible) {
+    wl_backend_t *wl_back = (wl_backend_t *)data;
+    event_t evt;
+    evt.type = EVENT_BUTTON;
+    evt.time = _wl_get_time();
+    evt.target = wl_back->focus_window;
+    //TODO : Support other buttons
+    evt.desc.button.button = (button == 0) ? BUTTON_LEFT : BUTTON_RIGHT;
+    evt.desc.button.state = (state == WL_POINTER_BUTTON_STATE_PRESSED) ? BUTTON_DOWN : BUTTON_UP;
+    evt.desc.button.x = wl_back->mouse_posx / 256;
+    evt.desc.button.y = wl_back->mouse_posy / 256;
+    event_notify(wl_back->listener, &evt);
+    printf("button: 0x%x state: %d\n", button, state);
+  }
 }
 
 static void
@@ -277,17 +245,18 @@ _wl_keyboard_key_handler(
   enum wl_keyboard_key_state state
 )
 {
-  wl_backend_t *wl_back = (wl_backend_t *)data;
-  char buf[128];
-  xkb_state_key_get_utf8(wl_back->xkb_state, key+8, buf, sizeof(buf));
-  event_t evt;
-  evt.target = wl_back->focus_window;
-  evt.time = _wl_get_time();
-  evt.type = EVENT_KEY;
-  evt.desc.key.code = sym_to_keycode[key];
-  evt.desc.key.char_ = buf[0];
-  evt.desc.key.state = (state == WL_KEYBOARD_KEY_STATE_RELEASED) ? KEY_UP : KEY_DOWN;
-  event_notify(wl_back->listener,&evt);
+  if (wl_back->focus_window && wl_back->focus_window->base.visible) {
+    wl_backend_t *wl_back = (wl_backend_t *)data;
+    uint32_t pressedKeyCharacter = xkb_state_key_get_utf32(wl_back->xkb_state, key+8);
+    event_t evt;
+    evt.target = wl_back->focus_window;
+    evt.time = _wl_get_time();
+    evt.type = EVENT_KEY;
+    evt.desc.key.code = sym_to_keycode[key];
+    evt.desc.key.char_ = pressedKeyCharacter;
+    evt.desc.key.state = (state == WL_KEYBOARD_KEY_STATE_RELEASED) ? KEY_UP : KEY_DOWN;
+    event_notify(wl_back->listener,&evt);
+  }
 }
 
 static void
@@ -338,7 +307,7 @@ _wl_keyboard_repeat_info_handler(
   int32_t delay
 )
 {
-
+  
 }
 
 
@@ -406,8 +375,7 @@ wl_backend_init(
     wl_pointer_add_listener(wl_back->pointer, &_wl_pointer_listener, wl_back);
   /* Retrieve the keyboard, iinitiate xkb_context and add listener */
   wl_back->keyboard = wl_seat_get_keyboard(wl_back->seat);
-  if (wl_back->keyboard)
-  {
+  if (wl_back->keyboard) {
     wl_back->xkb_context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
     wl_keyboard_add_listener(wl_back->keyboard,&_wl_keyboard_listener,wl_back);
   }
@@ -472,9 +440,11 @@ wl_backend_terminate(
   wl_back = NULL;
 }
 
-//TODO : Clean this up if it's not needed
 static const struct wl_callback_listener wl_callback_listener;
-static void wl_callback_handle_frame(void* data, struct wl_callback* wl_callback, uint32_t time)
+static void wl_callback_handle_frame(
+  void* data, 
+  struct wl_callback* wl_callback,
+  uint32_t time)
 {
   struct wl_window_t *wl_window = data;
   if (wl_callback) {
@@ -486,21 +456,14 @@ static void wl_callback_handle_frame(void* data, struct wl_callback* wl_callback
   event_t evt;
   evt.type = EVENT_FRAME;
   evt.time = _wl_get_time();
-  if (wl_window->base.visible)
-  {
-    //Attaches buffer and commits surface currently attached to this document
-    evt.target = data;
+  if (wl_window->base.visible) {
+    evt.target = (wl_window_t*)data;
     if (event_notify(wl_back->listener,&evt))
     {
       evt.type = EVENT_PRESENT;
       event_notify(wl_back->listener,&evt);
     }
   }
-  wl_surface_damage(wl_window->wl_surface,0,0,1280,720);
-  wl_surface_commit(wl_window->wl_surface);
-  
-
-
 }
 
 static const struct wl_callback_listener wl_callback_listener = 
@@ -517,7 +480,6 @@ wl_backend_add_window(
   w->wl_callback = wl_surface_frame(w->wl_surface);
   wl_callback_add_listener(w->wl_callback,&wl_callback_listener,w);
   wl_callback_handle_frame(w,w->wl_callback,0);
-  xdg_toplevel_add_listener(w->xdg_toplevel,&_wl_xdg_toplevel_listener,w);
 }
 
 void
