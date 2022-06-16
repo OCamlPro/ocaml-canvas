@@ -31,6 +31,7 @@ typedef struct wl_backend_t {
   struct wl_display *display;
   struct wl_registry *registry;
   struct wl_compositor *compositor;
+  struct wl_subcompositor *subcompositor;
   struct wl_seat *seat;
   struct wl_pointer *pointer;
   struct wl_keyboard *keyboard;
@@ -53,7 +54,7 @@ typedef struct wl_backend_t {
   /*Mouse objects*/
   wl_fixed_t mouse_posx;
   wl_fixed_t mouse_posy;
-
+  uint8_t inside_decor;
 } wl_backend_t;
 
 extern wl_backend_t *wl_back;

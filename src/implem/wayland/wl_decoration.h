@@ -8,31 +8,39 @@
 /*                                                                        */
 /**************************************************************************/
 
-#ifndef __WL_WINDOW_INTERNAL_H
-#define __WL_WINDOW_INTERNAL_H
+#ifndef __WL_DECORATION_H
+#define __WL_DECORATION_H
+
+#include <stdint.h>
+#include <stdbool.h>
+#include <sys/mman.h>
 
 #include <wayland-client.h>
-#include "xdg-shell-client-protocol.h"
 
-#include "../window_internal.h"
-#include "wl_decoration.h"
+#include "../color.h"
 
-typedef struct wl_window_t {
-
-  /* Common to all windows */
-  window_t base;
-
-  /* Specific to Wayland windows */
+typedef struct wl_decoration_t {
   struct wl_surface *wl_surface;
-  struct xdg_surface *xdg_surface;
-  struct xdg_toplevel *xdg_toplevel;
-  struct wl_callback *wl_callback;
-  const char *title;
+  struct wl_subsurface *wl_subsurface;
+  struct wl_buffer *background_buffer;
+} wl_decoration_t;
 
-  /*Client Side Decorations*/
-  //TODO : Check if KDE is used before enabling this
-  wl_decoration_t *decoration;
+wl_decoration_t*
+wl_decoration_create(
+    struct wl_surface *parent,
+    uint32_t width
+);
 
-} wl_window_t;
+void
+wl_decoration_destroy(
+    wl_decoration_t *decoration
+);
 
-#endif /* __WL_WINDOW_INTERNAL_H */
+void
+wl_decoration_present(
+    wl_decoration_t* decoration
+);
+
+
+
+#endif /* __WL_DECORATION_H */

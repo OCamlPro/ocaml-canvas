@@ -106,8 +106,13 @@ wl_window_create(
   window->base.width = clip_i32_to_i16(max(1, width));
   window->base.height = clip_i32_to_i16(max(1, height));
 
+  window->title = title;
+
   window->wl_surface = wl_compositor_create_surface(wl_back->compositor);
   wl_surface_set_user_data(window->wl_surface,window);
+
+  window->decoration = wl_decoration_create(window->wl_surface,width);
+  wl_surface_set_user_data(window->decoration->wl_surface,window);
 
   wl_backend_add_window(window);
 
@@ -122,6 +127,7 @@ wl_window_destroy(
   wl_callback_destroy(window->wl_callback);
   xdg_toplevel_destroy(window->xdg_toplevel);
   xdg_surface_destroy(window->xdg_surface);
+  wl_decoration_destroy(window->decoration);
   wl_surface_destroy(window->wl_surface);
   free(window);
 }
@@ -182,8 +188,9 @@ wl_window_show(
     xdg_surface_add_listener(window->xdg_surface, &_wl_xdg_surface_listener, &window);
     window->xdg_toplevel = xdg_surface_get_toplevel(window->xdg_surface);
     xdg_toplevel_add_listener(window->xdg_toplevel,&_wl_xdg_toplevel_listener,window);
+    xdg_toplevel_set_title(window->xdg_toplevel,window->title);
     window->base.visible = true;
-    wl_surface_commit(window->wl_surface);
+    wl_surface_commit(window->wl_surface);    
   }
   _wl_window_update_position(window);
 

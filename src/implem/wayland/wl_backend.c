@@ -17,16 +17,16 @@
 #include <string.h>
 #include <assert.h>
 #include <time.h>
-
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <unistd.h>
 
 #include <wayland-client.h>
 #include <wayland-cursor.h>
 #include "xdg-shell-client-protocol.h"
 #include <xkbcommon/xkbcommon.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <unistd.h>
+
 
 
 #include "../event.h"
@@ -72,6 +72,9 @@ printf("Global: %s\n", interface);
   } else if (strcmp(interface, wl_shm_interface.name) == 0) {
     wl_back->shm = (struct wl_shm *)
       wl_registry_bind(registry, id, &wl_shm_interface, 1);
+  } else if (strcmp(interface, wl_subcompositor_interface.name) == 0) {
+    wl_back->subcompositor = (struct wl_subcompositor*)
+      wl_registry_bind(registry, id, &wl_subcompositor_interface,version);
   }
 
 }
@@ -129,9 +132,16 @@ _wl_pointer_enter_handler(
                         wl_back->cursor_image->hotspot_x,
                         wl_back->cursor_image->hotspot_y);
   if (surface)
-    wl_back->focus_window = wl_surface_get_user_data(surface);
+  {
+    wl_back->focus_window = (wl_window_t*)wl_surface_get_user_data(surface);
+    if (surface == wl_back->focus_window->decoration->wl_surface)
+      wl_back->inside_decor = 1;
+  }
   else
+  {
     wl_back->focus_window = NULL;
+    wl_back->inside_decor = 1;
+  }
   event_t evt;
   
 }
@@ -143,7 +153,8 @@ _wl_pointer_leave_handler(
   uint32_t serial,
   struct wl_surface *surface)
 {
-
+  wl_backend_t *wl_back = (wl_backend_t *)data;
+  wl_back->inside_decor = 0;
 }
 
 static void
@@ -178,19 +189,26 @@ _wl_pointer_button_handler(
   uint32_t state)
 {
   //When the focus screen is hidden with a key down event for example, the key up event will still trigger. This check mitigates that.
-  if (wl_back->focus_window && wl_back->focus_window->base.visible) {
+  if (wl_back->focus_window && wl_back->focus_window->base.visible && !wl_back->inside_decor) {
     wl_backend_t *wl_back = (wl_backend_t *)data;
     event_t evt;
     evt.type = EVENT_BUTTON;
     evt.time = _wl_get_time();
     evt.target = wl_back->focus_window;
     //TODO : Support other buttons
-    evt.desc.button.button = (button == 0) ? BUTTON_LEFT : BUTTON_RIGHT;
+    //TODO : Find a way to get RMB's code (is it always 272?)
+    evt.desc.button.button = (button == 272) ? BUTTON_LEFT : BUTTON_RIGHT;
     evt.desc.button.state = (state == WL_POINTER_BUTTON_STATE_PRESSED) ? BUTTON_DOWN : BUTTON_UP;
     evt.desc.button.x = wl_back->mouse_posx / 256;
     evt.desc.button.y = wl_back->mouse_posy / 256;
     event_notify(wl_back->listener, &evt);
     printf("button: 0x%x state: %d\n", button, state);
+  }
+
+  if (wl_back->inside_decor && state == WL_POINTER_BUTTON_STATE_PRESSED && button == 272)
+  {
+    printf("henlo");
+    xdg_toplevel_move(wl_back->focus_window->xdg_toplevel,wl_back->seat,serial);
   }
 }
 
@@ -373,6 +391,7 @@ wl_backend_init(
   wl_back->pointer = wl_seat_get_pointer(wl_back->seat);
   if (wl_back->pointer)
     wl_pointer_add_listener(wl_back->pointer, &_wl_pointer_listener, wl_back);
+  wl_back->inside_decor = 0;
   /* Retrieve the keyboard, iinitiate xkb_context and add listener */
   wl_back->keyboard = wl_seat_get_keyboard(wl_back->seat);
   if (wl_back->keyboard) {
@@ -460,6 +479,7 @@ static void wl_callback_handle_frame(
     evt.target = (wl_window_t*)data;
     if (event_notify(wl_back->listener,&evt))
     {
+      wl_decoration_present(wl_window->decoration);
       evt.type = EVENT_PRESENT;
       event_notify(wl_back->listener,&evt);
     }
