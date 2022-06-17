@@ -207,7 +207,6 @@ _wl_pointer_button_handler(
 
   if (wl_back->inside_decor && state == WL_POINTER_BUTTON_STATE_PRESSED && button == 272)
   {
-    printf("henlo");
     xdg_toplevel_move(wl_back->focus_window->xdg_toplevel,wl_back->seat,serial);
   }
 }

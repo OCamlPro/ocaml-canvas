@@ -28,7 +28,8 @@ typedef struct wl_decoration_t {
 wl_decoration_t*
 wl_decoration_create(
     struct wl_surface *parent,
-    uint32_t width
+    uint32_t width,
+    const char* title
 );
 
 void
@@ -39,6 +40,14 @@ wl_decoration_destroy(
 void
 wl_decoration_present(
     wl_decoration_t* decoration
+);
+
+void
+_wl_decoration_render_title(
+    uint8_t *target,
+    uint32_t width,
+    uint32_t height,
+    const char* title
 );
 
 

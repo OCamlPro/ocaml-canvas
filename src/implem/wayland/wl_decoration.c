@@ -23,9 +23,15 @@
 #include <wayland-client.h>
 #include <sys/mman.h>
 
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
 #include "wl_decoration.h"
 #include "wl_backend.h"
 #include "wl_backend_internal.h"
+
+
+
 
 
 
@@ -78,12 +84,89 @@ _allocate_shm_file(
   return fd;
 }
 
+void
+_wl_decoration_render_title(
+    uint8_t *target,
+    uint32_t width,
+    uint32_t height,
+    const char* title
+)
+{
+    assert(target != NULL);
+    assert(title != NULL);
+
+    FT_Library library;
+    FT_Face face;
+
+    uint32_t error = FT_Init_FreeType(&library);
+    if (error)
+        return;
+    error = FT_New_Face(library,"/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf",0,&face);
+    if (error)
+        return;
+    error = FT_Set_Pixel_Sizes(face,0,16);
+    uint32_t i = 0;
+    uint32_t pen_x = 16;
+    uint32_t pen_y = 25;
+    for (int i = 0;i < strlen(title);i++)
+    {
+        FT_UInt glyph_index;
+        glyph_index = FT_Get_Char_Index(face,title[i]);
+        error = FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT);
+        if (error)
+            continue;
+        error = FT_Render_Glyph(face->glyph,FT_RENDER_MODE_NORMAL);
+        if (error)
+            continue;
+        printf("%d\n",face->glyph->bitmap.rows);
+        for (int r = 0; r < face->glyph->bitmap.rows;r++)
+        {
+            int di = pen_y - face->glyph->bitmap_top + r;
+            if (di < 0) 
+                continue;
+            else if (di > height)
+                break;
+            for (int c = 0; c < face->glyph->bitmap.width;c++)
+            {   
+                int dj = pen_x + face->glyph->bitmap_left + c;
+                if (dj < 0)
+                    continue;
+                if (dj > width)
+                    break;
+                int s_idx = r * face->glyph->bitmap.pitch + c;
+                uint8_t alpha = face->glyph->bitmap.buffer[s_idx];
+                int d_idx = dj + width*di;
+                if (alpha == 255)
+                {
+                    target[4*d_idx] = 255;
+                    target[4*d_idx + 1] = 255;
+                    target[4*d_idx + 2] = 255;
+                    target[4*d_idx + 3] = 255;
+                }
+                else if (alpha > 0)
+                {
+                  target[4*d_idx] = (alpha * 255 + (255 - alpha)*(target[4*d_idx]))/255;
+                  target[4*d_idx + 1]  = (alpha * 255 + (255 - alpha)*(target[4*d_idx]))/255;
+                  target[4*d_idx + 2] = (alpha * 255 + (255 - alpha)*(target[4*d_idx]))/255;
+                  target[4*d_idx + 3] = 255;
+                }
+            }
+        }
+        pen_x += face->glyph->advance.x >> 6;
+        pen_y += face->glyph->advance.y >> 6;
+    }
+    
+    FT_Done_Face(face);
+    FT_Done_FreeType(library);
+
+}
 
 
 wl_decoration_t*
 wl_decoration_create(
     struct wl_surface *parent,
-    uint32_t width
+    uint32_t width,
+    const char* title
 )
 {
 
@@ -121,7 +204,7 @@ wl_decoration_create(
         pool_data[4*i + 2] = 0;
         pool_data[4*i + 3] = 255;
     }
-
+    _wl_decoration_render_title(pool_data,width,_decor_height,title);
     munmap(pool_data,shm_pool_size);
 
     wl_surface_attach(decor->wl_surface,wl_buffer,0,0);
@@ -144,6 +227,7 @@ wl_decoration_destroy(
     wl_buffer_destroy(decoration->background_buffer);
     wl_subsurface_destroy(decoration->wl_subsurface);
     wl_surface_destroy(decoration->wl_surface);
+    free(decoration);
 }
 
 void

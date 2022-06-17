@@ -111,7 +111,7 @@ wl_window_create(
   window->wl_surface = wl_compositor_create_surface(wl_back->compositor);
   wl_surface_set_user_data(window->wl_surface,window);
 
-  window->decoration = wl_decoration_create(window->wl_surface,width);
+  window->decoration = wl_decoration_create(window->wl_surface,width,title);
   wl_surface_set_user_data(window->decoration->wl_surface,window);
 
   wl_backend_add_window(window);
