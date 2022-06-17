@@ -113,6 +113,7 @@ wl_window_create(
 
   window->decoration = wl_decoration_create(window->wl_surface,width,title);
   wl_surface_set_user_data(window->decoration->wl_surface,window);
+  wl_surface_set_user_data(window->decoration->wl_closebutton_surface,window);
 
   wl_backend_add_window(window);
 

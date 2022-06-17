@@ -23,6 +23,11 @@ typedef struct wl_decoration_t {
   struct wl_surface *wl_surface;
   struct wl_subsurface *wl_subsurface;
   struct wl_buffer *background_buffer;
+  
+  struct wl_surface *wl_closebutton_surface;
+  struct wl_subsurface *wl_closebutton_subsurface;
+  struct wl_buffer *wl_closebutton_buffer;
+
 } wl_decoration_t;
 
 wl_decoration_t*
@@ -42,13 +47,7 @@ wl_decoration_present(
     wl_decoration_t* decoration
 );
 
-void
-_wl_decoration_render_title(
-    uint8_t *target,
-    uint32_t width,
-    uint32_t height,
-    const char* title
-);
+
 
 
 

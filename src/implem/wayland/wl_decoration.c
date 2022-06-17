@@ -33,7 +33,28 @@
 
 
 
-
+void
+_wl_decoration_close_button(
+    wl_decoration_t *decor,
+    uint32_t size
+)
+{
+  decor->wl_closebutton_surface = wl_compositor_create_surface(wl_back->compositor);
+  decor->wl_closebutton_subsurface = wl_subcompositor_get_subsurface(wl_back->subcompositor,
+                                                                    decor->wl_closebutton_surface,
+                                                                    decor->wl_surface);
+  uint8_t *data = NULL;
+  decor->wl_closebutton_buffer = wl_create_buffer(size,size,&data);
+  for (int i = 0; i < size*size;i++)
+  {
+    data[4*i] = 0;
+    data[4*i + 1] = 0;
+    data[4*i + 2] = 255;
+    data[4*i + 3] = 255;
+  }
+  munmap(data,size * size * 4);
+  wl_surface_attach(decor->wl_closebutton_surface,decor->wl_closebutton_buffer,0,0);
+}
 
 void
 _wl_decoration_render_title(
@@ -144,10 +165,12 @@ wl_decoration_create(
     }
     _wl_decoration_render_title(pool_data,width,_decor_height,title);
     munmap(pool_data,width * _decor_height * 4);
-
     wl_surface_attach(decor->wl_surface,wl_buffer,0,0);
     wl_subsurface_set_position(decor->wl_subsurface,0,-_decor_height);
     decor->background_buffer = wl_buffer;
+
+    _wl_decoration_close_button(decor,30);
+    wl_subsurface_set_position(decor->wl_closebutton_subsurface,width - 40,5);
 
     return decor;
 }
@@ -158,13 +181,14 @@ wl_decoration_destroy(
 )
 {
     assert(decoration != NULL);
-    assert(decoration->background_buffer != NULL);
-    assert(decoration->wl_subsurface != NULL);
-    assert(decoration->wl_surface != NULL);
-
+    
+    wl_buffer_destroy(decoration->wl_closebutton_buffer);
+    wl_subsurface_destroy(decoration->wl_closebutton_subsurface);
+    wl_surface_destroy(decoration->wl_closebutton_surface);
     wl_buffer_destroy(decoration->background_buffer);
     wl_subsurface_destroy(decoration->wl_subsurface);
     wl_surface_destroy(decoration->wl_surface);
+
     free(decoration);
 }
 
@@ -174,6 +198,7 @@ wl_decoration_present(
 )
 {
     wl_surface_commit(decoration->wl_surface);
+    wl_surface_commit(decoration->wl_closebutton_surface);
 }
 
 

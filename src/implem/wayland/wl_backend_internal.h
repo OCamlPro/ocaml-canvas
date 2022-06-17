@@ -21,6 +21,12 @@
 #include "../hashtable.h"
 #include "../event.h"
 
+enum DECORATION_REGION {
+  DECOR_REGION_OUTSIDE = 0,
+  DECOR_REGION_BAR = 1,
+  DECOR_REGION_CLOSE_BUTTON = 2,
+};
+
 typedef struct wl_backend_t {
 
 
@@ -54,7 +60,7 @@ typedef struct wl_backend_t {
   /*Mouse objects*/
   wl_fixed_t mouse_posx;
   wl_fixed_t mouse_posy;
-  uint8_t inside_decor;
+  enum DECORATION_REGION inside_decor_location;
 } wl_backend_t;
 
 extern wl_backend_t *wl_back;

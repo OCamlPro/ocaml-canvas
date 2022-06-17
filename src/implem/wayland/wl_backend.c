@@ -135,12 +135,14 @@ _wl_pointer_enter_handler(
   {
     wl_back->focus_window = (wl_window_t*)wl_surface_get_user_data(surface);
     if (surface == wl_back->focus_window->decoration->wl_surface)
-      wl_back->inside_decor = 1;
+      wl_back->inside_decor_location = DECOR_REGION_BAR;
+    else if (surface == wl_back->focus_window->decoration->wl_closebutton_surface)
+      wl_back->inside_decor_location = DECOR_REGION_CLOSE_BUTTON;
   }
   else
   {
     wl_back->focus_window = NULL;
-    wl_back->inside_decor = 1;
+    wl_back->inside_decor_location = DECOR_REGION_OUTSIDE;
   }
   event_t evt;
   
@@ -154,7 +156,7 @@ _wl_pointer_leave_handler(
   struct wl_surface *surface)
 {
   wl_backend_t *wl_back = (wl_backend_t *)data;
-  wl_back->inside_decor = 0;
+  wl_back->inside_decor_location = DECOR_REGION_OUTSIDE;
 }
 
 static void
@@ -189,7 +191,7 @@ _wl_pointer_button_handler(
   uint32_t state)
 {
   //When the focus screen is hidden with a key down event for example, the key up event will still trigger. This check mitigates that.
-  if (wl_back->focus_window && wl_back->focus_window->base.visible && !wl_back->inside_decor) {
+  if (wl_back->focus_window && wl_back->focus_window->base.visible && !wl_back->inside_decor_location) {
     wl_backend_t *wl_back = (wl_backend_t *)data;
     event_t evt;
     evt.type = EVENT_BUTTON;
@@ -205,9 +207,17 @@ _wl_pointer_button_handler(
     printf("button: 0x%x state: %d\n", button, state);
   }
 
-  if (wl_back->inside_decor && state == WL_POINTER_BUTTON_STATE_PRESSED && button == 272)
+  if (state == WL_POINTER_BUTTON_STATE_PRESSED && button == 272)
   {
-    xdg_toplevel_move(wl_back->focus_window->xdg_toplevel,wl_back->seat,serial);
+    if (wl_back->inside_decor_location == DECOR_REGION_BAR)
+      xdg_toplevel_move(wl_back->focus_window->xdg_toplevel,wl_back->seat,serial);
+    else if (wl_back->inside_decor_location == DECOR_REGION_CLOSE_BUTTON)
+    {
+      event_t evt;
+      evt.type = EVENT_CLOSE;
+      evt.target = wl_back->focus_window;
+      event_notify(wl_back->listener,&evt);
+    }
   }
 }
 
@@ -390,7 +400,7 @@ wl_backend_init(
   wl_back->pointer = wl_seat_get_pointer(wl_back->seat);
   if (wl_back->pointer)
     wl_pointer_add_listener(wl_back->pointer, &_wl_pointer_listener, wl_back);
-  wl_back->inside_decor = 0;
+  wl_back->inside_decor_location = DECOR_REGION_OUTSIDE;
   /* Retrieve the keyboard, iinitiate xkb_context and add listener */
   wl_back->keyboard = wl_seat_get_keyboard(wl_back->seat);
   if (wl_back->keyboard) {
