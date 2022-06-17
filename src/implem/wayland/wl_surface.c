@@ -28,6 +28,7 @@
 #include "../color.h"
 #include "wl_backend.h"
 #include "wl_window.h"
+#include "wl_memory.h"
 #include "wl_target.h"
 
 typedef struct surface_impl_wl_t {
@@ -36,53 +37,6 @@ typedef struct surface_impl_wl_t {
   struct wl_surface *wl_surface;
 } surface_impl_wl_t;
 
-static void
-_randname(
-  char *buf)
-{
-  struct timespec ts;
-  clock_gettime(CLOCK_REALTIME, &ts);
-  long r = ts.tv_nsec;
-  for (int i = 0; i < 6; ++i) {
-    buf[i] = 'A'+(r&15)+(r&16)*2;
-    r >>= 5;
-  }
-}
-
-static int
-_create_shm_file()
-{
-  int retries = 100;
-  do {
-    char name[] = "/canvas_shm-XXXXXX";
-    _randname(name + sizeof(name) - 7);
-    --retries;
-    int fd = shm_open(name, O_CREAT | O_EXCL | O_RDWR | O_CLOEXEC, 0600);
-    if (fd >= 0) {
-      shm_unlink(name);
-      return fd;
-    }
-  } while (retries > 0 && errno == EEXIST);
-  return -1;
-}
-
-static int
-_allocate_shm_file(
-  size_t size)
-{
-  int fd = _create_shm_file();
-  if (fd < 0)
-    return -1;
-  int ret;
-  do {
-    ret = ftruncate(fd, size);
-  } while (ret < 0 && errno == EINTR);
-  if (ret < 0) {
-    close(fd);
-    return -1;
-  }
-  return fd;
-}
 
 surface_impl_wl_t *
 surface_create_wl_impl(
@@ -105,24 +59,10 @@ surface_create_wl_impl(
     return NULL;
   }
 
-  // _surface_create_wl_image(..., width, height, &s->data, ...);
+  uint8_t *pool_data = NULL;
+  struct wl_buffer *wl_buffer = wl_create_buffer(width,height,&pool_data);
 
-  uint32_t shm_pool_size = width * height * 4;
-  int fd = _allocate_shm_file(shm_pool_size);
-  uint8_t *pool_data = (uint8_t *)mmap(NULL, shm_pool_size,
-                                       PROT_READ | PROT_WRITE,
-                                       MAP_SHARED, fd, 0);
-
-  struct wl_shm_pool *pool = wl_shm_create_pool(wl_target->wl_shm,
-                                                fd, shm_pool_size);
-  close(fd); // fd no longer needed at this point
-
-  struct wl_buffer *wl_buffer =
-    wl_shm_pool_create_buffer(pool, 0, width, height, width * 4,
-                              WL_SHM_FORMAT_ARGB8888); // or ARGB for alpha
   wl_buffer_set_user_data(wl_buffer,wl_target->wl_shm);
-// or pool could be kept...
-  wl_shm_pool_destroy(pool); // the buffer keeps a reference to the pool so it's ok to destroy
 
   impl->type = IMPL_WAYLAND;
   impl->wl_buffer = wl_buffer;
@@ -190,29 +130,18 @@ surface_resize_wl_impl(
   assert(d_data != NULL);
   assert(*d_data == NULL);
 
-  //Acquire Shm object (needed to recreate a new buffer)
-  struct wl_shm* wl_shm = wl_buffer_get_user_data(impl->wl_buffer);
   
   //Destroy old buffer
   if (impl->wl_buffer)
     wl_buffer_destroy(impl->wl_buffer);
-  
-  //Create a new shared memory slot with the correct size
-  uint32_t shm_pool_size = d_width * d_height * 4;
-  int fd = _allocate_shm_file(shm_pool_size);
-  uint8_t *pool_data = (uint8_t *)mmap(NULL, shm_pool_size,
-                                       PROT_READ | PROT_WRITE,
-                                       MAP_SHARED, fd, 0);
-
-  struct wl_shm_pool *pool = wl_shm_create_pool(wl_shm,
-                                                fd, shm_pool_size);
-  close(fd); 
-  //Create buffer and get data handle
-  impl->wl_buffer = wl_shm_pool_create_buffer(pool,0,d_width,d_height,d_width*4,WL_SHM_FORMAT_ARGB8888);
-    wl_buffer_set_user_data(impl->wl_buffer,wl_shm);
+  //Create new buffer
+  uint8_t *pool_data = NULL;
+  impl->wl_buffer = wl_create_buffer(d_width,d_height,&pool_data);
   *d_data = (color_t_ *)pool_data;
   //Copy data
   _raw_surface_copy(*s_data,s_width,s_height,*d_data,d_width,d_height);
+  //Delete old data ?
+  munmap(s_data,s_width * s_height * 4);
   return true;
 }
 

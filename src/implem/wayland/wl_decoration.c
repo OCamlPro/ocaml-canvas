@@ -29,60 +29,11 @@
 #include "wl_decoration.h"
 #include "wl_backend.h"
 #include "wl_backend_internal.h"
+#include "wl_memory.h"
 
 
 
 
-
-
-//TODO : Factor this between surface and decoration
-static void
-_randname(
-  char *buf)
-{
-  struct timespec ts;
-  clock_gettime(CLOCK_REALTIME, &ts);
-  long r = ts.tv_nsec;
-  for (int i = 0; i < 6; ++i) {
-    buf[i] = 'A'+(r&15)+(r&16)*2;
-    r >>= 5;
-  }
-}
-//TODO : Factor this between surface and decoration
-static int
-_create_shm_file()
-{
-  int retries = 100;
-  do {
-    char name[] = "/canvas_shm-XXXXXX";
-    _randname(name + sizeof(name) - 7);
-    --retries;
-    int fd = shm_open(name, O_CREAT | O_EXCL | O_RDWR | O_CLOEXEC, 0600);
-    if (fd >= 0) {
-      shm_unlink(name);
-      return fd;
-    }
-  } while (retries > 0 && errno == EEXIST);
-  return -1;
-}
-//TODO : Factor this between surface and decoration
-static int
-_allocate_shm_file(
-  size_t size)
-{
-  int fd = _create_shm_file();
-  if (fd < 0)
-    return -1;
-  int ret;
-  do {
-    ret = ftruncate(fd, size);
-  } while (ret < 0 && errno == EINTR);
-  if (ret < 0) {
-    close(fd);
-    return -1;
-  }
-  return fd;
-}
 
 void
 _wl_decoration_render_title(
@@ -180,21 +131,8 @@ wl_decoration_create(
     decor->wl_surface = wl_compositor_create_surface(wl_back->compositor);
     decor->wl_subsurface = wl_subcompositor_get_subsurface(wl_back->subcompositor,decor->wl_surface,parent);
 
-    //TODO : Factor this between surface and decoration
-    uint32_t shm_pool_size = width * _decor_height * 4;
-    int fd = _allocate_shm_file(shm_pool_size);
-    uint8_t *pool_data = (uint8_t *)mmap(NULL, shm_pool_size,
-                                       PROT_READ | PROT_WRITE,
-                                       MAP_SHARED, fd, 0);
-
-    struct wl_shm_pool *pool = wl_shm_create_pool(wl_back->shm,
-                                                fd, shm_pool_size);
-    close(fd); 
-
-    struct wl_buffer *wl_buffer =
-    wl_shm_pool_create_buffer(pool, 0, width, _decor_height, width * 4,
-                              WL_SHM_FORMAT_ARGB8888); // or ARGB for alpha
-    wl_shm_pool_destroy(pool);
+    uint8_t *pool_data = NULL;
+    struct wl_buffer *wl_buffer = wl_create_buffer(width,_decor_height,&pool_data);
 
     //TODO : Improve the design
     for (int i = 0;i < width*_decor_height;i++)
@@ -205,7 +143,7 @@ wl_decoration_create(
         pool_data[4*i + 3] = 255;
     }
     _wl_decoration_render_title(pool_data,width,_decor_height,title);
-    munmap(pool_data,shm_pool_size);
+    munmap(pool_data,width * _decor_height * 4);
 
     wl_surface_attach(decor->wl_surface,wl_buffer,0,0);
     wl_subsurface_set_position(decor->wl_subsurface,0,-_decor_height);
