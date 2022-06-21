@@ -32,6 +32,7 @@ typedef struct wl_window_t {
   /*Client Side Decorations*/
   //TODO : Check if KDE is used before enabling this
   wl_decoration_t *decoration;
+  bool pending_resize;
 
 } wl_window_t;
 

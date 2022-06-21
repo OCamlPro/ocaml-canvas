@@ -209,8 +209,21 @@ _wl_pointer_button_handler(
 
   if (state == WL_POINTER_BUTTON_STATE_PRESSED && button == 272)
   {
-    if (wl_back->inside_decor_location == DECOR_REGION_BAR)
-      xdg_toplevel_move(wl_back->focus_window->xdg_toplevel,wl_back->seat,serial);
+    const wl_fixed_t margin = 5 * 256;
+    uint32_t resizeEdge = XDG_TOPLEVEL_RESIZE_EDGE_NONE;
+    if (wl_back->inside_decor_location == DECOR_REGION_BAR && wl_back->mouse_posy < margin)
+      resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_TOP;
+    else if (!wl_back->inside_decor_location && wl_back->mouse_posy > wl_back->focus_window->base.height*256 - margin)
+      resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM;
+    if (wl_back->mouse_posx < margin)
+      resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_LEFT;
+    else if (wl_back->mouse_posx > wl_back->focus_window->base.width*256 - margin)
+      resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_RIGHT;
+    if (resizeEdge != XDG_TOPLEVEL_RESIZE_EDGE_NONE)
+    {
+      //xdg_toplevel_move(wl_back->focus_window->xdg_toplevel,wl_back->seat,serial);
+      xdg_toplevel_resize(wl_back->focus_window->xdg_toplevel,wl_back->seat,serial,resizeEdge);
+    }
     else if (wl_back->inside_decor_location == DECOR_REGION_CLOSE_BUTTON)
     {
       event_t evt;
@@ -480,8 +493,16 @@ static void wl_callback_handle_frame(
     wl_window->wl_callback = wl_surface_frame(wl_window->wl_surface);
     wl_callback_add_listener(wl_window->wl_callback,&wl_callback_listener,wl_window);
   }
-  //Trigger event
   event_t evt;
+  if (wl_window->pending_resize)
+  {
+    evt.desc.resize.width = wl_window->base.width;
+    evt.desc.resize.height = wl_window->base.height;
+    evt.target = wl_window;
+    evt.type = EVENT_RESIZE;
+    event_notify(wl_back->listener,&evt);
+  }
+  //Trigger event
   evt.type = EVENT_FRAME;
   evt.time = _wl_get_time();
   if (wl_window->base.visible) {

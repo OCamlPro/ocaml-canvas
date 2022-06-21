@@ -29,6 +29,7 @@
 #include "wl_window_internal.h"
 
 
+
 static void
 _wl_window_update_position(
   wl_window_t *window)
@@ -60,7 +61,18 @@ _wl_xdg_toplevel_configure_handler(
   int32_t height,
   struct wl_array *states)
 {
+  struct wl_window_t *wl_window = data;
   printf("top level configure: %dx%d\n", width, height);
+  uint8_t* p;
+  bool resizing = false;
+  wl_array_for_each(p,states) if(*p == XDG_TOPLEVEL_STATE_RESIZING) resizing = true; 
+  bool movedEnough = abs(width - wl_window->base.width) > 10;
+  movedEnough |= abs(height - wl_window->base.height) > 10;
+  if (resizing && movedEnough)
+  {
+    wl_window->pending_resize = true;
+    wl_window_set_size(wl_window,width,height);
+  }
 }
 
 static void
@@ -107,6 +119,7 @@ wl_window_create(
   window->base.height = clip_i32_to_i16(max(1, height));
 
   window->title = title;
+  window->pending_resize = false;
 
   window->wl_surface = wl_compositor_create_surface(wl_back->compositor);
   wl_surface_set_user_data(window->wl_surface,window);
@@ -183,14 +196,13 @@ wl_window_show(
   wl_window_t *window)
 {
   assert(window != NULL);
-  if (window->base.visible) {
+  if (!window->xdg_surface) {
     window->xdg_surface =
       xdg_wm_base_get_xdg_surface(wl_back->xdg_wm_base, window->wl_surface);
     xdg_surface_add_listener(window->xdg_surface, &_wl_xdg_surface_listener, &window);
     window->xdg_toplevel = xdg_surface_get_toplevel(window->xdg_surface);
     xdg_toplevel_add_listener(window->xdg_toplevel,&_wl_xdg_toplevel_listener,window);
     xdg_toplevel_set_title(window->xdg_toplevel,window->title);
-    window->base.visible = true;
     wl_surface_commit(window->wl_surface);    
   }
   _wl_window_update_position(window);
@@ -209,7 +221,6 @@ wl_window_hide(
     xdg_toplevel_destroy(window->xdg_toplevel);
   window->xdg_surface = NULL;
   window->xdg_toplevel = NULL;
-  window->base.visible = false;
   //Cannot recreate the XDG Surface from a surface with an attached buffer.
   wl_surface_attach(window->wl_surface,NULL,0,0);
   wl_surface_commit(window->wl_surface);
