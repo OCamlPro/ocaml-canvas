@@ -47,7 +47,12 @@ wl_decoration_present(
     wl_decoration_t* decoration
 );
 
-
+void 
+wl_decoration_resize(
+    wl_decoration_t* decoration,
+    uint32_t width,
+    const char* title
+);
 
 
 

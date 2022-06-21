@@ -30,6 +30,7 @@
 #include "wl_backend.h"
 #include "wl_backend_internal.h"
 #include "wl_memory.h"
+#include "../unicode.h"
 
 
 
@@ -80,10 +81,15 @@ _wl_decoration_render_title(
     uint32_t i = 0;
     uint32_t pen_x = 16;
     uint32_t pen_y = 25;
-    for (int i = 0;i < strlen(title);i++)
+    while(*title)
     {
+        uint32_t chr = decode_utf8_char(&title);
+        if (pen_x > width - 30 - 16)
+            break;
+        if (pen_x > width - 30 - 32)
+            chr = 0x0000002e;
         FT_UInt glyph_index;
-        glyph_index = FT_Get_Char_Index(face,title[i]);
+        glyph_index = FT_Get_Char_Index(face,chr);
         error = FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT);
         if (error)
             continue;
@@ -133,29 +139,15 @@ _wl_decoration_render_title(
 
 }
 
-
-wl_decoration_t*
-wl_decoration_create(
-    struct wl_surface *parent,
+struct wl_buffer*
+_wl_decoration_background(
     uint32_t width,
     const char* title
 )
 {
-
-    //TODO : Make this adapt to screen
     uint32_t _decor_height = 40;
-
-    assert(parent != NULL);
-    wl_decoration_t *decor = (wl_decoration_t*)calloc(1, sizeof(wl_decoration_t));
-    if (decor == NULL)
-        return NULL;
-    decor->wl_surface = wl_compositor_create_surface(wl_back->compositor);
-    decor->wl_subsurface = wl_subcompositor_get_subsurface(wl_back->subcompositor,decor->wl_surface,parent);
-
     uint8_t *pool_data = NULL;
     struct wl_buffer *wl_buffer = wl_create_buffer(width,_decor_height,&pool_data);
-
-    //TODO : Improve the design
     for (int i = 0;i < width*_decor_height;i++)
     {
         pool_data[4*i] = 0;
@@ -165,13 +157,31 @@ wl_decoration_create(
     }
     _wl_decoration_render_title(pool_data,width,_decor_height,title);
     munmap(pool_data,width * _decor_height * 4);
+    return wl_buffer;
+}
+
+wl_decoration_t*
+wl_decoration_create(
+    struct wl_surface *parent,
+    uint32_t width,
+    const char* title
+)
+{
+    //TODO : Make this adapt to screen
+    uint32_t _decor_height = 40;
+
+    assert(parent != NULL);
+    wl_decoration_t *decor = (wl_decoration_t*)calloc(1, sizeof(wl_decoration_t));
+    if (decor == NULL)
+        return NULL;
+    decor->wl_surface = wl_compositor_create_surface(wl_back->compositor);
+    decor->wl_subsurface = wl_subcompositor_get_subsurface(wl_back->subcompositor,decor->wl_surface,parent);
+    struct wl_buffer *wl_buffer = _wl_decoration_background(width,title);
     wl_surface_attach(decor->wl_surface,wl_buffer,0,0);
     wl_subsurface_set_position(decor->wl_subsurface,0,-_decor_height);
     decor->background_buffer = wl_buffer;
-
     _wl_decoration_close_button(decor,30);
     wl_subsurface_set_position(decor->wl_closebutton_subsurface,width - 40,5);
-
     return decor;
 }
 
@@ -200,6 +210,21 @@ wl_decoration_present(
     wl_surface_commit(decoration->wl_surface);
     wl_surface_commit(decoration->wl_closebutton_surface);
 }
+
+
+void 
+wl_decoration_resize(
+    wl_decoration_t* decor,
+    uint32_t width,
+    const char* title
+)
+{
+    wl_buffer_destroy(decor->background_buffer);
+    decor->background_buffer =  _wl_decoration_background(width,title);
+    wl_surface_attach(decor->wl_surface,decor->background_buffer,0,0);
+    wl_subsurface_set_position(decor->wl_closebutton_subsurface,width - 40,5);
+}
+
 
 
 #endif /*HAS_WAYLAND*/

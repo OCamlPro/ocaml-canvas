@@ -33,6 +33,7 @@
 #include "wl_window.h"
 #include "wl_memory.h"
 #include "wl_target.h"
+#include "wl_decoration.h"
 
 typedef struct surface_impl_wl_t {
   impl_type_t type;
@@ -50,6 +51,9 @@ wl_buffer_release(void *data, struct wl_buffer *wl_buffer)
   event_t evt;
   if (wl_window->pending_resize)
   {
+    //resize decorations
+    wl_decoration_resize(wl_window->decoration,wl_window->base.width,wl_window->title);
+    //resize surface
     evt.desc.resize.width = wl_window->base.width;
     evt.desc.resize.height = wl_window->base.height;
     evt.target = wl_window;
@@ -128,11 +132,15 @@ _raw_surface_copy(
   
   uint32_t min_width = d_width < s_width ? d_width : s_width;
   uint32_t min_height = d_height < s_height ? d_height : s_height;
-  for (size_t i = 0; i < min_height; i++) {
-    for (size_t j = 0; j < min_width; j++) {
-      d_data[i * d_width + j] = s_data[i * s_width + j];
+  for (size_t i = 0; i < d_height; i++) {
+    for (size_t j = 0; j < d_width; j++) {
+      if (i < min_height && j < min_width)
+        d_data[i * d_width + j] = s_data[i * s_width + j];
+      else
+        d_data[i * d_width + j] = color_black;
     }
   }
+  
 }
 
 

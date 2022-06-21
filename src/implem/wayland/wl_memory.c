@@ -59,7 +59,7 @@ _allocate_shm_file(
     return -1;
   int ret;
   do {
-    ret = ftruncate(fd, size);
+    ret = posix_fallocate(fd,0, size);
   } while (ret < 0 && errno == EINTR);
   if (ret < 0) {
     close(fd);
@@ -79,7 +79,7 @@ struct wl_buffer* wl_create_buffer(
     assert(height > 0);
 
     uint32_t shm_pool_size = width * height * 4;
-    int fd = _allocate_shm_file(shm_pool_size);
+    int fd = _allocate_shm_file(width*height*4);
     *data = (uint8_t *)mmap(NULL, shm_pool_size,
                                        PROT_READ | PROT_WRITE,
                                        MAP_SHARED, fd, 0);
