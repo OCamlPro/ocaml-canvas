@@ -219,10 +219,15 @@ _wl_pointer_button_handler(
       resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_LEFT;
     else if (wl_back->mouse_posx > wl_back->focus_window->base.width*256 - margin)
       resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_RIGHT;
+    
     if (resizeEdge != XDG_TOPLEVEL_RESIZE_EDGE_NONE)
     {
       //xdg_toplevel_move(wl_back->focus_window->xdg_toplevel,wl_back->seat,serial);
       xdg_toplevel_resize(wl_back->focus_window->xdg_toplevel,wl_back->seat,serial,resizeEdge);
+    }
+    else if (wl_back->inside_decor_location == DECOR_REGION_BAR)
+    {
+      xdg_toplevel_move(wl_back->focus_window->xdg_toplevel,wl_back->seat,serial);
     }
     else if (wl_back->inside_decor_location == DECOR_REGION_CLOSE_BUTTON)
     {
@@ -494,15 +499,6 @@ static void wl_callback_handle_frame(
     wl_callback_add_listener(wl_window->wl_callback,&wl_callback_listener,wl_window);
   }
   event_t evt;
-  if (wl_window->pending_resize)
-  {
-    evt.desc.resize.width = wl_window->base.width;
-    evt.desc.resize.height = wl_window->base.height;
-    evt.target = wl_window;
-    evt.type = EVENT_RESIZE;
-    event_notify(wl_back->listener,&evt);
-  }
-  //Trigger event
   evt.type = EVENT_FRAME;
   evt.time = _wl_get_time();
   if (wl_window->base.visible) {
