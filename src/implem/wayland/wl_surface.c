@@ -33,7 +33,6 @@
 #include "wl_window.h"
 #include "wl_memory.h"
 #include "wl_target.h"
-#include "wl_decoration.h"
 
 typedef struct surface_impl_wl_t {
   impl_type_t type;

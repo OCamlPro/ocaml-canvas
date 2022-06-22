@@ -123,11 +123,12 @@ wl_window_create(
 
   window->wl_surface = wl_compositor_create_surface(wl_back->compositor);
   wl_surface_set_user_data(window->wl_surface,window);
-
-  window->decoration = wl_decoration_create(window->wl_surface,width,title);
-  wl_surface_set_user_data(window->decoration->wl_surface,window);
-  wl_surface_set_user_data(window->decoration->wl_closebutton_surface,window);
-
+  if (window->base.decorated)
+  {
+    window->decoration = wl_decoration_create(window->wl_surface,width,title);
+    wl_surface_set_user_data(window->decoration->wl_surface,window);
+    wl_surface_set_user_data(window->decoration->wl_closebutton_surface,window);
+  }
   wl_backend_add_window(window);
 
   return window;
@@ -141,7 +142,8 @@ wl_window_destroy(
   wl_callback_destroy(window->wl_callback);
   xdg_toplevel_destroy(window->xdg_toplevel);
   xdg_surface_destroy(window->xdg_surface);
-  wl_decoration_destroy(window->decoration);
+  if (window->base.decorated)
+    wl_decoration_destroy(window->decoration);
   wl_surface_destroy(window->wl_surface);
   free(window);
 }
@@ -204,7 +206,8 @@ wl_window_show(
     xdg_toplevel_add_listener(window->xdg_toplevel,&_wl_xdg_toplevel_listener,window);
     xdg_toplevel_set_title(window->xdg_toplevel,window->title);
     //Need to attach any buffer here...
-    wl_surface_attach(window->wl_surface,window->decoration->wl_closebutton_buffer,0,0);
+    if (window->base.decorated)
+      wl_surface_attach(window->wl_surface,window->decoration->wl_closebutton_buffer,0,0);
     wl_surface_commit(window->wl_surface);    
   }
   _wl_window_update_position(window);

@@ -134,10 +134,15 @@ _wl_pointer_enter_handler(
   if (surface)
   {
     wl_back->focus_window = (wl_window_t*)wl_surface_get_user_data(surface);
-    if (surface == wl_back->focus_window->decoration->wl_surface)
-      wl_back->inside_decor_location = DECOR_REGION_BAR;
-    else if (surface == wl_back->focus_window->decoration->wl_closebutton_surface)
-      wl_back->inside_decor_location = DECOR_REGION_CLOSE_BUTTON;
+    if (wl_back->focus_window->base.decorated)
+    {
+      if (surface == wl_back->focus_window->decoration->wl_surface)
+        wl_back->inside_decor_location = DECOR_REGION_BAR;
+      else if (surface == wl_back->focus_window->decoration->wl_closebutton_surface)
+        wl_back->inside_decor_location = DECOR_REGION_CLOSE_BUTTON;
+    }
+    else
+      wl_back->inside_decor_location = DECOR_REGION_OUTSIDE;
   }
   else
   {
@@ -211,7 +216,9 @@ _wl_pointer_button_handler(
   {
     const wl_fixed_t margin = 5 * 256;
     uint32_t resizeEdge = XDG_TOPLEVEL_RESIZE_EDGE_NONE;
-    if (wl_back->inside_decor_location == DECOR_REGION_BAR && wl_back->mouse_posy < margin)
+    if (wl_back->focus_window->base.decorated && wl_back->inside_decor_location == DECOR_REGION_BAR && wl_back->mouse_posy < margin)
+      resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_TOP;
+    else if (!wl_back->focus_window->base.decorated && wl_back->mouse_posy < margin)
       resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_TOP;
     else if (!wl_back->inside_decor_location && wl_back->mouse_posy > wl_back->focus_window->base.height*256 - margin)
       resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM;
@@ -219,7 +226,6 @@ _wl_pointer_button_handler(
       resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_LEFT;
     else if (wl_back->mouse_posx > wl_back->focus_window->base.width*256 - margin)
       resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_RIGHT;
-    
     if (resizeEdge != XDG_TOPLEVEL_RESIZE_EDGE_NONE)
     {
       //xdg_toplevel_move(wl_back->focus_window->xdg_toplevel,wl_back->seat,serial);
@@ -502,7 +508,8 @@ static void wl_callback_handle_frame(
   if (wl_window->pending_resize)
   {
     //resize decorations
-    wl_decoration_resize(wl_window->decoration,wl_window->base.width,wl_window->title);
+    if (wl_window->base.decorated)
+      wl_decoration_resize(wl_window->decoration,wl_window->base.width,wl_window->title);
     //resize surface
     evt.desc.resize.width = wl_window->base.width;
     evt.desc.resize.height = wl_window->base.height;
@@ -517,7 +524,8 @@ static void wl_callback_handle_frame(
     evt.target = (wl_window_t*)data;
     if (event_notify(wl_back->listener,&evt))
     {
-      wl_decoration_present(wl_window->decoration);
+      if (wl_window->base.decorated)
+        wl_decoration_present(wl_window->decoration);
       evt.type = EVENT_PRESENT;
       event_notify(wl_back->listener,&evt);
     }
