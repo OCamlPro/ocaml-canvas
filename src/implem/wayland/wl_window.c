@@ -117,7 +117,7 @@ wl_window_create(
   }
 
   window->base.visible = false;
-  window->base.decorated = false;
+  window->base.decorated = decorated;
   window->base.x = clip_i32_to_i16(x);
   window->base.y = clip_i32_to_i16(y);
   window->base.width = clip_i32_to_i16(max(1, width));

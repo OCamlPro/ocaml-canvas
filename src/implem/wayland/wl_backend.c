@@ -40,12 +40,47 @@ wl_backend_t *wl_back = NULL;
 
 
 
-int64_t _wl_get_time()
+int64_t
+_wl_get_time()
 {
   struct timespec ts;
 	clock_gettime(CLOCK_MONOTONIC, &ts);
   return ts.tv_sec/1000000 + ts.tv_nsec/(1000);
 }
+
+void 
+_wl_find_resize_edge()
+{
+    const wl_fixed_t margin = 10 * 256;
+    uint32_t resizeEdge = XDG_TOPLEVEL_RESIZE_EDGE_NONE;
+    if (wl_back->focus_window->base.decorated && wl_back->inside_decor_location == DECOR_REGION_BAR && wl_back->mouse_posy < margin)
+      resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_TOP;
+    else if (!wl_back->focus_window->base.decorated && wl_back->mouse_posy < margin)
+      resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_TOP;
+    else if (!wl_back->inside_decor_location && wl_back->mouse_posy > wl_back->focus_window->base.height*256 - margin)
+      resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM;
+    if (wl_back->mouse_posx < margin)
+      resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_LEFT;
+    else if (wl_back->mouse_posx > wl_back->focus_window->base.width*256 - margin)
+      resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_RIGHT;
+    wl_back->current_resize_edge = resizeEdge;
+}
+
+void 
+_wl_change_cursor(
+  const char* cursorName
+)
+{
+  wl_back->cursor =
+    wl_cursor_theme_get_cursor(wl_back->cursor_theme, cursorName);
+  wl_back->cursor_image = wl_back->cursor->images[0];
+  wl_back->cursor_buffer = wl_cursor_image_get_buffer(wl_back->cursor_image);
+  wl_surface_attach(wl_back->cursor_surface, wl_back->cursor_buffer, 0, 0);
+  wl_surface_damage(wl_back->cursor_surface,0,0,24,24);
+  wl_surface_commit(wl_back->cursor_surface);
+}
+
+
 
 static void
 _wl_registry_global(
@@ -183,6 +218,42 @@ _wl_pointer_motion_handler(
     evt.desc.cursor.x = x/256;
     evt.desc.cursor.y = y/256;
     event_notify(wl_back->listener, &evt);
+    _wl_find_resize_edge();
+    //TODO : Make it change only if cursor actually changes
+    switch (wl_back->current_resize_edge)
+    {
+    case XDG_TOPLEVEL_RESIZE_EDGE_NONE:
+      _wl_change_cursor("left_ptr");
+      break;
+    case XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM:
+      _wl_change_cursor("bottom_side");
+      break;
+    case XDG_TOPLEVEL_RESIZE_EDGE_TOP:
+      _wl_change_cursor("top_side");
+      break;
+    case XDG_TOPLEVEL_RESIZE_EDGE_RIGHT:
+      _wl_change_cursor("right_side");
+      break;
+    case XDG_TOPLEVEL_RESIZE_EDGE_LEFT:
+      _wl_change_cursor("left_side");
+      break;
+    case XDG_TOPLEVEL_RESIZE_EDGE_TOP_LEFT:
+      _wl_change_cursor("top_left_corner");
+      break;
+    case XDG_TOPLEVEL_RESIZE_EDGE_TOP_RIGHT:
+      _wl_change_cursor("top_right_corner");
+      break;
+    case XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM_LEFT:
+      _wl_change_cursor("bottom_left_corner");
+      break;
+    case XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM_RIGHT:
+      _wl_change_cursor("bottom_right_corner");
+      break;
+    default:
+      break;
+    }
+    
+
   }
 }
 
@@ -216,20 +287,10 @@ _wl_pointer_button_handler(
   {
     const wl_fixed_t margin = 5 * 256;
     uint32_t resizeEdge = XDG_TOPLEVEL_RESIZE_EDGE_NONE;
-    if (wl_back->focus_window->base.decorated && wl_back->inside_decor_location == DECOR_REGION_BAR && wl_back->mouse_posy < margin)
-      resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_TOP;
-    else if (!wl_back->focus_window->base.decorated && wl_back->mouse_posy < margin)
-      resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_TOP;
-    else if (!wl_back->inside_decor_location && wl_back->mouse_posy > wl_back->focus_window->base.height*256 - margin)
-      resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM;
-    if (wl_back->mouse_posx < margin)
-      resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_LEFT;
-    else if (wl_back->mouse_posx > wl_back->focus_window->base.width*256 - margin)
-      resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_RIGHT;
-    wl_back->current_resize_edge = resizeEdge;
-    if (resizeEdge != XDG_TOPLEVEL_RESIZE_EDGE_NONE)
+    _wl_find_resize_edge();
+    if (wl_back->current_resize_edge != XDG_TOPLEVEL_RESIZE_EDGE_NONE)
     {
-      xdg_toplevel_resize(wl_back->focus_window->xdg_toplevel,wl_back->seat,serial,resizeEdge);
+      xdg_toplevel_resize(wl_back->focus_window->xdg_toplevel,wl_back->seat,serial,wl_back->current_resize_edge);
     }
     else if (wl_back->inside_decor_location == DECOR_REGION_BAR)
     {
