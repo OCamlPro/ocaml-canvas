@@ -71,7 +71,11 @@ _wl_xdg_toplevel_configure_handler(
   if (resizing && movedEnough)
   {
     wl_window->pending_resize = true;
-    wl_window_set_size(wl_window,width,height);
+    //This check solves some issues when using the Ubuntu compositor while having decorations activated
+    if (wl_back->current_resize_edge & XDG_TOPLEVEL_RESIZE_EDGE_RIGHT || wl_back->current_resize_edge & XDG_TOPLEVEL_RESIZE_EDGE_LEFT)
+      wl_window->base.width = clip_i32_to_i16(width);
+    if (wl_back->current_resize_edge & XDG_TOPLEVEL_RESIZE_EDGE_TOP || wl_back->current_resize_edge & XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM)
+      wl_window->base.height = clip_i32_to_i16(height);
   }
 }
 
@@ -112,7 +116,7 @@ wl_window_create(
   }
 
   window->base.visible = false;
-  window->base.decorated = decorated;
+  window->base.decorated = false;
   window->base.x = clip_i32_to_i16(x);
   window->base.y = clip_i32_to_i16(y);
   window->base.width = clip_i32_to_i16(max(1, width));

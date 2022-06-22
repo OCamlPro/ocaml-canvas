@@ -61,6 +61,7 @@ typedef struct wl_backend_t {
   wl_fixed_t mouse_posx;
   wl_fixed_t mouse_posy;
   enum DECORATION_REGION inside_decor_location;
+  enum xdg_toplevel_resize_edge current_resize_edge;
 } wl_backend_t;
 
 extern wl_backend_t *wl_back;
