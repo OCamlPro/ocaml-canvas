@@ -27,6 +27,7 @@
 #include "wl_backend_internal.h"
 #include "wl_target.h"
 #include "wl_window_internal.h"
+#include "wl_memory.h"
 
 
 
@@ -210,8 +211,10 @@ wl_window_show(
     xdg_toplevel_add_listener(window->xdg_toplevel,&_wl_xdg_toplevel_listener,window);
     xdg_toplevel_set_title(window->xdg_toplevel,window->title);
     //Need to attach any buffer here...
-    if (window->base.decorated)
-      wl_surface_attach(window->wl_surface,window->decoration->wl_closebutton_buffer,0,0);
+    uint8_t *dummy_data = NULL;
+    struct wl_buffer *dummy = wl_create_buffer(1,1,&dummy_data);
+    munmap(dummy_data,4);
+    wl_surface_attach(window->wl_surface,dummy,0,0);
     wl_surface_commit(window->wl_surface);    
   }
   _wl_window_update_position(window);
