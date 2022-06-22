@@ -499,6 +499,18 @@ static void wl_callback_handle_frame(
     wl_callback_add_listener(wl_window->wl_callback,&wl_callback_listener,wl_window);
   }
   event_t evt;
+  if (wl_window->pending_resize)
+  {
+    //resize decorations
+    wl_decoration_resize(wl_window->decoration,wl_window->base.width,wl_window->title);
+    //resize surface
+    evt.desc.resize.width = wl_window->base.width;
+    evt.desc.resize.height = wl_window->base.height;
+    evt.target = wl_window;
+    evt.type = EVENT_RESIZE;
+    event_notify(wl_back->listener,&evt);
+    wl_window->pending_resize = false;
+  }
   evt.type = EVENT_FRAME;
   evt.time = _wl_get_time();
   if (wl_window->base.visible) {

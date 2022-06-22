@@ -46,21 +46,9 @@ typedef struct surface_impl_wl_t {
 static void
 wl_buffer_release(void *data, struct wl_buffer *wl_buffer)
 {
-  //process resize requests here?
+  //handle buffer release event (maybe useful later)
   struct wl_window_t *wl_window = data;
-  event_t evt;
-  if (wl_window->pending_resize)
-  {
-    //resize decorations
-    wl_decoration_resize(wl_window->decoration,wl_window->base.width,wl_window->title);
-    //resize surface
-    evt.desc.resize.width = wl_window->base.width;
-    evt.desc.resize.height = wl_window->base.height;
-    evt.target = wl_window;
-    evt.type = EVENT_RESIZE;
-    event_notify(wl_back->listener,&evt);
-    wl_window->pending_resize = false;
-  }
+  
 }
 
 static const struct wl_buffer_listener wl_buffer_listener = {
