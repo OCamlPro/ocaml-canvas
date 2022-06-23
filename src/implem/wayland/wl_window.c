@@ -67,10 +67,13 @@ _wl_xdg_toplevel_configure_handler(
   printf("top level configure: %dx%d\n", width, height);
   uint8_t* p;
   bool resizing = false;
+  bool maximizing = false;
   wl_array_for_each(p,states) 
   {
     if(*p == XDG_TOPLEVEL_STATE_RESIZING) 
       resizing = true;
+    else if (*p == XDG_TOPLEVEL_STATE_MAXIMIZED)
+      maximizing = true;
     else if (*p == XDG_TOPLEVEL_STATE_ACTIVATED)
     {
       if (wl_back->activated_window && wl_back->activated_window != wl_window)
@@ -101,6 +104,13 @@ _wl_xdg_toplevel_configure_handler(
       wl_window->base.width = clip_i32_to_i16(width);
     if (wl_back->current_resize_edge & XDG_TOPLEVEL_RESIZE_EDGE_TOP || wl_back->current_resize_edge & XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM || HAS_SERVER_DECORATION)
       wl_window->base.height = clip_i32_to_i16(height);
+  }
+  else if (maximizing || wl_back->demaximize)
+  {
+    wl_window->base.width = clip_i32_to_i16(width);
+    wl_window->base.height = clip_i32_to_i16(height);
+    wl_window->pending_resize = true;
+    wl_back->demaximize = false;
   }
 }
 
@@ -157,6 +167,8 @@ wl_window_create(
     window->decoration = wl_decoration_create(window->wl_surface,width,title);
     wl_surface_set_user_data(window->decoration->wl_surface,window);
     wl_surface_set_user_data(window->decoration->wl_closebutton_surface,window);
+    wl_surface_set_user_data(window->decoration->wl_minbutton_surface,window);
+    wl_surface_set_user_data(window->decoration->wl_maxbutton_surface,window);
   }
   wl_backend_add_window(window);
 

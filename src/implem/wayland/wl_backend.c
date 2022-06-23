@@ -52,7 +52,7 @@ void
 _wl_find_resize_edge()
 {
 
-  if (wl_back->focus_window->base.decorated && HAS_SERVER_DECORATION)
+  if (wl_back->focus_window->base.decorated && HAS_SERVER_DECORATION || wl_back->inside_decor_location != DECOR_REGION_OUTSIDE && wl_back->inside_decor_location != DECOR_REGION_BAR)
   {
     wl_back->current_resize_edge = XDG_TOPLEVEL_RESIZE_EDGE_NONE;
     return;
@@ -184,6 +184,10 @@ _wl_pointer_enter_handler(
         wl_back->inside_decor_location = DECOR_REGION_BAR;
       else if (surface == wl_back->focus_window->decoration->wl_closebutton_surface)
         wl_back->inside_decor_location = DECOR_REGION_CLOSE_BUTTON;
+      else if (surface == wl_back->focus_window->decoration->wl_maxbutton_surface)
+        wl_back->inside_decor_location = DECOR_REGION_MAX_BUTTON;
+      else if (surface == wl_back->focus_window->decoration->wl_minbutton_surface)
+        wl_back->inside_decor_location = DECOR_REGION_MIN_BUTTON;
     }
     else
       wl_back->inside_decor_location = DECOR_REGION_OUTSIDE;
@@ -325,6 +329,20 @@ _wl_pointer_button_handler(
       evt.type = EVENT_CLOSE;
       evt.target = wl_back->focus_window;
       event_notify(wl_back->listener,&evt);
+    }
+    else if (wl_back->inside_decor_location == DECOR_REGION_MIN_BUTTON)
+    {
+      xdg_toplevel_set_minimized(wl_back->focus_window->xdg_toplevel);
+    }
+    else if (wl_back->inside_decor_location == DECOR_REGION_MAX_BUTTON)
+    {
+      if (!wl_back->maximized)
+        xdg_toplevel_set_maximized(wl_back->focus_window->xdg_toplevel);
+      else
+        xdg_toplevel_unset_maximized(wl_back->focus_window->xdg_toplevel);
+      wl_back->maximized = !wl_back->maximized;
+      if (!wl_back->maximized)
+        wl_back->demaximize = true;
     }
   }
 }

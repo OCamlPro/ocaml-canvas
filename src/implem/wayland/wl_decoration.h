@@ -28,6 +28,14 @@ typedef struct wl_decoration_t {
   struct wl_subsurface *wl_closebutton_subsurface;
   struct wl_buffer *wl_closebutton_buffer;
 
+  struct wl_surface *wl_minbutton_surface;
+  struct wl_subsurface *wl_minbutton_subsurface;
+  struct wl_buffer *wl_minbutton_buffer;
+
+  struct wl_surface *wl_maxbutton_surface;
+  struct wl_subsurface *wl_maxbutton_subsurface;
+  struct wl_buffer *wl_maxbutton_buffer;
+
 } wl_decoration_t;
 
 wl_decoration_t*

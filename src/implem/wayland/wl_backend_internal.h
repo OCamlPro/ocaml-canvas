@@ -26,6 +26,8 @@ enum DECORATION_REGION {
   DECOR_REGION_OUTSIDE = 0,
   DECOR_REGION_BAR = 1,
   DECOR_REGION_CLOSE_BUTTON = 2,
+  DECOR_REGION_MAX_BUTTON = 3,
+  DECOR_REGION_MIN_BUTTON = 4,
 };
 
 typedef struct wl_backend_t {
@@ -68,6 +70,9 @@ typedef struct wl_backend_t {
   enum DECORATION_REGION inside_decor_location;
   enum xdg_toplevel_resize_edge current_resize_edge;
   enum xdg_toplevel_resize_edge old_resize_edge;
+  bool maximized;
+  bool demaximize;
+
 } wl_backend_t;
 
 extern wl_backend_t *wl_back;

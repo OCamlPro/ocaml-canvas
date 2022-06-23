@@ -35,26 +35,32 @@
 
 
 void
-_wl_decoration_close_button(
+_wl_decoration_button(
     wl_decoration_t *decor,
-    uint32_t size
+    struct wl_surface **surface,
+    struct wl_subsurface **subsurface,
+    struct wl_buffer **buffer,
+    uint32_t size,
+    uint8_t r,
+    uint8_t g,
+    uint8_t b
 )
 {
-  decor->wl_closebutton_surface = wl_compositor_create_surface(wl_back->compositor);
-  decor->wl_closebutton_subsurface = wl_subcompositor_get_subsurface(wl_back->subcompositor,
-                                                                    decor->wl_closebutton_surface,
+  *surface = wl_compositor_create_surface(wl_back->compositor);
+  *subsurface = wl_subcompositor_get_subsurface(wl_back->subcompositor,
+                                                                    *surface,
                                                                     decor->wl_surface);
   uint8_t *data = NULL;
-  decor->wl_closebutton_buffer = wl_create_buffer(size,size,&data);
+  *buffer = wl_create_buffer(size,size,&data);
   for (int i = 0; i < size*size;i++)
   {
-    data[4*i] = 0;
-    data[4*i + 1] = 0;
-    data[4*i + 2] = 255;
+    data[4*i] = b;
+    data[4*i + 1] = g;
+    data[4*i + 2] = r;
     data[4*i + 3] = 255;
   }
   munmap(data,size * size * 4);
-  wl_surface_attach(decor->wl_closebutton_surface,decor->wl_closebutton_buffer,0,0);
+  wl_surface_attach(*surface,*buffer,0,0);
 }
 
 void
@@ -84,9 +90,9 @@ _wl_decoration_render_title(
     while(*title)
     {
         uint32_t chr = decode_utf8_char(&title);
-        if (pen_x > width - 30 - 16)
+        if (pen_x > width - 30 - 16 - 70)
             break;
-        if (pen_x > width - 30 - 32)
+        if (pen_x > width - 30 - 32 - 70)
             chr = 0x0000002e;
         FT_UInt glyph_index;
         glyph_index = FT_Get_Char_Index(face,chr);
@@ -180,8 +186,12 @@ wl_decoration_create(
     wl_surface_attach(decor->wl_surface,wl_buffer,0,0);
     wl_subsurface_set_position(decor->wl_subsurface,0,-_decor_height);
     decor->background_buffer = wl_buffer;
-    _wl_decoration_close_button(decor,30);
+    _wl_decoration_button(decor,&decor->wl_closebutton_surface,&decor->wl_closebutton_subsurface,&decor->wl_closebutton_buffer,30,255,0,0);
     wl_subsurface_set_position(decor->wl_closebutton_subsurface,width - 40,5);
+    _wl_decoration_button(decor,&decor->wl_maxbutton_surface,&decor->wl_maxbutton_subsurface,&decor->wl_maxbutton_buffer,30,0,255,0);
+    wl_subsurface_set_position(decor->wl_maxbutton_subsurface,width - 75,5);
+    _wl_decoration_button(decor,&decor->wl_minbutton_surface,&decor->wl_minbutton_subsurface,&decor->wl_minbutton_buffer,30,0,0,255);
+    wl_subsurface_set_position(decor->wl_minbutton_subsurface,width - 110,5);
     return decor;
 }
 
@@ -195,6 +205,15 @@ wl_decoration_destroy(
     wl_buffer_destroy(decoration->wl_closebutton_buffer);
     wl_subsurface_destroy(decoration->wl_closebutton_subsurface);
     wl_surface_destroy(decoration->wl_closebutton_surface);
+        
+    wl_buffer_destroy(decoration->wl_minbutton_buffer);
+    wl_subsurface_destroy(decoration->wl_minbutton_subsurface);
+    wl_surface_destroy(decoration->wl_minbutton_surface);
+        
+    wl_buffer_destroy(decoration->wl_maxbutton_buffer);
+    wl_subsurface_destroy(decoration->wl_maxbutton_subsurface);
+    wl_surface_destroy(decoration->wl_maxbutton_surface);
+
     wl_buffer_destroy(decoration->background_buffer);
     wl_subsurface_destroy(decoration->wl_subsurface);
     wl_surface_destroy(decoration->wl_surface);
@@ -209,6 +228,8 @@ wl_decoration_present(
 {
     wl_surface_commit(decoration->wl_surface);
     wl_surface_commit(decoration->wl_closebutton_surface);
+    wl_surface_commit(decoration->wl_minbutton_surface);
+    wl_surface_commit(decoration->wl_maxbutton_surface);
 }
 
 
@@ -223,6 +244,8 @@ wl_decoration_resize(
     decor->background_buffer =  _wl_decoration_background(width,title);
     wl_surface_attach(decor->wl_surface,decor->background_buffer,0,0);
     wl_subsurface_set_position(decor->wl_closebutton_subsurface,width - 40,5);
+    wl_subsurface_set_position(decor->wl_maxbutton_subsurface,width - 75,5);
+    wl_subsurface_set_position(decor->wl_minbutton_subsurface,width - 110,5);
 }
 
 
