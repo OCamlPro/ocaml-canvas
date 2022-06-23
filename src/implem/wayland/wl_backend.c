@@ -51,19 +51,25 @@ _wl_get_time()
 void 
 _wl_find_resize_edge()
 {
-    const wl_fixed_t margin = 10 * 256;
-    uint32_t resizeEdge = XDG_TOPLEVEL_RESIZE_EDGE_NONE;
-    if (wl_back->focus_window->base.decorated && wl_back->inside_decor_location == DECOR_REGION_BAR && wl_back->mouse_posy < margin)
-      resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_TOP;
-    else if (!wl_back->focus_window->base.decorated && wl_back->mouse_posy < margin)
-      resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_TOP;
-    else if (!wl_back->inside_decor_location && wl_back->mouse_posy > wl_back->focus_window->base.height*256 - margin)
-      resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM;
-    if (wl_back->mouse_posx < margin)
-      resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_LEFT;
-    else if (wl_back->mouse_posx > wl_back->focus_window->base.width*256 - margin)
-      resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_RIGHT;
-    wl_back->current_resize_edge = resizeEdge;
+
+  if (wl_back->focus_window->base.decorated && HAS_SERVER_DECORATION)
+  {
+    wl_back->current_resize_edge = XDG_TOPLEVEL_RESIZE_EDGE_NONE;
+    return;
+  }
+  const wl_fixed_t margin = 10 * 256;
+  uint32_t resizeEdge = XDG_TOPLEVEL_RESIZE_EDGE_NONE;
+  if (wl_back->focus_window->base.decorated && wl_back->inside_decor_location == DECOR_REGION_BAR && wl_back->mouse_posy < margin)
+    resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_TOP;
+  else if (!wl_back->focus_window->base.decorated && wl_back->mouse_posy < margin)
+    resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_TOP;
+  else if (!wl_back->inside_decor_location && wl_back->mouse_posy > wl_back->focus_window->base.height*256 - margin)
+    resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM;
+  if (wl_back->mouse_posx < margin)
+    resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_LEFT;
+  else if (wl_back->mouse_posx > wl_back->focus_window->base.width*256 - margin)
+    resizeEdge |= XDG_TOPLEVEL_RESIZE_EDGE_RIGHT;
+  wl_back->current_resize_edge = resizeEdge;
 }
 
 void 
@@ -110,6 +116,9 @@ printf("Global: %s\n", interface);
   } else if (strcmp(interface, wl_subcompositor_interface.name) == 0) {
     wl_back->subcompositor = (struct wl_subcompositor*)
       wl_registry_bind(registry, id, &wl_subcompositor_interface,version);
+  } else if (strcmp(interface, zxdg_decoration_manager_v1_interface.name) == 0) {
+    wl_back->zxdg_decoration_manager_v1 = (struct zxdg_decoration_manager_v1*)
+      wl_registry_bind(registry, id, &zxdg_decoration_manager_v1_interface,version);
   }
 
 }
@@ -169,7 +178,7 @@ _wl_pointer_enter_handler(
   if (surface)
   {
     wl_back->focus_window = (wl_window_t*)wl_surface_get_user_data(surface);
-    if (wl_back->focus_window->base.decorated)
+    if (wl_back->focus_window->base.decorated && !HAS_SERVER_DECORATION)
     {
       if (surface == wl_back->focus_window->decoration->wl_surface)
         wl_back->inside_decor_location = DECOR_REGION_BAR;
@@ -560,6 +569,8 @@ wl_backend_terminate(
   }
   wl_seat_release(wl_back->seat);
   wl_seat_destroy(wl_back->seat);
+  if (wl_back->zxdg_decoration_manager_v1)
+    zxdg_decoration_manager_v1_destroy(wl_back->zxdg_decoration_manager_v1);
   wl_subcompositor_destroy(wl_back->subcompositor);
   wl_compositor_destroy(wl_back->compositor);
   wl_registry_destroy(wl_back->registry);
@@ -588,7 +599,7 @@ static void wl_callback_handle_frame(
   if (wl_window->pending_resize)
   {
     //resize decorations
-    if (wl_window->base.decorated)
+    if (wl_window->base.decorated && !HAS_SERVER_DECORATION)
       wl_decoration_resize(wl_window->decoration,wl_window->base.width,wl_window->title);
     //resize surface
     evt.desc.resize.width = wl_window->base.width;
@@ -604,7 +615,7 @@ static void wl_callback_handle_frame(
     evt.target = (wl_window_t*)data;
     if (event_notify(wl_back->listener,&evt))
     {
-      if (wl_window->base.decorated)
+      if (wl_window->base.decorated && !HAS_SERVER_DECORATION)
         wl_decoration_present(wl_window->decoration);
       evt.type = EVENT_PRESENT;
       event_notify(wl_back->listener,&evt);

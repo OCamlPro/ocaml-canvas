@@ -21,6 +21,7 @@
 
 #include <wayland-client.h>
 #include "xdg-shell-client-protocol.h"
+#include "xdg-decor-protocol.h"
 
 #include "../util.h"
 #include "wl_backend.h"
@@ -28,6 +29,7 @@
 #include "wl_target.h"
 #include "wl_window_internal.h"
 #include "wl_memory.h"
+
 
 
 static void
@@ -139,7 +141,7 @@ wl_window_create(
   }
 
   window->base.visible = false;
-  window->base.decorated = decorated;
+  window->base.decorated = false;
   window->base.x = clip_i32_to_i16(x);
   window->base.y = clip_i32_to_i16(y);
   window->base.width = clip_i32_to_i16(max(1, width));
@@ -150,7 +152,7 @@ wl_window_create(
 
   window->wl_surface = wl_compositor_create_surface(wl_back->compositor);
   wl_surface_set_user_data(window->wl_surface,window);
-  if (window->base.decorated)
+  if (window->base.decorated && !HAS_SERVER_DECORATION)
   {
     window->decoration = wl_decoration_create(window->wl_surface,width,title);
     wl_surface_set_user_data(window->decoration->wl_surface,window);
@@ -169,6 +171,8 @@ wl_window_destroy(
   wl_callback_destroy(window->wl_callback);
   xdg_toplevel_destroy(window->xdg_toplevel);
   xdg_surface_destroy(window->xdg_surface);
+  if (window->server_decor)
+    zxdg_toplevel_decoration_v1_destroy(window->server_decor);
   if (window->base.decorated)
     wl_decoration_destroy(window->decoration);
   wl_surface_destroy(window->wl_surface);
@@ -232,6 +236,11 @@ wl_window_show(
     window->xdg_toplevel = xdg_surface_get_toplevel(window->xdg_surface);
     xdg_toplevel_add_listener(window->xdg_toplevel,&_wl_xdg_toplevel_listener,window);
     xdg_toplevel_set_title(window->xdg_toplevel,window->title);
+    if (window->base.decorated && HAS_SERVER_DECORATION)
+    {
+      window->server_decor = zxdg_decoration_manager_v1_get_toplevel_decoration(wl_back->zxdg_decoration_manager_v1,window->xdg_toplevel);
+      zxdg_toplevel_decoration_v1_set_mode(window->server_decor,ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
+    }
     //Need to attach any buffer here...
     uint8_t *dummy_data = NULL;
     struct wl_buffer *dummy = wl_create_buffer(1,1,&dummy_data);

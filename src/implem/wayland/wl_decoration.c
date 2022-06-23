@@ -74,7 +74,7 @@ _wl_decoration_render_title(
     uint32_t error = FT_Init_FreeType(&library);
     if (error)
         return;
-    error = FT_New_Face(library,"/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf",0,&face);
+    error = FT_New_Face(library,"/home/hachem/Minchou.otf",0,&face);
     if (error)
         return;
     error = FT_Set_Pixel_Sizes(face,0,16);

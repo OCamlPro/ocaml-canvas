@@ -16,6 +16,7 @@
 #include <wayland-client.h>
 #include <wayland-cursor.h>
 #include "xdg-shell-client-protocol.h"
+#include "xdg-decor-protocol.h"
 #include <xkbcommon/xkbcommon.h>
 
 #include "../hashtable.h"
@@ -43,6 +44,7 @@ typedef struct wl_backend_t {
   struct wl_keyboard *keyboard;
   struct wl_shm *shm;
   struct xdg_wm_base *xdg_wm_base;
+  struct zxdg_decoration_manager_v1 *zxdg_decoration_manager_v1;
 
   /* Objects */
   struct wl_cursor_theme *cursor_theme; /* contains wl_cursors */

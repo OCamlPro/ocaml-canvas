@@ -13,9 +13,12 @@
 
 #include <wayland-client.h>
 #include "xdg-shell-client-protocol.h"
-
+#include "xdg-decor-protocol.h"
 #include "../window_internal.h"
 #include "wl_decoration.h"
+
+#define HAS_SERVER_DECORATION (wl_back->zxdg_decoration_manager_v1 != NULL)
+
 
 typedef struct wl_window_t {
 
@@ -30,8 +33,9 @@ typedef struct wl_window_t {
   const char *title;
 
   /*Client Side Decorations*/
-  //TODO : Check if KDE is used before enabling this
   wl_decoration_t *decoration;
+  /*Server Side Decorations*/
+  struct zxdg_toplevel_decoration_v1 *server_decor;
   bool pending_resize;
 
 } wl_window_t;
