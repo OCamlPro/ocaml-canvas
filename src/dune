@@ -15,7 +15,7 @@
          gdi_keyboard gdi_backend gdi_target gdi_window gdi_surface
          qtz_keyboard qtz_backend qtz_target qtz_window qtz_surface
          x11_keysym x11_keyboard x11_backend x11_target x11_window x11_surface
-         wl_backend wl_memory wl_target wl_window wl_surface wl_decoration xdg-shell-protocol
+         wl_backend wl_memory wl_target wl_window wl_surface wl_decoration xdg-shell-protocol xdg-decor-protocol
          window surface
          path arc polygon polygonize poly_render
          font_desc gdi_font qtz_font ft_font font
