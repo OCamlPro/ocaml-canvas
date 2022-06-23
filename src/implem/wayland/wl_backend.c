@@ -219,39 +219,42 @@ _wl_pointer_motion_handler(
     evt.desc.cursor.y = y/256;
     event_notify(wl_back->listener, &evt);
     _wl_find_resize_edge();
-    //TODO : Make it change only if cursor actually changes
-    switch (wl_back->current_resize_edge)
+    if (wl_back->current_resize_edge != wl_back->old_resize_edge)
     {
-    case XDG_TOPLEVEL_RESIZE_EDGE_NONE:
-      _wl_change_cursor("left_ptr");
-      break;
-    case XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM:
-      _wl_change_cursor("bottom_side");
-      break;
-    case XDG_TOPLEVEL_RESIZE_EDGE_TOP:
-      _wl_change_cursor("top_side");
-      break;
-    case XDG_TOPLEVEL_RESIZE_EDGE_RIGHT:
-      _wl_change_cursor("right_side");
-      break;
-    case XDG_TOPLEVEL_RESIZE_EDGE_LEFT:
-      _wl_change_cursor("left_side");
-      break;
-    case XDG_TOPLEVEL_RESIZE_EDGE_TOP_LEFT:
-      _wl_change_cursor("top_left_corner");
-      break;
-    case XDG_TOPLEVEL_RESIZE_EDGE_TOP_RIGHT:
-      _wl_change_cursor("top_right_corner");
-      break;
-    case XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM_LEFT:
-      _wl_change_cursor("bottom_left_corner");
-      break;
-    case XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM_RIGHT:
-      _wl_change_cursor("bottom_right_corner");
-      break;
-    default:
-      break;
+      switch (wl_back->current_resize_edge)
+      {
+      case XDG_TOPLEVEL_RESIZE_EDGE_NONE:
+        _wl_change_cursor("left_ptr");
+        break;
+      case XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM:
+        _wl_change_cursor("bottom_side");
+        break;
+      case XDG_TOPLEVEL_RESIZE_EDGE_TOP:
+        _wl_change_cursor("top_side");
+        break;
+      case XDG_TOPLEVEL_RESIZE_EDGE_RIGHT:
+        _wl_change_cursor("right_side");
+        break;
+      case XDG_TOPLEVEL_RESIZE_EDGE_LEFT:
+        _wl_change_cursor("left_side");
+        break;
+      case XDG_TOPLEVEL_RESIZE_EDGE_TOP_LEFT:
+        _wl_change_cursor("top_left_corner");
+        break;
+      case XDG_TOPLEVEL_RESIZE_EDGE_TOP_RIGHT:
+        _wl_change_cursor("top_right_corner");
+        break;
+      case XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM_LEFT:
+        _wl_change_cursor("bottom_left_corner");
+        break;
+      case XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM_RIGHT:
+        _wl_change_cursor("bottom_right_corner");
+        break;
+      default:
+        break;
+      }
     }
+    wl_back->old_resize_edge = wl_back->current_resize_edge;
     
 
   }
@@ -273,9 +276,20 @@ _wl_pointer_button_handler(
     evt.type = EVENT_BUTTON;
     evt.time = _wl_get_time();
     evt.target = wl_back->focus_window;
-    //TODO : Support other buttons
-    //TODO : Find a way to get RMB's code (is it always 272?)
-    evt.desc.button.button = (button == 272) ? BUTTON_LEFT : BUTTON_RIGHT;
+    switch (button)
+    {
+    case 272:
+      evt.desc.button.button = BUTTON_LEFT;
+      break;
+    case 273:
+      evt.desc.button.button = BUTTON_RIGHT;
+      break;
+    case 274:
+      evt.desc.button.button = BUTTON_MIDDLE;
+      break;
+    default:
+      break;
+    }
     evt.desc.button.state = (state == WL_POINTER_BUTTON_STATE_PRESSED) ? BUTTON_DOWN : BUTTON_UP;
     evt.desc.button.x = wl_back->mouse_posx / 256;
     evt.desc.button.y = wl_back->mouse_posy / 256;
@@ -332,7 +346,12 @@ _wl_keyboard_enter_handler(
 {
   wl_backend_t *wl_back = (wl_backend_t *)data;
   if (surface)
-    wl_back->focus_window = wl_surface_get_user_data(surface);
+  {
+    if (wl_surface_get_user_data(surface) != wl_back->focus_window)
+    {
+      wl_back->focus_window = wl_surface_get_user_data(surface);
+    }
+  }
   else //happens for some reason when the window gets destroyed
     wl_back->focus_window = NULL;
 }
@@ -344,7 +363,6 @@ _wl_keyboard_leave_handler(
   uint32_t serial,
   struct wl_surface *surface)
 {
-  wl_back->focus_window = NULL;
 }
 
 static void
@@ -542,6 +560,7 @@ wl_backend_terminate(
   }
   wl_seat_release(wl_back->seat);
   wl_seat_destroy(wl_back->seat);
+  wl_subcompositor_destroy(wl_back->subcompositor);
   wl_compositor_destroy(wl_back->compositor);
   wl_registry_destroy(wl_back->registry);
   wl_display_roundtrip(wl_back->display);
@@ -633,7 +652,7 @@ wl_backend_run(
 
   wl_back->running = true;
 
-  while (wl_display_dispatch(wl_back->display) >= 0) {
+  while (wl_display_dispatch(wl_back->display) >= 0 && wl_back->running) {
     //Events are handled separately. This loop is left empty on purpose.
   }
 

@@ -22,6 +22,10 @@
 
 typedef struct wl_backend_t wl_backend_t;
 
+int64_t
+_wl_get_time(
+  void);
+
 bool
 wl_backend_init(
   void);

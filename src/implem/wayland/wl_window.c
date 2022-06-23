@@ -30,7 +30,6 @@
 #include "wl_memory.h"
 
 
-
 static void
 _wl_window_update_position(
   wl_window_t *window)
@@ -66,7 +65,30 @@ _wl_xdg_toplevel_configure_handler(
   printf("top level configure: %dx%d\n", width, height);
   uint8_t* p;
   bool resizing = false;
-  wl_array_for_each(p,states) if(*p == XDG_TOPLEVEL_STATE_RESIZING) resizing = true; 
+  wl_array_for_each(p,states) 
+  {
+    if(*p == XDG_TOPLEVEL_STATE_RESIZING) 
+      resizing = true;
+    if (*p == XDG_TOPLEVEL_STATE_ACTIVATED)
+    {
+      if (wl_back->activated_window && wl_back->activated_window != wl_window)
+      {
+        event_t evt;
+        evt.desc.focus.inout = FOCUS_OUT;
+        evt.time = _wl_get_time();
+        evt.target = wl_window;
+        evt.type = EVENT_FOCUS;
+        event_notify(wl_back->listener,&evt);
+      }
+      event_t evt;
+      evt.desc.focus.inout = FOCUS_IN;
+      evt.time = _wl_get_time();
+      evt.target = wl_window;
+      evt.type = EVENT_FOCUS;
+      event_notify(wl_back->listener,&evt);
+      wl_back->activated_window = wl_window;
+    }
+  }
   bool movedEnough = abs(width - wl_window->base.width) > 10;
   movedEnough |= abs(height - wl_window->base.height) > 10;
   if (resizing && movedEnough)

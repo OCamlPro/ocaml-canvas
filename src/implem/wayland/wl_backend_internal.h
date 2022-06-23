@@ -50,7 +50,10 @@ typedef struct wl_backend_t {
   struct wl_cursor_image *cursor_image;
   struct wl_buffer *cursor_buffer;
   struct wl_surface *cursor_surface;
+  //The focus window is the window where input will be relayed, it can differ from the activated window.
   wl_window_t *focus_window;
+  //The activated window is the "focused" window for the wayland server.
+  wl_window_t *activated_window;
 
   /*Keyboard objects*/
   struct xkb_keymap *xkb_keymap;
@@ -62,6 +65,7 @@ typedef struct wl_backend_t {
   wl_fixed_t mouse_posy;
   enum DECORATION_REGION inside_decor_location;
   enum xdg_toplevel_resize_edge current_resize_edge;
+  enum xdg_toplevel_resize_edge old_resize_edge;
 } wl_backend_t;
 
 extern wl_backend_t *wl_back;
