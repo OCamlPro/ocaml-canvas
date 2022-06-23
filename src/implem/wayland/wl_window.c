@@ -71,7 +71,7 @@ _wl_xdg_toplevel_configure_handler(
   {
     if(*p == XDG_TOPLEVEL_STATE_RESIZING) 
       resizing = true;
-    if (*p == XDG_TOPLEVEL_STATE_ACTIVATED)
+    else if (*p == XDG_TOPLEVEL_STATE_ACTIVATED)
     {
       if (wl_back->activated_window && wl_back->activated_window != wl_window)
       {
@@ -97,9 +97,9 @@ _wl_xdg_toplevel_configure_handler(
   {
     wl_window->pending_resize = true;
     //This check solves some issues when using the Ubuntu compositor while having decorations activated
-    if (wl_back->current_resize_edge & XDG_TOPLEVEL_RESIZE_EDGE_RIGHT || wl_back->current_resize_edge & XDG_TOPLEVEL_RESIZE_EDGE_LEFT)
+    if (wl_back->current_resize_edge & XDG_TOPLEVEL_RESIZE_EDGE_RIGHT || wl_back->current_resize_edge & XDG_TOPLEVEL_RESIZE_EDGE_LEFT || HAS_SERVER_DECORATION)
       wl_window->base.width = clip_i32_to_i16(width);
-    if (wl_back->current_resize_edge & XDG_TOPLEVEL_RESIZE_EDGE_TOP || wl_back->current_resize_edge & XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM)
+    if (wl_back->current_resize_edge & XDG_TOPLEVEL_RESIZE_EDGE_TOP || wl_back->current_resize_edge & XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM || HAS_SERVER_DECORATION)
       wl_window->base.height = clip_i32_to_i16(height);
   }
 }
@@ -141,7 +141,7 @@ wl_window_create(
   }
 
   window->base.visible = false;
-  window->base.decorated = false;
+  window->base.decorated = decorated;
   window->base.x = clip_i32_to_i16(x);
   window->base.y = clip_i32_to_i16(y);
   window->base.width = clip_i32_to_i16(max(1, width));
@@ -173,7 +173,7 @@ wl_window_destroy(
   xdg_surface_destroy(window->xdg_surface);
   if (window->server_decor)
     zxdg_toplevel_decoration_v1_destroy(window->server_decor);
-  if (window->base.decorated)
+  if (window->base.decorated && !HAS_SERVER_DECORATION)
     wl_decoration_destroy(window->decoration);
   wl_surface_destroy(window->wl_surface);
   free(window);
