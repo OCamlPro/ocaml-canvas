@@ -8,26 +8,26 @@
 /*                                                                        */
 /**************************************************************************/
 
-#ifndef __TUPLES_H
-#define __TUPLES_H
+#ifndef __OPTION_H
+#define __OPTION_H
 
-#include <stdint.h>
+#include <stdbool.h>
+#include <assert.h>
 
-#define define_pair_type(type) \
-typedef struct pair_##type##_t { \
-  type m1; \
-  type m2; \
-} pair_##type##_t
+#define define_option_type(type) \
+typedef struct option_##type##_t { \
+  type value; \
+  bool is_empty; \
+} option_##type##_t
 
-#define pair_t(type) pair_##type##_t
+#define option_t(type) option_##type##_t
 
-#define pair(type,p1,p2) ((pair_##type##_t){ .m1 = (p1), .m2 = (p2) })
+#define some(type,v) ((option_##type##_t){ .value = (v), .is_empty = false })
+#define none(type) ((option_##type##_t){ .is_empty = true })
 
-#define fst(p) ((p).m1)
-#define snd(p) ((p).m2)
+#define opt_value(o,d) ((o).is_empty ? (d) : (o).value)
+#define get(o) (assert(!(o).is_empty), (o).value)
+#define is_some(o) (!(o).is_empty)
+#define is_none(o) ((o).is_empty)
 
-define_pair_type(int32_t);
-define_pair_type(uint32_t);
-define_pair_type(double);
-
-#endif /* __TUPLES_H */
+#endif /* __OPTION_H */

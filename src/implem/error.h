@@ -8,26 +8,13 @@
 /*                                                                        */
 /**************************************************************************/
 
-#ifndef __TUPLES_H
-#define __TUPLES_H
+#ifndef __ERROR_H
+#define __ERROR_H
 
-#include <stdint.h>
+typedef enum error_t {
+  ERROR_NONE = 0;
+  ERROR_GENERIC = 1;
+  ERROR_OUT_OF_MEMORY = 2;
+} error_t;
 
-#define define_pair_type(type) \
-typedef struct pair_##type##_t { \
-  type m1; \
-  type m2; \
-} pair_##type##_t
-
-#define pair_t(type) pair_##type##_t
-
-#define pair(type,p1,p2) ((pair_##type##_t){ .m1 = (p1), .m2 = (p2) })
-
-#define fst(p) ((p).m1)
-#define snd(p) ((p).m2)
-
-define_pair_type(int32_t);
-define_pair_type(uint32_t);
-define_pair_type(double);
-
-#endif /* __TUPLES_H */
+#endif /* __ERROR_H */
