@@ -69,7 +69,7 @@ state_reset(
   font_desc_reset(s->font_desc);
   s->stroke_color = color_black;
   s->fill_color = color_white;
-  s->global_alpha = 0xFF;
+  s->global_alpha = 1.0;
   s->line_width = 1.0;
 }
 

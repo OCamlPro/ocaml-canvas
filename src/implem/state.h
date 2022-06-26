@@ -24,7 +24,7 @@ typedef struct state_t {
   // dash array
   color_t_ stroke_color; // style
   color_t_ fill_color; // style
-  uint8_t global_alpha; // 0.0 - 1.0
+  double global_alpha; // 0.0 - 1.0
   double line_width;
   // globalCompositeOperation (source-over, source-in, source-out...)
   // lineWidth, lineCap, lineJoin, miterLimit, lineDashOffset

@@ -428,6 +428,25 @@ ml_canvas_set_fill_color(
 }
 
 CAMLprim value
+ml_canvas_get_global_alpha(
+  value mlCanvas)
+{
+  CAMLparam1(mlCanvas);
+  CAMLreturn(caml_copy_double(canvas_get_global_alpha(Canvas_val(mlCanvas))));
+}
+
+CAMLprim value
+ml_canvas_set_global_alpha(
+  value mlCanvas,
+  value mlGlobalAlpha)
+{
+  CAMLparam2(mlCanvas, mlGlobalAlpha);
+  canvas_set_global_alpha(Canvas_val(mlCanvas),
+                          Double_val(mlGlobalAlpha));
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
 ml_canvas_set_font(
   value mlCanvas,
   value mlFamily,
