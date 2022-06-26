@@ -208,6 +208,12 @@ module Canvas = struct
 
   external setFillColor : 'a t -> Color.t -> unit
     = "ml_canvas_set_fill_color"
+  
+  external getGlobalAlpha : 'a t -> float
+    = "ml_canvas_get_global_alpha"
+  
+  external setGlobalAlpha : 'a t -> float -> unit
+    = "ml_canvas_set_global_alpha"
 
   external setFont :
     'a t -> string -> size:Font.size -> slant:Font.slant ->

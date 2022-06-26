@@ -416,6 +416,13 @@ module Canvas : sig
   val setFillColor : 'a t -> Color.t -> unit
   (** [setFillColor c col] sets the current fill color
       for canvas [c] to [col] *)
+  
+  val getGlobalAlpha : 'a t -> float
+  (** [getGlobalAlpha c] returns the current global alpha for canvas [c] *)
+
+  val setGlobalAlpha : 'a t -> float -> unit
+  (** [setGlobalAlpha c a] sets the global alpha value for
+      canvas[c] to [a] *)
 
   val setFont :
     'a t -> string -> size:Font.size ->

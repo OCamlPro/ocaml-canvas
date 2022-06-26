@@ -395,6 +395,7 @@ poly_render(
   const polygon_t *p,
   const rect_t *bbox,
   color_t_ color,
+  double global_alpha,
   bool non_zero)
 {
   assert(s != NULL);
@@ -441,13 +442,14 @@ poly_render(
         // only if this pixel is simple
         calculate = is_complex;
       }
-
+      int ga = fastround(global_alpha * 256.0);
+      int draw_alpha = alpha * ga / 256;
       // Apply the coverage to the pixel
       // Only do this logic if there's something to apply
-      if (alpha == 255) {
+      if (draw_alpha == 255) {
         _setpixel(s, i, j, color);
-      } else if (alpha != 0) {
-        _setpixel_alpha(s, i, j, alpha, color);
+      } else if (draw_alpha != 0) {
+        _setpixel_alpha(s, i, j, draw_alpha, color);
       }
     }
     free(complex);

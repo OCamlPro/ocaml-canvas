@@ -528,6 +528,16 @@ function ml_canvas_set_fill_color(canvas, color) {
   canvas.ctxt.fillStyle = _color_of_int(color);
 }
 
+//Provides: ml_canvas_get_global_alpha
+function ml_canvas_get_global_alpha(canvas) {
+  return canvas.ctxt.globalAlpha;
+}
+
+//Provides: ml_canvas_set_global_alpha
+function ml_canvas_set_global_alpha(canvas, global_alpha) {
+  canvas.ctxt.globalAlpha = global_alpha;
+}
+
 //Provides: ml_canvas_set_font
 // Requires: Slant_val
 function ml_canvas_set_font(canvas, family, size, slant, weight) {

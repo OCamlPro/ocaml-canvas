@@ -29,6 +29,7 @@ poly_render(
   const polygon_t *p,
   const rect_t *bbox,
   color_t_ color,
+  double global_alpha,
   bool non_zero);
 
 #endif /* __POLY_RENDER_H */

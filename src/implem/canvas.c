@@ -558,6 +558,29 @@ canvas_set_stroke_color(
   canvas->state->stroke_color = color;
 }
 
+double
+canvas_get_global_alpha(
+  const canvas_t *canvas)
+{
+  assert(canvas != NULL);
+  assert(canvas->state != NULL);
+
+  return canvas->state->global_alpha;
+}
+
+void
+canvas_set_global_alpha(
+  canvas_t *canvas,
+  double global_alpha)
+{
+  assert(canvas != NULL);
+  assert(canvas->state != NULL);
+
+  if ((global_alpha >= 0.0) && (global_alpha <= 1.0)) {
+    canvas->state->global_alpha = global_alpha;
+  }
+}
+
 void
 canvas_set_font(
   canvas_t *c,
@@ -883,7 +906,8 @@ canvas_fill(
   rect_t bbox = rect(point(0.0, 0.0), point(c->width, c->height));
 
   if (polygonize(c->path, p, &bbox) == true) {
-    poly_render(c->surface, p, &bbox, c->state->fill_color, non_zero);
+    poly_render(c->surface, p, &bbox, c->state->fill_color,
+                c->state->global_alpha, non_zero);
   }
 
   polygon_destroy(p);
@@ -907,7 +931,8 @@ canvas_stroke(
   rect_t bbox = rect(point(0.0, 0.0), point(c->width, c->height));
 
   if (polygonize_outline(c->path, c->state->line_width, p, &bbox) == true) {
-    poly_render(c->surface, p, &bbox, c->state->stroke_color, true);
+    poly_render(c->surface, p, &bbox, c->state->stroke_color,
+                c->state->global_alpha, true);
   }
 
   polygon_destroy(p);
@@ -957,7 +982,8 @@ canvas_fill_rect(
                      point(max4(p1.x, p2.x, p3.x, p4.x),
                            max4(p1.y, p2.y, p3.y, p4.y)));
 
-  poly_render(c->surface, p, &bbox, c->state->fill_color, false);
+  poly_render(c->surface, p, &bbox, c->state->fill_color,
+              c->state->global_alpha ,false);
 
   polygon_destroy(p);
 }
@@ -1007,7 +1033,8 @@ canvas_stroke_rect(
   }
 
   polygon_offset(p, tp, c->state->line_width);
-  poly_render(c->surface, tp, &bbox, c->state->stroke_color, true);
+  poly_render(c->surface, tp, &bbox, c->state->stroke_color,
+              c->state->global_alpha, true);
 
   polygon_destroy(tp);
   polygon_destroy(p);
@@ -1071,7 +1098,8 @@ canvas_fill_text(
     polygon_reset(p);
     if (font_char_as_poly(c->font, c->state->transform,
                           chr, &pen, p, &bbox) == true) {
-      poly_render(c->surface, p, &bbox, c->state->fill_color, true);
+      poly_render(c->surface, p, &bbox, c->state->fill_color,
+                  c->state->global_alpha, true);
     }
   }
 
@@ -1109,7 +1137,8 @@ canvas_stroke_text(
     if (font_char_as_poly_outline(c->font, c->state->transform,
                                   chr, c->state->line_width,
                                   &pen, p, &bbox) == true) {
-      poly_render(c->surface, p, &bbox, c->state->stroke_color, true);
+      poly_render(c->surface, p, &bbox, c->state->stroke_color,
+                  c->state->global_alpha, true);
     }
   }
 

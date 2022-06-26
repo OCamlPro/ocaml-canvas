@@ -190,6 +190,15 @@ canvas_set_stroke_color(
   canvas_t *c,
   color_t_ color);
 
+double
+canvas_get_global_alpha(
+  const canvas_t *c);
+
+void
+canvas_set_global_alpha(
+  canvas_t *c,
+  double global_alpha);
+
 void
 canvas_set_font(
   canvas_t *c,
