@@ -138,7 +138,7 @@ surface_destroy(
 
   if (s->data) {
     switch_IMPL() {
-      case_WAYLAND(munmap(s->data,s->width * s->height * 4));
+      case_WAYLAND(s->data = NULL;);
       default:
         free(s->data);
         break;
@@ -197,7 +197,7 @@ surface_resize(
     _surface_copy_to_buffer(s, data, width, height);
 
     switch_IMPL() {
-      case_WAYLAND(munmap(s->data,s->width * s->height * 4));
+      case_WAYLAND(s->data = NULL);
       default:
         free(s->data);
         break;

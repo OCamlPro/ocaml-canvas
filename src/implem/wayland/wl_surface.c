@@ -38,6 +38,8 @@ typedef struct surface_impl_wl_t {
   impl_type_t type;
   struct wl_buffer *wl_buffer;
   struct wl_surface *wl_surface;
+  uint8_t *data;
+  uint32_t size;
 } surface_impl_wl_t;
 
 
@@ -83,6 +85,8 @@ surface_create_wl_impl(
   impl->type = IMPL_WAYLAND;
   impl->wl_buffer = wl_buffer;
   impl->wl_surface = wl_target->wl_surface;
+  impl->data = pool_data;
+  impl->size = width * height * 4;
   *data = (color_t_ *)pool_data;
 
   return impl;
@@ -97,7 +101,7 @@ surface_destroy_wl_impl(
 
   //Surface is attached to the window. Its destruction is left for the window destroy function
   wl_buffer_destroy(impl->wl_buffer);
-
+  munmap(impl->data,impl->size);
 }
 
 
@@ -163,6 +167,8 @@ surface_resize_wl_impl(
   munmap(*s_data,s_width * s_height * 4);
   wl_buffer_add_listener(newBuffer,&wl_buffer_listener,wl_surface_get_user_data(impl->wl_surface));
   impl->wl_buffer = newBuffer;
+  impl->data = pool_data;
+  impl->size = d_width * d_height * 4;
   return true;
 }
 
