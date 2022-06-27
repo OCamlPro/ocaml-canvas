@@ -55,17 +55,6 @@ surface_present(
   surface_t *s,
   present_data_t *present_data);
 
-void
-surface_blit(
-  surface_t *ds,
-  int32_t dx,
-  int32_t dy,
-  const surface_t *ss,
-  int32_t sx,
-  int32_t sy,
-  int32_t width,
-  int32_t height);
-
 // Direct access to the surface pixels
 // Do NOT free the data pointer !
 pixmap_t

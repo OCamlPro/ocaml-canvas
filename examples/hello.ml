@@ -45,6 +45,14 @@ let () =
 
   Canvas.show c;
 
+  let c2 = Canvas.createOffscreen ~size:(20, 20) in
+  Canvas.setFillColor c2 Color.blue;
+  Canvas.fillRect c2 ~pos:(0.0, 0.0) ~size:(20.0, 20.0);
+  Canvas.save c;
+  Canvas.rotate c 0.3;
+  Canvas.scale c (5.0, 5.0);
+  Canvas.blit ~dst:c ~dpos:(20, 0) ~src:c2 ~spos:(0, 0) ~size:(20, 20);
+
   Backend.run (function
 
     | Event.KeyAction { canvas = _; timestamp = _;

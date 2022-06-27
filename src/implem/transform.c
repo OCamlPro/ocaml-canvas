@@ -9,9 +9,11 @@
 /**************************************************************************/
 
 #include <stdlib.h>
+#include <stdbool.h>
 #include <math.h>
 #include <assert.h>
 
+#include "util.h"
 #include "point.h"
 #include "transform.h"
 
@@ -96,6 +98,19 @@ transform_extract_ft(
 
   *a = t->a; *b = t->b;
   *c = t->c; *d = t->d;
+}
+
+void
+transform_get_translation(
+  const transform_t *t,
+  double *e,
+  double *f)
+{
+  assert(t != NULL);
+  assert(e != NULL);
+  assert(f != NULL);
+
+  *e = t->e; *f = t->f;
 }
 
 void
@@ -274,4 +289,30 @@ transform_extract_scale(
   double r = sqrt(t->a * t->a + t->b * t->b);
   *sx = r;
   *sy = det / r;
+}
+
+static const double _epsilon = 0.0001;
+
+bool
+transform_is_identity(
+  const transform_t *t)
+{
+  return
+    between(t->a - 1.0, -_epsilon, _epsilon) &&
+    between(t->d - 1.0, -_epsilon, _epsilon) &&
+    between(t->b, -_epsilon, _epsilon) &&
+    between(t->c, -_epsilon, _epsilon) &&
+    between(t->e, -_epsilon, _epsilon) &&
+    between(t->f, -_epsilon, _epsilon);
+}
+
+bool
+transform_is_pure_translation(
+  const transform_t *t)
+{
+  return
+    between(t->a - 1.0, -_epsilon, _epsilon) &&
+    between(t->d - 1.0, -_epsilon, _epsilon) &&
+    between(t->b, -_epsilon, _epsilon) &&
+    between(t->c, -_epsilon, _epsilon);
 }

@@ -28,6 +28,8 @@
 #define min4(a,b,c,d) (min(min(a,b),min(c,d)))
 #define max4(a,b,c,d) (max(max(a,b),max(c,d)))
 
+#define between(x,l,h) (((l) < (x)) && ((x) < (h)))
+
 #define clip(a,b,c) ((a) < (b) ? (b) : (a) > (c) ? (c) : b)
 
 int16_t
