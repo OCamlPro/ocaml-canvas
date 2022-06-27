@@ -428,7 +428,7 @@ _wl_keyboard_key_handler(
     evt.target = wl_back->focus_window;
     evt.time = _wl_get_time();
     evt.type = EVENT_KEY;
-    evt.desc.key.code = sym_to_keycode[key];
+    evt.desc.key.code = wl_translate_sym_to_keycode(key);
     evt.desc.key.char_ = pressedKeyCharacter;
     evt.desc.key.state = (state == WL_KEYBOARD_KEY_STATE_RELEASED) ? KEY_UP : KEY_DOWN;
     
