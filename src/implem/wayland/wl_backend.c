@@ -51,7 +51,6 @@ _wl_get_time()
 void 
 _wl_find_resize_edge()
 {
-
   if (wl_back->focus_window->base.decorated && HAS_SERVER_DECORATION || wl_back->inside_decor_location != DECOR_REGION_OUTSIDE && wl_back->inside_decor_location != DECOR_REGION_BAR)
   {
     wl_back->current_resize_edge = XDG_TOPLEVEL_RESIZE_EDGE_NONE;
@@ -96,6 +95,8 @@ _wl_registry_global(
   const char *interface,
   uint32_t version)
 {
+  assert(data != NULL);
+  assert(registry != NULL);
 
   wl_backend_t *wl_back = (wl_backend_t *)data;
 
@@ -168,6 +169,8 @@ _wl_pointer_enter_handler(
   wl_fixed_t x,
   wl_fixed_t y)
 {
+  assert(data != NULL);
+  assert(pointer != NULL);
   wl_backend_t *wl_back = (wl_backend_t *)data;
   wl_back->mouse_posx = x;
   wl_back->mouse_posy = y;
@@ -208,6 +211,8 @@ _wl_pointer_leave_handler(
   uint32_t serial,
   struct wl_surface *surface)
 {
+  assert(data != NULL);
+  assert(pointer != NULL);
   wl_backend_t *wl_back = (wl_backend_t *)data;
   wl_back->inside_decor_location = DECOR_REGION_OUTSIDE;
 }
@@ -220,6 +225,8 @@ _wl_pointer_motion_handler(
   wl_fixed_t x,
   wl_fixed_t y)
 {
+  assert(data != NULL);
+  assert(pointer != NULL);
   if (wl_back->focus_window && wl_back->focus_window->base.visible) {
     wl_backend_t *wl_back = (wl_backend_t *)data;
     wl_back->mouse_posx = x;
@@ -282,6 +289,8 @@ _wl_pointer_button_handler(
   uint32_t button,
   uint32_t state)
 {
+  assert(pointer != NULL);
+  assert(data != NULL);
   //When the focus screen is hidden with a key down event for example, the key up event will still trigger. This check mitigates that.
   if (wl_back->focus_window && wl_back->focus_window->base.visible && !wl_back->inside_decor_location) {
     wl_backend_t *wl_back = (wl_backend_t *)data;
@@ -371,6 +380,8 @@ _wl_keyboard_enter_handler(
   struct wl_array *keys
 )
 {
+  assert(data != NULL);
+  assert(keyboard != NULL);
   wl_backend_t *wl_back = (wl_backend_t *)data;
   if (surface)
   {
@@ -390,6 +401,8 @@ _wl_keyboard_leave_handler(
   uint32_t serial,
   struct wl_surface *surface)
 {
+  assert(data != NULL);
+  assert(keyboard != NULL);
 }
 
 static void
@@ -402,6 +415,8 @@ _wl_keyboard_key_handler(
   enum wl_keyboard_key_state state
 )
 {
+  assert(data != NULL);
+  assert(keyboard != NULL);
   if (wl_back->focus_window && wl_back->focus_window->base.visible) {
     wl_backend_t *wl_back = (wl_backend_t *)data;
     uint32_t pressedKeyCharacter = xkb_state_key_get_utf32(wl_back->xkb_state, key+8);
@@ -425,6 +440,8 @@ _wl_keyboard_keymap_handler(
   uint32_t size
 )
 {
+  assert(data != NULL);
+  assert(keyboard != NULL);
   assert(format == WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1);
   wl_backend_t *wl_back = (wl_backend_t *)data;
   
@@ -452,6 +469,8 @@ _wl_keyboard_modifiers_handler(
   uint32_t group
 )
 {
+    assert(data != NULL);
+    assert(wl_keyboard != NULL);
     wl_backend_t *wl_back = (wl_backend_t *)data;
     xkb_state_update_mask(wl_back->xkb_state,
         depressed, latched, locked, 0, 0, group);
@@ -464,7 +483,8 @@ _wl_keyboard_repeat_info_handler(
   int32_t delay
 )
 {
-  
+  assert(data != NULL);
+  assert(wl_keyboard != NULL); 
 }
 
 
@@ -607,6 +627,8 @@ static void wl_callback_handle_frame(
   struct wl_callback* wl_callback,
   uint32_t time)
 {
+  assert(data != NULL);
+  assert(wl_callback != NULL);
   struct wl_window_t *wl_window = data;
   if (wl_callback) {
     wl_callback_destroy(wl_callback);

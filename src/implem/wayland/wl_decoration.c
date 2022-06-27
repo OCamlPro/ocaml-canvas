@@ -46,6 +46,14 @@ _wl_decoration_button(
     uint8_t b
 )
 {
+  assert(decor != NULL);
+  assert (surface != NULL);
+  assert(*surface == NULL);
+  assert(subsurface != NULL);
+  assert(*subsurface == NULL);
+  assert(buffer != NULL);
+  assert(*buffer == NULL);
+
   *surface = wl_compositor_create_surface(wl_back->compositor);
   *subsurface = wl_subcompositor_get_subsurface(wl_back->subcompositor,
                                                                     *surface,
@@ -151,6 +159,7 @@ _wl_decoration_background(
     const char* title
 )
 {
+    assert(title != NULL);
     uint32_t _decor_height = 40;
     uint8_t *pool_data = NULL;
     struct wl_buffer *wl_buffer = wl_create_buffer(width,_decor_height,&pool_data);
@@ -173,6 +182,8 @@ wl_decoration_create(
     const char* title
 )
 {
+    assert(parent != NULL);
+    assert(title != NULL);
     //TODO : Make this adapt to screen
     uint32_t _decor_height = 40;
 
@@ -226,6 +237,8 @@ wl_decoration_present(
     wl_decoration_t* decoration
 )
 {
+    assert(decoration != NULL);
+    assert(decoration->wl_surface != NULL);
     wl_surface_commit(decoration->wl_surface);
     wl_surface_commit(decoration->wl_closebutton_surface);
     wl_surface_commit(decoration->wl_minbutton_surface);
@@ -240,6 +253,7 @@ wl_decoration_resize(
     const char* title
 )
 {
+    assert(decor != NULL);
     wl_buffer_destroy(decor->background_buffer);
     decor->background_buffer =  _wl_decoration_background(width,title);
     wl_surface_attach(decor->wl_surface,decor->background_buffer,0,0);
