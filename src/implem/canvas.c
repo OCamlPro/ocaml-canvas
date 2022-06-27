@@ -565,7 +565,7 @@ canvas_get_stroke_color(
   if (canvas->state->stroke_style.fill_type == FILL_TYPE_COLOR) {
     return canvas->state->stroke_style.content.color;
   } else {
-    return color_of_int(0);
+    return color_transparent_black;
   }
 }
 
@@ -620,7 +620,7 @@ canvas_get_fill_color(
   if (canvas->state->fill_style.fill_type == FILL_TYPE_COLOR) {
     return canvas->state->fill_style.content.color;
   } else {
-    return color_of_int(0);
+    return color_transparent_black;
   }
 }
 
@@ -1264,12 +1264,99 @@ canvas_blit(
   int32_t height)
 {
   assert(dc != NULL);
+  assert(dc->surface != NULL);
   assert(sc != NULL);
+  assert(sc->surface != NULL);
 
-  surface_t *ds = dc->surface;
-  const surface_t *ss = sc->surface;
-  surface_blit(ds, dx, dy, ss, sx, sy, width, height);
-  // TODO: new version with transformations
+  pixmap_t dp = surface_get_raw_pixmap(dc->surface);
+  const pixmap_t sp = surface_get_raw_pixmap((surface_t *)sc->surface);
+
+  if (transform_is_pure_translation(dc->state->transform) == true) {
+    double tx = 0.0, ty = 0.0;
+    transform_get_translation(dc->state->transform, &tx, &ty);
+    pixmap_blit(&dp, dx + tx, dy + ty, &sp, sx, sy, width, height);
+  }
+  else
+  {
+    // Calculate output mesh
+    point_t p1 = point(dx, dy);
+    point_t p2 = point(dx + width, dy);
+    point_t p3 = point(dx + width, dy + height);
+    point_t p4 = point(dx, dy + height);
+
+    transform_apply(dc->state->transform, &p1);
+    transform_apply(dc->state->transform, &p2);
+    transform_apply(dc->state->transform, &p3);
+    transform_apply(dc->state->transform, &p4);
+
+    // Prepare transform
+    transform_t *inv_transform = transform_copy(dc->state->transform);
+    transform_inverse(inv_transform);
+
+    // Calculate AABB
+    int32_t aabb_min_x = min4(p1.x, p2.x, p3.x, p4.x);
+    int32_t aabb_min_y = min4(p1.y, p2.y, p3.y, p4.y);
+    int32_t aabb_max_x = max4(p1.x, p2.x, p3.x, p4.x);
+    int32_t aabb_max_y = max4(p1.y, p2.y, p3.y, p4.y);
+
+    // Correct AABBs
+    aabb_min_x = max(0, min(dc->width - 1, aabb_min_x));
+    aabb_max_x = max(0, min(dc->width - 1, aabb_max_x));
+    aabb_min_y = max(0, min(dc->height - 1, aabb_min_y));
+    aabb_max_y = max(0, min(dc->height - 1, aabb_max_y));
+
+    // Run through
+    for (int32_t x = aabb_min_x; x <= aabb_max_x; x++) {
+      for (int32_t y = aabb_min_y; y <= aabb_max_y; y++) {
+        point_t p = point(x, y);
+        transform_apply(inv_transform, &p);
+        // Get coords
+        double uvx = p.x + sx - dx;
+        double uvy = p.y + sy - dy;
+        if ((uvx <= -1.0) || (uvx >= (double)width) ||
+            (uvy <= -1.0) || (uvy >= (double)height)) {
+          continue;
+        }
+        int32_t pt_x = (int32_t)uvx;
+        int32_t pt_y = (int32_t)uvy;
+        double dec_x = uvx - (double)pt_x;
+        double dec_y = uvy - (double)pt_y;
+        color_t_ col11 =
+          pixmap_at(sp, pt_y, pt_x);
+        color_t_ col21 =
+          (pt_x + 1 < width) ?
+          pixmap_at(sp, pt_y, pt_x + 1) :
+          color_transparent_black;
+        color_t_ col12 =
+          (pt_y + 1 < height) ?
+          pixmap_at(sp, pt_y + 1, pt_x) :
+          color_transparent_black;
+        color_t_ col22 =
+          ((pt_x + 1 < width) && (pt_y + 1 < height)) ?
+          pixmap_at(sp, pt_y + 1, pt_x + 1) :
+          color_transparent_black;
+        double w11 = (1.0 - dec_x) * (1.0 - dec_y);
+        double w12 = (1.0 - dec_x) - w11;
+        double w21 = dec_x * (1.0 - dec_y);
+        double w22 = dec_x - w21;
+        uint8_t r =
+          col11.r * w11 + col12.r * w12 +
+          col21.r * w21 + col22.r * w22;
+        uint8_t g =
+          col11.g * w11 + col12.g * w12 +
+          col21.g * w21 + col22.g * w22;
+        uint8_t b =
+          col11.b * w11 + col12.b * w12 +
+          col21.b * w21 + col22.b * w22;
+        uint8_t a =
+          col11.a * w11 + col12.a * w12 +
+          col21.a * w21 + col22.a * w22;
+        color_t_ fill_color = color(a, r, g, b);
+        color_t_ final_color = alpha_blend(a, pixmap_at(dp, y, x), fill_color);
+        pixmap_at(dp, y, x) = final_color;
+      }
+    }
+  }
 }
 
 /* Direct pixel access */
@@ -1288,7 +1375,7 @@ canvas_get_pixel(
   const pixmap_t pm = surface_get_raw_pixmap((surface_t *)c->surface);
   if (pixmap_valid(pm) == true) {
     if ((x >= 0) && (x < pm.width) && (y >= 0) && (y < pm.height)) {
-      color = pixmap_at(pm, x, y);
+      color = pixmap_at(pm, y, x);
     }
   }
 
@@ -1308,7 +1395,7 @@ canvas_set_pixel(
   pixmap_t pm = surface_get_raw_pixmap(c->surface);
   if (pixmap_valid(pm) == true) {
     if ((x >= 0) && (x < pm.width) && (y >= 0) && (y < pm.height)) {
-      pixmap_at(pm, x, y) = color;
+      pixmap_at(pm, y, x) = color;
     }
   }
 }

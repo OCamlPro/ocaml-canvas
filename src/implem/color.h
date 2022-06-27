@@ -28,8 +28,15 @@ typedef struct color_t {
 #define color_black \
   ((color_t_){ .a = 255, .r = 0, .g = 0, .b = 0 })
 
+#define color_transparent_black \
+  ((color_t_){ .a = 0, .r = 0, .g = 0, .b = 0 })
+
 #define color_white \
   ((color_t_){ .a = 255, .r = 255, .g = 255, .b = 255 })
+
+#define color_transparent_white \
+  ((color_t_){ .a = 0, .r = 255, .g = 255, .b = 255 })
+
 
 #define color_of_int(_c) \
   ((color_t_){ .a = ((_c) >> 24) & 0xFF, \

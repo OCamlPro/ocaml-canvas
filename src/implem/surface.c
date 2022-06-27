@@ -274,67 +274,6 @@ surface_present(
   }
 }
 
-void
-surface_blit(
-  surface_t *ds,
-  int32_t dx,
-  int32_t dy,
-  const surface_t *ss,
-  int32_t sx,
-  int32_t sy,
-  int32_t width,
-  int32_t height)
-{
-  assert(ds != NULL);
-  assert(ds->data != NULL);
-  assert(ss != NULL);
-  assert(ss->data != NULL);
-
-  if (dx < 0) {
-    sx -= dx;
-    width += dx;
-    dx = 0;
-  }
-  if (dy < 0) {
-    sy -= dy;
-    height += dy;
-    dy = 0;
-  }
-
-  if (sx < 0) {
-    dx -= sx;
-    width += sx;
-    sx = 0;
-  }
-  if (sy < 0) {
-    dy -= sy;
-    height += sy;
-    sy = 0;
-  }
-
-  if (dx + width > ds->width) {
-    width = ds->width -dx;
-  }
-  if (dy + height > ds->height) {
-    height = ds->height -dy;
-  }
-
-  if (sx + width > ss->width) {
-    width = ss->width -sx;
-  }
-  if (sy + height > ss->height) {
-    height = ss->height -sy;
-  }
-
-  for (int32_t i = 0; i < height; ++i) {
-    for (int32_t j = 0; j < width; ++j) {
-      ds->data[(dy+i) * ds->width + (dx+j)] =
-        ss->data[(sy+i) * ss->width + (sx+j)];
-    }
-  }
-
-}
-
 pixmap_t
 surface_get_raw_pixmap(
   surface_t *s)

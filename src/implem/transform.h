@@ -11,6 +11,8 @@
 #ifndef __TRANSFORM_H
 #define __TRANSFORM_H
 
+#include <stdbool.h>
+
 #include "point.h"
 
 typedef struct transform_t transform_t;
@@ -38,6 +40,12 @@ transform_extract_ft(
   double *b,
   double *c,
   double *d);
+
+void
+transform_get_translation(
+  const transform_t *t,
+  double *e,
+  double *f);
 
 void
 transform_set(
@@ -96,5 +104,13 @@ transform_extract_scale(
   const transform_t *t,
   double *sx,
   double *sy);
+
+bool
+transform_is_identity(
+  const transform_t *t);
+
+bool
+transform_is_pure_translation(
+  const transform_t *t);
 
 #endif /* __TRANSFORM_H */
