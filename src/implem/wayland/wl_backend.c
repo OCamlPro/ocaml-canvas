@@ -45,11 +45,13 @@ _wl_get_time()
 {
   struct timespec ts;
 	clock_gettime(CLOCK_MONOTONIC, &ts);
-  return ts.tv_sec/1000000 + ts.tv_nsec/(1000);
+  return ts.tv_sec*1000000 + ts.tv_nsec/(1000);
 }
 
-void 
-_wl_find_resize_edge()
+static void 
+_wl_find_resize_edge(
+  void
+)
 {
   if (wl_back->focus_window->base.decorated && HAS_SERVER_DECORATION || wl_back->inside_decor_location != DECOR_REGION_OUTSIDE && wl_back->inside_decor_location != DECOR_REGION_BAR)
   {
@@ -71,7 +73,7 @@ _wl_find_resize_edge()
   wl_back->current_resize_edge = resizeEdge;
 }
 
-void 
+static void 
 _wl_change_cursor(
   const char* cursorName
 )
@@ -417,6 +419,8 @@ _wl_keyboard_key_handler(
 {
   assert(data != NULL);
   assert(keyboard != NULL);
+  assert(wl_back->xkb_state != NULL);
+
   if (wl_back->focus_window && wl_back->focus_window->base.visible) {
     wl_backend_t *wl_back = (wl_backend_t *)data;
     uint32_t pressedKeyCharacter = xkb_state_key_get_utf32(wl_back->xkb_state, key+8);
@@ -427,6 +431,25 @@ _wl_keyboard_key_handler(
     evt.desc.key.code = sym_to_keycode[key];
     evt.desc.key.char_ = pressedKeyCharacter;
     evt.desc.key.state = (state == WL_KEYBOARD_KEY_STATE_RELEASED) ? KEY_UP : KEY_DOWN;
+    
+    //modifiers
+    key_modifier_t mods = MOD_NONE;
+    if (xkb_state_mod_name_is_active(wl_back->xkb_state,XKB_MOD_NAME_SHIFT,XKB_STATE_MODS_EFFECTIVE))
+      mods |= MOD_SHIFT;
+    if (xkb_state_mod_name_is_active(wl_back->xkb_state,XKB_MOD_NAME_NUM,XKB_STATE_MODS_EFFECTIVE))
+      mods |= MOD_NUMLOCK;
+    if (xkb_state_mod_name_is_active(wl_back->xkb_state,XKB_MOD_NAME_CAPS,XKB_STATE_MODS_EFFECTIVE))
+      mods |= MOD_CAPSLOCK;
+    if (xkb_state_mod_name_is_active(wl_back->xkb_state,XKB_MOD_NAME_ALT,XKB_STATE_MODS_EFFECTIVE))
+      mods |= MOD_ALT;
+    if (xkb_state_mod_name_is_active(wl_back->xkb_state,XKB_MOD_NAME_CTRL,XKB_STATE_MODS_EFFECTIVE))
+      mods |= MOD_CTRL;
+    if (xkb_state_mod_name_is_active(wl_back->xkb_state,XKB_MOD_NAME_LOGO,XKB_STATE_MODS_EFFECTIVE))
+      mods |= MOD_META;
+    
+    evt.desc.key.modifiers = mods;
+
+
     event_notify(wl_back->listener,&evt);
   }
 }

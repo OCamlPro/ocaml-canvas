@@ -24,12 +24,12 @@
 #include "xdg-decor-protocol.h"
 
 #include "../util.h"
+#include "../unicode.h"
 #include "wl_backend.h"
 #include "wl_backend_internal.h"
 #include "wl_target.h"
 #include "wl_window_internal.h"
 #include "wl_memory.h"
-
 
 
 static void
@@ -46,6 +46,8 @@ _wl_xdg_surface_configure(
   struct xdg_surface *xdg_surface,
   uint32_t serial)
 {
+    assert(data != NULL);
+    assert(xdg_surface != NULL);
     wl_window_t *window = (wl_window_t *)data;
     xdg_surface_ack_configure(xdg_surface, serial);
 }
@@ -63,6 +65,8 @@ _wl_xdg_toplevel_configure_handler(
   int32_t height,
   struct wl_array *states)
 {
+  assert(data != NULL);
+  assert(xdg_toplevel != NULL);
   struct wl_window_t *wl_window = data;
   printf("top level configure: %dx%d\n", width, height);
   uint8_t* p;
@@ -119,6 +123,8 @@ _wl_xdg_toplevel_close_handler(
   void *data,
   struct xdg_toplevel *xdg_toplevel)
 {
+  assert(data != NULL);
+  assert(xdg_toplevel != NULL);
   struct wl_window_t *wl_window = data;
   event_t evt;
   evt.type = EVENT_CLOSE;
@@ -156,8 +162,7 @@ wl_window_create(
   window->base.y = clip_i32_to_i16(y);
   window->base.width = clip_i32_to_i16(max(1, width));
   window->base.height = clip_i32_to_i16(max(1, height));
-
-  window->title = title;
+  window->title = strndup(title,strlen(title));
   window->pending_resize = false;
 
   window->wl_surface = wl_compositor_create_surface(wl_back->compositor);

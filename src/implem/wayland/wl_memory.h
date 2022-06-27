@@ -11,6 +11,8 @@
 #ifndef __WL_MEMORY_H
 #define __WL_MEMORY_H
 
+#include "stdint.h"
+
 #include <wayland-client.h>
 
 struct wl_buffer* wl_create_buffer(
