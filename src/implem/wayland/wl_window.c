@@ -155,6 +155,10 @@ wl_window_create(
   if (window == NULL) {
     return NULL;
   }
+  
+  //Allows creation of frameless windows...
+  if (title == NULL)
+    title = "";
 
   window->base.visible = false;
   window->base.decorated = decorated;
@@ -162,7 +166,10 @@ wl_window_create(
   window->base.y = clip_i32_to_i16(y);
   window->base.width = clip_i32_to_i16(max(1, width));
   window->base.height = clip_i32_to_i16(max(1, height));
-  window->title = strndup(title,strlen(title));
+  //Magic 256...
+  printf("%s\n",title);
+  window->title = strndup(title,256);
+  printf("%s\n",title);
   window->pending_resize = false;
 
   window->wl_surface = wl_compositor_create_surface(wl_back->compositor);
