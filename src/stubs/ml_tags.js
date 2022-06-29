@@ -8,6 +8,12 @@
 /*                                                                        */
 /**************************************************************************/
 
+//Provides: STYLE_TAG
+var STYLE_TAG = {
+  COLOR    : 0,
+  GRADIENT : 1
+};
+
 //Provides: SLANT_TAG
 var SLANT_TAG = {
   ROMAN   : 0,

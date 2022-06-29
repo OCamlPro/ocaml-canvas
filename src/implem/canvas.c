@@ -30,6 +30,8 @@
 #include "state.h"
 #include "font_desc.h"
 #include "font.h"
+#include "fill_style.h"
+#include "gradient.h"
 #include "transform.h"
 #include "path.h"
 #include "arc.h"
@@ -554,34 +556,17 @@ canvas_set_line_width(
 }
 
 color_t_
-canvas_get_fill_color(
-  const canvas_t *canvas)
-{
-  assert(canvas != NULL);
-  assert(canvas->state != NULL);
-
-  return canvas->state->fill_color;
-}
-
-void
-canvas_set_fill_color(
-  canvas_t *canvas,
-  color_t_ color)
-{
-  assert(canvas != NULL);
-  assert(canvas->state != NULL);
-
-  canvas->state->fill_color = color;
-}
-
-color_t_
 canvas_get_stroke_color(
   const canvas_t *canvas)
 {
   assert(canvas != NULL);
   assert(canvas->state != NULL);
 
-  return canvas->state->stroke_color;
+  if (canvas->state->stroke_style.fill_type == FILL_TYPE_COLOR) {
+    return canvas->state->stroke_style.content.color;
+  } else {
+    return color_of_int(0);
+  }
 }
 
 void
@@ -592,7 +577,92 @@ canvas_set_stroke_color(
   assert(canvas != NULL);
   assert(canvas->state != NULL);
 
-  canvas->state->stroke_color = color;
+  fill_style_destroy(&canvas->state->stroke_style);
+  fill_style_t style;
+  style.fill_type = FILL_TYPE_COLOR;
+  style.content.color = color;
+  canvas->state->stroke_style = style;
+}
+
+fill_style_t
+canvas_get_stroke_style(
+  const canvas_t *canvas)
+{
+  assert(canvas != NULL);
+  assert(canvas->state != NULL);
+
+  return fill_style_copy(&canvas->state->stroke_style);
+}
+
+void
+canvas_set_stroke_gradient(
+  canvas_t *canvas,
+  gradient_t *gradient)
+{
+  assert(canvas != NULL);
+  assert(canvas->state != NULL);
+  assert(gradient != NULL);
+
+  fill_style_destroy(&canvas->state->stroke_style);
+  fill_style_t style;
+  style.fill_type = FILL_TYPE_GRADIENT;
+  style.content.gradient = gradient;
+  canvas->state->stroke_style = style;
+}
+
+color_t_
+canvas_get_fill_color(
+  const canvas_t *canvas)
+{
+  assert(canvas != NULL);
+  assert(canvas->state != NULL);
+
+  if (canvas->state->fill_style.fill_type == FILL_TYPE_COLOR) {
+    return canvas->state->fill_style.content.color;
+  } else {
+    return color_of_int(0);
+  }
+}
+
+void
+canvas_set_fill_color(
+  canvas_t *canvas,
+  color_t_ color)
+{
+  assert(canvas != NULL);
+  assert(canvas->state != NULL);
+
+  fill_style_destroy(&canvas->state->fill_style);
+  fill_style_t style;
+  style.fill_type = FILL_TYPE_COLOR;
+  style.content.color = color;
+  canvas->state->fill_style = style;
+}
+
+fill_style_t
+canvas_get_fill_style(
+  const canvas_t *canvas)
+{
+  assert(canvas != NULL);
+  assert(canvas->state != NULL);
+
+  return fill_style_copy(&canvas->state->fill_style);
+}
+
+void
+canvas_set_fill_gradient(
+  canvas_t *canvas,
+  gradient_t *gradient)
+{
+  assert(canvas != NULL);
+  assert(canvas->state != NULL);
+  assert(gradient != NULL);
+
+  fill_style_destroy(&canvas->state->fill_style);
+  fill_style_t style;
+  style.fill_type = FILL_TYPE_GRADIENT;
+  style.content.gradient = gradient;
+  canvas->state->fill_style = style;
 }
 
 double
@@ -943,8 +1013,8 @@ canvas_fill(
   rect_t bbox = rect(point(0.0, 0.0), point(c->width, c->height));
 
   if (polygonize(c->path, p, &bbox) == true) {
-    poly_render(c->surface, p, &bbox, c->state->fill_color,
-                c->state->global_alpha, non_zero);
+    poly_render(c->surface, p, &bbox, c->state->fill_style,
+                c->state->global_alpha, non_zero, c->state->transform);
   }
 
   polygon_destroy(p);
@@ -968,8 +1038,8 @@ canvas_stroke(
   rect_t bbox = rect(point(0.0, 0.0), point(c->width, c->height));
 
   if (polygonize_outline(c->path, c->state->line_width, p, &bbox) == true) {
-    poly_render(c->surface, p, &bbox, c->state->stroke_color,
-                c->state->global_alpha, true);
+    poly_render(c->surface, p, &bbox, c->state->stroke_style,
+                c->state->global_alpha, true, c->state->transform);
   }
 
   polygon_destroy(p);
@@ -1019,8 +1089,8 @@ canvas_fill_rect(
                      point(max4(p1.x, p2.x, p3.x, p4.x),
                            max4(p1.y, p2.y, p3.y, p4.y)));
 
-  poly_render(c->surface, p, &bbox, c->state->fill_color,
-              c->state->global_alpha ,false);
+  poly_render(c->surface, p, &bbox, c->state->fill_style,
+              c->state->global_alpha, false, c->state->transform);
 
   polygon_destroy(p);
 }
@@ -1070,8 +1140,8 @@ canvas_stroke_rect(
   }
 
   polygon_offset(p, tp, c->state->line_width);
-  poly_render(c->surface, tp, &bbox, c->state->stroke_color,
-              c->state->global_alpha, true);
+  poly_render(c->surface, tp, &bbox, c->state->stroke_style,
+              c->state->global_alpha, true, c->state->transform);
 
   polygon_destroy(tp);
   polygon_destroy(p);
@@ -1135,8 +1205,8 @@ canvas_fill_text(
     polygon_reset(p);
     if (font_char_as_poly(c->font, c->state->transform,
                           chr, &pen, p, &bbox) == true) {
-      poly_render(c->surface, p, &bbox, c->state->fill_color,
-                  c->state->global_alpha, true);
+      poly_render(c->surface, p, &bbox, c->state->fill_style,
+                  c->state->global_alpha, true, c->state->transform);
     }
   }
 
@@ -1174,8 +1244,8 @@ canvas_stroke_text(
     if (font_char_as_poly_outline(c->font, c->state->transform,
                                   chr, c->state->line_width,
                                   &pen, p, &bbox) == true) {
-      poly_render(c->surface, p, &bbox, c->state->stroke_color,
-                  c->state->global_alpha, true);
+      poly_render(c->surface, p, &bbox, c->state->stroke_style,
+                  c->state->global_alpha, true, c->state->transform);
     }
   }
 

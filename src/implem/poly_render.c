@@ -18,6 +18,10 @@
 #include "point.h"
 #include "rect.h"
 #include "color.h"
+#include "transform.h"
+#include "fill_style.h"
+#include "gradient.h"
+#include "gradient_internal.h"
 #include "polygon.h"
 #include "polygon_internal.h"
 #include "surface.h"
@@ -394,20 +398,29 @@ poly_render(
   surface_t *s,
   const polygon_t *p,
   const rect_t *bbox,
-  color_t_ color,
+  fill_style_t fill_style,
   double global_alpha,
-  bool non_zero)
+  bool non_zero,
+  transform_t *transform)
 {
   assert(s != NULL);
   assert(s->data != NULL);
   assert(p != NULL);
   assert(bbox != NULL);
+  assert((fill_style.fill_type != FILL_TYPE_GRADIENT) ||
+         (fill_style.content.gradient != NULL));
 
   int alpha = 0;
 
   polygon_t *line_poly = polygon_create(1024, 16);
   polygon_t *pixel_poly = polygon_create(1024, 16);
   polygon_t *tmp_poly = polygon_create(1024, 16);
+
+  transform_t *inverse;
+  if (fill_style.fill_type == FILL_TYPE_GRADIENT) {
+    inverse = transform_copy(transform);
+    transform_inverse(inverse);
+  }
 
   for (int i = max((int)bbox->p1.y, 0);
        i < min((int)(bbox->p2.y + 1.0), s->height); ++i) {
@@ -442,8 +455,16 @@ poly_render(
         // only if this pixel is simple
         calculate = is_complex;
       }
-      int ga = fastround(global_alpha * 256.0);
-      int draw_alpha = alpha * ga / 256;
+      color_t_ color = color_black;
+      if (fill_style.fill_type == FILL_TYPE_COLOR) {
+        color = fill_style.content.color;
+      }
+      else if (fill_style.fill_type == FILL_TYPE_GRADIENT) {
+        color =
+          gradient_evaluate_pos(fill_style.content.gradient, j, i, inverse);
+      }
+      int draw_alpha =
+        (alpha * fastround(global_alpha * 256.0) * color.a) / (256 * 255);
       // Apply the coverage to the pixel
       // Only do this logic if there's something to apply
       if (draw_alpha == 255) {
@@ -453,6 +474,10 @@ poly_render(
       }
     }
     free(complex);
+  }
+
+  if (fill_style.fill_type == FILL_TYPE_GRADIENT) {
+    transform_destroy(inverse);
   }
 
   polygon_destroy(tmp_poly);

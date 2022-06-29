@@ -219,6 +219,29 @@ function ml_canvas_image_data_export_png(data, filename) {
 
 
 
+/* Gradients */
+
+//Provides: ml_canvas_create_linear_gradient
+function ml_canvas_create_linear_gradient(canvas, pos1, pos2) {
+  return canvas.ctxt.createLinearGradient(pos1[1], pos1[2], pos2[1], pos2[2]);
+}
+
+//Provides: ml_canvas_create_radial_gradient
+function ml_canvas_create_radial_gradient(canvas,
+                                          center1, rad1,
+                                          center2, rad2) {
+  return canvas.ctxt.createRadialGradient(center1[1], center1[2], rad1,
+                                          center2[1], center2[2], rad2);
+}
+
+//Provides: ml_canvas_gradient_add_color_stop
+//Requires: _color_of_int
+function ml_canvas_gradient_add_color_stop(grad, color, pos) {
+  grad.addColorStop(pos, _color_of_int(color));
+}
+
+
+
 /* Canvas */
 
 /* Comparison */
@@ -618,7 +641,10 @@ function ml_canvas_set_line_width(canvas, width) {
 //Provides: ml_canvas_get_stroke_color
 //Requires: _int_of_color
 function ml_canvas_get_stroke_color(canvas) {
-  return _int_of_color(canvas.ctxt.strokeStyle);
+  if (typeof(canvas.ctxt.strokeStyle) == "string")
+    return _int_of_color(canvas.ctxt.strokeStyle);
+  else
+    return 0;
 }
 
 //Provides: ml_canvas_set_stroke_color
@@ -627,10 +653,55 @@ function ml_canvas_set_stroke_color(canvas, color) {
   canvas.ctxt.strokeStyle = _color_of_int(color);
 }
 
+//Provides: ml_canvas_set_stroke_gradient
+function ml_canvas_set_stroke_gradient(canvas, grad) {
+  canvas.ctxt.strokeStyle = grad;
+}
+
+//Provides: ml_canvas_set_stroke_style
+//Requires: _color_of_int,STYLE_TAG
+function ml_canvas_set_stroke_style(canvas, style) {
+  switch(style[0])
+  {
+    case STYLE_TAG.COLOR:
+      canvas.ctxt.strokeStyle = _color_of_int(style[1]);
+      break;
+    case STYLE_TAG.GRADIENT:
+      canvas.ctxt.strokeStyle = style[1];
+      break;
+    default:
+      break;
+  }
+}
+
+//Provides: ml_canvas_get_stroke_style
+//Requires: STYLE_TAG
+function ml_canvas_get_stroke_style(canvas)
+{
+  var st =  canvas.ctxt.strokeStyle;
+  var a = [];
+  if (typeof(st) == "string")
+  {
+    a[0] = STYLE_TAG.COLOR;
+    a[1] = st;
+    return a;
+  }
+  else
+  {
+    a[0] = STYLE_TAG.GRADIENT;
+    a[1] = st;
+    return a;
+  }
+}
+
+
 //Provides: ml_canvas_get_fill_color
 //Requires: _int_of_color
 function ml_canvas_get_fill_color(canvas) {
-  return _int_of_color(canvas.ctxt.fillStyle);
+  if (typeof(canvas.ctxt.fillStyle) == "string")
+    return _int_of_color(canvas.ctxt.fillStyle);
+  else
+    return 0;
 }
 
 //Provides: ml_canvas_set_fill_color
@@ -647,6 +718,46 @@ function ml_canvas_get_global_alpha(canvas) {
 //Provides: ml_canvas_set_global_alpha
 function ml_canvas_set_global_alpha(canvas, global_alpha) {
   canvas.ctxt.globalAlpha = global_alpha;
+}
+
+//Provides: ml_canvas_set_fill_gradient
+function ml_canvas_set_fill_gradient(canvas, grad) {
+  canvas.ctxt.fillStyle = grad;
+}
+
+//Provides: ml_canvas_set_fill_style
+//Requires: _color_of_int,STYLE_TAG
+function ml_canvas_set_fill_style(canvas, style) {
+  switch(style[0])
+  {
+    case STYLE_TAG.COLOR:
+      canvas.ctxt.fillStyle = _color_of_int(style[1]);
+      break;
+    case STYLE_TAG.GRADIENT:
+      canvas.ctxt.fillStyle = style[1];
+      break;
+    default:
+      break;
+  }
+}
+
+//Provides: ml_canvas_get_fill_style
+function ml_canvas_get_fill_style(canvas)
+{
+  var st =  canvas.ctxt.fillStyle;
+  var a = [];
+  if (typeof(st) == "string")
+  {
+    a[0] = 0;
+    a[1] = st;
+    return a;
+  }
+  else
+  {
+    a[0] = 1;
+    a[1] = st;
+    return a;
+  }
 }
 
 //Provides: ml_canvas_set_font

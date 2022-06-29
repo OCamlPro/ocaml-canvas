@@ -8,31 +8,50 @@
 /*                                                                        */
 /**************************************************************************/
 
-#ifndef __POLY_RENDER_H
-#define __POLY_RENDER_H
+#ifndef __GRADIENT_H
+#define __GRADIENT_H
 
-#include <stdint.h>
 #include <stdbool.h>
 
-#include "rect.h"
+#include "object.h"
 #include "color.h"
 #include "transform.h"
-#include "fill_style.h"
-#include "polygon.h"
-#include "surface.h"
+
+typedef struct gradient_t gradient_t;
+
+DECLARE_OBJECT_METHODS(gradient_t, gradient)
+
+gradient_t *
+gradient_create_linear(
+  double pos1_x,
+  double pos1_y,
+  double pos2_x,
+  double pos2_y);
+
+gradient_t *
+gradient_create_radial(
+  double center1_x,
+  double center1_y,
+  double rad1,
+  double center2_x,
+  double center2_y,
+  double rad2);
+
+bool
+gradient_add_color_stop(
+  gradient_t *gradient,
+  color_t_ color,
+  double pos);
+
+color_t_
+gradient_evaluate_pos(
+  const gradient_t *gradient,
+  double pos_x,
+  double pos_y,
+  const transform_t *inverse);
 
 void
-poly_render_init(
-  void);
+gradient_set_destroy_callback(
+  void (*callback)(gradient_t *));
 
-void
-poly_render(
-  surface_t *s,
-  const polygon_t *p,
-  const rect_t *bbox,
-  fill_style_t fill_style,
-  double global_alpha,
-  bool non_zero,
-  transform_t *transform);
-
-#endif /* __POLY_RENDER_H */
+#endif /* __GRADIENT_H */

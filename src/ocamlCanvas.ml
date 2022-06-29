@@ -26,7 +26,11 @@ module Color = struct
     else if i > 0xFFFFFF then 0xFFFFFF
     else i
 
-  let of_rgb r g b = (clip_8 r) * 0x10000 + (clip_8 g) * 0x100 + (clip_8 b)
+  let of_rgb r g b =
+    0xFF000000 + (clip_8 r) * 0x10000 + (clip_8 g) * 0x100 + (clip_8 b)
+  let of_argb a r g b =
+    (clip_8 a) * 0x1000000 + (clip_8 r) * 0x10000 +
+    (clip_8 g) * 0x100 + (clip_8 b)
   let to_rgb c = (c / 0x10000 mod 0x100), (c / 0x100 mod 0x100), (c mod 0x100)
   let of_int i = clip_24 i
   let to_int c = c
@@ -37,15 +41,15 @@ module Color = struct
     colors := StringMap.add (String.lowercase_ascii name) c !colors;
     c
 
-  let black = define_color "black" 0x000000
-  let white = define_color "white" 0xFFFFFF
-  let blue = define_color "blue" 0x0000FF
-  let cyan = define_color "cyan" 0x00FFFF
-  let green = define_color "green" 0x008000
-  let lime = define_color "lime" 0x00FF00
-  let orange = define_color "orange" 0xFFA500
-  let pink = define_color "pink" 0xFFC0CB
-  let red = define_color "red" 0xFF0000
+  let black = define_color "black" 0xFF000000
+  let white = define_color "white" 0xFFFFFFFF
+  let blue = define_color "blue" 0xFF0000FF
+  let cyan = define_color "cyan" 0xFF00FFFF
+  let green = define_color "green" 0xFF008000
+  let lime = define_color "lime" 0xFF00FF00
+  let orange = define_color "orange" 0xFFFFA500
+  let pink = define_color "pink" 0xFFFFC0CB
+  let red = define_color "red" 0xFFFF0000
 
   let of_string s =
     if String.length s < 1 then
@@ -101,9 +105,41 @@ module ImageData = struct
 
 end
 
+module Gradient = struct
+
+  type t
+
+  external addColorStop : t -> Color.t -> float -> unit
+    = "ml_canvas_gradient_add_color_stop"
+
+end
+
 module Canvas = struct
 
   type 'a t
+
+  type style =
+    | ColorStyle of Color.t
+    | GradientStyle of Gradient.t
+
+  (* Gradients *)
+
+  external createLinearGradient :
+    'a t -> pos1:(float * float) -> pos2:(float * float) -> Gradient.t
+    = "ml_canvas_create_linear_gradient"
+
+  external createLinearGradient_ :
+    'a t -> (float * float) -> (float * float) -> Gradient.t
+    = "ml_canvas_create_linear_gradient"
+
+  external createRadialGradient :
+    'a t -> center1:(float * float) -> rad1:float ->
+    center2:(float * float) -> rad2:float -> Gradient.t
+    = "ml_canvas_create_radial_gradient"
+
+  external createRadialGradient_ :
+    'a t -> (float * float) -> float -> (float * float) -> float -> Gradient.t
+    = "ml_canvas_create_radial_gradient"
 
   (* Comparison *)
 
@@ -225,11 +261,29 @@ module Canvas = struct
   external setStrokeColor : 'a t -> Color.t -> unit
     = "ml_canvas_set_stroke_color"
 
+  external getStrokeStyle : 'a t -> style
+    = "ml_canvas_get_stroke_style"
+
+  external setStrokeStyle : 'a t -> style -> unit
+    = "ml_canvas_set_stroke_style"
+
+  external setStrokeGradient : 'a t -> Gradient.t -> unit
+    = "ml_canvas_set_stroke_gradient"
+
   external getFillColor : 'a t -> Color.t
     = "ml_canvas_get_fill_color"
 
   external setFillColor : 'a t -> Color.t -> unit
     = "ml_canvas_set_fill_color"
+
+  external getFillStyle : 'a t -> style
+    = "ml_canvas_get_fill_style"
+
+  external setFillStyle : 'a t -> style -> unit
+    = "ml_canvas_set_fill_style"
+
+  external setFillGradient : 'a t -> Gradient.t -> unit
+    = "ml_canvas_set_fill_gradient"
 
   external getGlobalAlpha : 'a t -> float
     = "ml_canvas_get_global_alpha"

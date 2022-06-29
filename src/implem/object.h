@@ -8,6 +8,9 @@
 /*                                                                        */
 /**************************************************************************/
 
+#ifndef __OBJECT_H
+#define __OBJECT_H
+
 #include <stdlib.h>
 #include <assert.h>
 
@@ -30,7 +33,7 @@ void * prefix##_get_data(type *o);                                            \
 
 #define IMPLEMENT_OBJECT_METHODS(type,prefix,destroy)                         \
                                                                               \
-type * prefix##_alloc(void)                                                   \
+static type * prefix##_alloc(void)                                            \
 {                                                                             \
   type *o = (type *)malloc(sizeof(type));                                     \
   if (o != NULL) {                                                            \
@@ -73,3 +76,5 @@ void * prefix##_get_data(type *o)                                             \
                                                                               \
   return ((object_t *)o)->data;                                               \
 }
+
+#endif /* __OBJECT_H */

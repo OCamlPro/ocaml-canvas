@@ -8,31 +8,33 @@
 /*                                                                        */
 /**************************************************************************/
 
-#ifndef __POLY_RENDER_H
-#define __POLY_RENDER_H
+#ifndef __FILL_STYLE_H
+#define __FILL_STYLE_H
 
-#include <stdint.h>
-#include <stdbool.h>
-
-#include "rect.h"
 #include "color.h"
-#include "transform.h"
-#include "fill_style.h"
-#include "polygon.h"
-#include "surface.h"
+#include "gradient.h"
+
+typedef enum fill_type_t {
+  FILL_TYPE_COLOR    = 0,
+  FILL_TYPE_GRADIENT = 1
+} fill_type_t;
+
+typedef union fill_content_t {
+  color_t_ color;
+  gradient_t *gradient;
+} fill_content_t;
+
+typedef struct fill_style_t {
+  fill_type_t fill_type;
+  fill_content_t content;
+} fill_style_t;
 
 void
-poly_render_init(
-  void);
+fill_style_destroy(
+  fill_style_t *fs);
 
-void
-poly_render(
-  surface_t *s,
-  const polygon_t *p,
-  const rect_t *bbox,
-  fill_style_t fill_style,
-  double global_alpha,
-  bool non_zero,
-  transform_t *transform);
+fill_style_t
+fill_style_copy(
+  const fill_style_t *fs);
 
-#endif /* __POLY_RENDER_H */
+#endif /*__FILL_STYLE_H */
