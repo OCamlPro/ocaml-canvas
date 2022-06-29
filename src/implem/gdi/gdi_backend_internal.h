@@ -31,7 +31,7 @@ typedef struct gdi_backend_t {
   event_listener_t *listener;
 
   double musec_per_tick;
-  int64_t last_frame;
+  int64_t next_frame;
 
 } gdi_backend_t;
 
