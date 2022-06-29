@@ -86,6 +86,16 @@ gdi_backend_init(
     return false;
   }
 
+  /* Disable SEH for timer procedures (security recommendation) */
+  if (SetUserObjectInformation(GetCurrentProcess(),
+                               UOI_TIMERPROC_EXCEPTION_SUPPRESSION,
+                               (PVOID)(BOOL[1]){ FALSE },
+                               sizeof(BOOL)) == FALSE) {
+    ht_delete(gdi_back->hwnd_to_win);
+    free(gdi_back);
+    return false;
+  }
+
   /* Initialize the high performance counter */
   LARGE_INTEGER f;
   if (!QueryPerformanceFrequency(&f) || f.QuadPart == 0) {
@@ -290,32 +300,6 @@ _gdi_mouse_event_state(
   return (button_state_t)0;
 }
 
-// TODO: segfault here when closing window
-static void
-_gdi_process_events()
-{
-  MSG msg;
-  int64_t cur_time;
-
-  if (!gdi_back->modal_op && PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-    if (msg.message == WM_QUIT) {
-      gdi_back->running = false;
-    } else {
-      TranslateMessage(&msg); // translates WM_KEY* messages to WM_CHAR
-      DispatchMessage(&msg);
-    }
-  } else {
-    MsgWaitForMultipleObjects(0, NULL, TRUE, 1, QS_ALLEVENTS);
-  }
-
-  cur_time = gdi_get_time();
-
-  if (cur_time - gdi_back->last_frame >= 1000000/60) {
-    gdi_back->last_frame = cur_time;
-    _gdi_render_all_windows();
-  }
-}
-
 void
 gdi_backend_run(
   void)
@@ -324,9 +308,29 @@ gdi_backend_run(
   assert(gdi_back->running == false);
 
   gdi_back->running = true;
+  gdi_back->next_frame = gdi_get_time();
 
   while (gdi_back->running) {
-    _gdi_process_events();
+    MSG msg;
+    if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+      if (msg.message == WM_QUIT) {
+        gdi_back->running = false;
+      } else {
+        TranslateMessage(&msg); // translates WM_KEY* messages to WM_CHAR
+        DispatchMessage(&msg);
+      }
+    } else {
+      int64_t cur_time = gdi_get_time();
+      int64_t timeout = (gdi_back->next_frame - cur_time) / 1000;
+      if ((timeout < 0) ||
+          (WAIT_TIMEOUT == MsgWaitForMultipleObjects(0, NULL, TRUE, timeout,
+                                                     QS_ALLEVENTS))) {
+        _gdi_render_all_windows();
+        do {
+          gdi_back->next_frame += 1000000 / 60;
+        } while (gdi_back->next_frame < cur_time);
+      }
+    }
   }
 }
 
@@ -346,9 +350,14 @@ _gdi_modal_timer_proc(
   UINT_PTR id,
   DWORD time)
 {
-  int cpt = 10;
-  while (gdi_back->running && gdi_back->modal_op && cpt--)
-    _gdi_process_events();
+  int64_t cur_time = gdi_get_time();
+  int64_t timeout = (gdi_back->next_frame - cur_time) / 1000;
+  if (timeout <= 4) {
+    _gdi_render_all_windows();
+    do {
+      gdi_back->next_frame += 1000000 / 60;
+    } while (gdi_back->next_frame < cur_time);
+  }
 }
 
 static LRESULT CALLBACK
@@ -388,10 +397,11 @@ _gdi_window_proc(
 
   switch (msg) {
 
+    case WM_ENTERIDLE:
     case WM_ENTERSIZEMOVE:
       if (!gdi_back->modal_op) {
         gdi_back->modal_op = true;
-        gdi_back->modal_timer = SetTimer(NULL, 0, 10, _gdi_modal_timer_proc);
+        gdi_back->modal_timer = SetTimer(NULL, 0, 1, _gdi_modal_timer_proc);
         if (gdi_back->modal_timer == 0)
           printf("Set timer failed\n");
       }
@@ -441,8 +451,6 @@ _gdi_window_proc(
         evt.target = (void *)w;
         evt.desc.resize.width = width;
         evt.desc.resize.height = height;
-printf("WM_WINDOWPOSCHANGED\n");
-fflush(stdout);
         event_notify(listener, &evt);
         }
       return 0;

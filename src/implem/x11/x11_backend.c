@@ -25,6 +25,7 @@
 #include <xcb/xcb_image.h>
 #include <xcb/xcb_keysyms.h>
 
+#include "../util.h"
 #include "../hashtable.h"
 #include "../event.h"
 #include "x11_keysym.h"
@@ -487,9 +488,14 @@ x11_backend_run(
   uint8_t event_type;
   event_t evt;
   fd_set fds;
-  struct timeval to = { .tv_sec = 0, .tv_usec = 16667 };
+
+  struct timespec ts_current = { .tv_sec = 0, .tv_nsec = 0 };
+  struct timespec ts_next_frame = { .tv_sec = 0, .tv_nsec = 0 };
+  struct timeval tv_frame_timeout = { .tv_sec = 0, .tv_usec = 0 };
 
   FD_ZERO(&fds);
+
+  clock_gettime(CLOCK_MONOTONIC, &ts_next_frame);
 
   x11_back->running = true;
 
@@ -738,16 +744,30 @@ x11_backend_run(
 
 
       free(e.generic); // Beware, when using extended events (generic), have to free more data
-    } else {
-      /* Idle */
 
-      FD_SET(x11_back->fd, &fds);
-      if (select(1, &fds, NULL, NULL, &to) == 0) {
-        to.tv_usec = 16667;
+    } else {
+      /* Update remaining time to wait */
+      clock_gettime(CLOCK_MONOTONIC, &ts_current);
+      tv_frame_timeout.tv_usec =
+        (ts_next_frame.tv_sec - ts_current.tv_sec) * 1000000 +
+        (ts_next_frame.tv_nsec - ts_current.tv_nsec) / 1000;
+
+      /* Wait for new events or frame */
+      if ((tv_frame_timeout.tv_usec < 0) ||
+          (FD_SET(x11_back->fd, &fds),
+           select(1, &fds, NULL, NULL, &tv_frame_timeout) == 0)) {
         _x11_render_all_windows();
-      } else {
-        // should set to.tv_usec to remaining time
-        // based on remaining time
+
+        /* Compute time until next frame, skip frames if needed */
+        do {
+          ts_next_frame.tv_nsec += 1000000000 / 60;
+          if (ts_next_frame.tv_nsec >= 1000000000) {
+            ts_next_frame.tv_nsec -= 1000000000;
+            ts_next_frame.tv_sec += 1;
+          }
+        } while ((ts_next_frame.tv_sec < ts_current.tv_sec) ||
+                 ((ts_next_frame.tv_sec == ts_current.tv_sec) &&
+                  (ts_next_frame.tv_nsec < ts_current.tv_nsec)));
       }
     }
   }
