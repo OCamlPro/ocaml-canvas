@@ -11,6 +11,11 @@
 #ifndef __ML_TAGS_H
 #define __ML_TAGS_H
 
+typedef enum style_tag_t {
+  TAG_COLOR = 0,
+  TAG_GRADIENT = 1
+} style_tag_t;
+
 typedef enum slant_tag_t {
   TAG_ROMAN   = 0,
   TAG_ITALIC  = 1,

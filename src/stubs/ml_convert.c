@@ -27,6 +27,7 @@
 #include "../implem/pixmap.h"
 #include "../implem/color.h"
 #include "../implem/font_desc.h"
+#include "../implem/fill_style.h"
 
 #include "ml_tags.h"
 #include "ml_convert.h"
@@ -684,6 +685,84 @@ Nullify_val(
   CAMLparam1(mlValue);
   *((void **)Data_custom_val(mlValue)) = NULL;
   CAMLreturn0;
+}
+#include <stdio.h>
+static void
+_ml_canvas_gradient_finalize(
+  value mlGradient)
+{
+  gradient_t *gradient = *((gradient_t **)Data_custom_val(mlGradient));
+  if (gradient != NULL) {
+printf("Release\n"); fflush(stdout);
+    gradient_release(gradient);
+  }
+}
+
+static struct custom_operations _ml_gradient_ops = {
+  "com.ocamlpro.ocaml-canvas.gradient",
+  _ml_canvas_gradient_finalize,
+  custom_compare_default,
+  custom_hash_default,
+  custom_serialize_default,
+  custom_deserialize_default,
+  custom_compare_ext_default,
+#if OCAML_VERSION >= 40800
+  custom_fixed_length_default
+#endif
+};
+
+value
+Val_gradient(
+  gradient_t *gradient)
+{
+  CAMLparam0();
+  CAMLlocal1(mlGradient);
+  value *mlGradient_ptr = (value *)gradient_get_data(gradient);
+  if (mlGradient_ptr != NULL) {
+    mlGradient = *mlGradient_ptr;
+  } else {
+    mlGradient =
+      caml_alloc_custom(&_ml_gradient_ops, sizeof(gradient_t *), 0, 1);
+    *((gradient_t **)Data_custom_val(mlGradient)) = gradient_retain(gradient);
+    mlGradient_ptr = (value *)calloc(1, sizeof(value));
+    *mlGradient_ptr = mlGradient;
+    gradient_set_data(gradient, (void*)mlGradient_ptr);
+    caml_register_generational_global_root(mlGradient_ptr);
+  }
+  CAMLreturn(mlGradient);
+}
+
+gradient_t *
+Gradient_val(
+  value mlGradient)
+{
+  CAMLparam1(mlGradient);
+  gradient_t *gradient = *((gradient_t **)Data_custom_val(mlGradient));
+  if (gradient == NULL) {
+    caml_raise_constant(*caml_named_value("gradient_destroyed"));
+  }
+  CAMLreturnT(gradient_t *, gradient);
+}
+
+value
+Val_style(
+  fill_style_t style)
+{
+  CAMLparam0();
+  CAMLlocal1(mlStyle);
+  switch (style.fill_type)
+  {
+  case FILL_TYPE_COLOR:
+    mlStyle = caml_alloc(1,TAG_COLOR);
+    Store_field(mlStyle,0,Val_int(color_to_int(style.content.color)));
+    break;
+  case FILL_TYPE_GRADIENT:
+    mlStyle = caml_alloc(1,TAG_GRADIENT);
+    Store_field(mlStyle,0,Val_gradient(style.content.gradient));
+  default:
+    break;
+  }
+  CAMLreturn(mlStyle);
 }
 
 value

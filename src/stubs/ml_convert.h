@@ -20,6 +20,8 @@
 #include "../implem/event.h"
 #include "../implem/pixmap.h"
 #include "../implem/font_desc.h"
+#include "../implem/gradient.h"
+#include "../implem/fill_style.h"
 
 #if OCAML_VERSION < 41200
 
@@ -81,6 +83,18 @@ Val_canvas(
 canvas_t *
 Canvas_val(
   value mlCanvas);
+
+value
+Val_gradient(
+  gradient_t *gradient);
+
+gradient_t*
+Gradient_val(
+  value mlGradient);
+
+value
+Val_style(
+  fill_style_t style);
 
 void
 Nullify_val(

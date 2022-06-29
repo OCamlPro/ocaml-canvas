@@ -18,6 +18,8 @@
 #include "color.h"
 #include "pixmap.h"
 #include "font_desc.h"
+#include "gradient.h"
+#include "fill_style.h"
 
 typedef struct canvas_t canvas_t;
 
@@ -183,6 +185,24 @@ canvas_set_line_width(
   double line_width);
 
 color_t_
+canvas_get_stroke_color(
+  const canvas_t *c);
+
+void
+canvas_set_stroke_color(
+  canvas_t *c,
+  color_t_ color);
+
+fill_style_t
+canvas_get_stroke_style(
+  const canvas_t *c);
+
+void
+canvas_set_stroke_gradient(
+  canvas_t *c,
+  gradient_t *gradient);
+
+color_t_
 canvas_get_fill_color(
   const canvas_t *c);
 
@@ -191,14 +211,14 @@ canvas_set_fill_color(
   canvas_t *c,
   color_t_ color);
 
-color_t_
-canvas_get_stroke_color(
+fill_style_t
+canvas_get_fill_style(
   const canvas_t *c);
 
 void
-canvas_set_stroke_color(
+canvas_set_fill_gradient(
   canvas_t *c,
-  color_t_ color);
+  gradient_t *gradient);
 
 double
 canvas_get_global_alpha(

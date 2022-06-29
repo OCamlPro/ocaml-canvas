@@ -16,14 +16,15 @@
 #include "color.h"
 #include "transform.h"
 #include "font_desc.h"
+#include "fill_style.h"
 
 typedef struct state_t {
   transform_t *transform;
   font_desc_t *font_desc;
   // outline region
   // dash array
-  color_t_ stroke_color; // style
-  color_t_ fill_color; // style
+  fill_style_t fill_style;
+  fill_style_t stroke_style;
   double global_alpha; // 0.0 - 1.0
   double line_width;
   // globalCompositeOperation (source-over, source-in, source-out...)

@@ -152,6 +152,9 @@ module Color : sig
   val of_rgb : int -> int -> int -> t
   (** [of_rgb r g b] creates a color from its [r], [g] and [b] components *)
 
+  val of_argb : int -> int -> int -> int -> t
+  (** [of_argb a r g b] creates a color from its [a], [r], [g], [b] components *)
+
   val to_rgb : t -> int * int * int
   (** [to_rgb c] converts a color to its [r], [g] and [b] components *)
 
@@ -267,11 +270,53 @@ module ImageData : sig
 
 end
 
+module Gradient : sig
+
+  type t
+  (** An abstract type representing a gradient *)
+
+  val addColorStop : t -> Color.t -> float -> unit
+  (** [addColorStop] gradient color stop) adds a new [color]
+      color spot in the gradient object at position [stop] *)
+
+end
+
 module Canvas : sig
 (** Canvas manipulation functions *)
 
   type 'a t
   (** An abstract type representing a canvas *)
+
+  type style =
+    | ColorStyle of Color.t
+    | GradientStyle of Gradient.t
+  (** A type to represent stroke and fill styles *)
+
+
+  (** {1 Gradient creation functions} *)
+
+  val createLinearGradient :
+    'a t -> pos1:(float * float) -> pos2:(float * float) -> Gradient.t
+  (** [createLinearGradient c ~pos1 ~pos2] creates a new linear
+      gradient parallel to the line ([pos1][pos2]) in window
+      coordinates for canvas [c] *)
+
+  val createLinearGradient_:
+    'a t -> (float * float) -> (float * float) -> Gradient.t
+  (** [createLinearGradient_ c pos1 pos2] is a labelless
+      equivalent of [createLinearGradient c ~pos1 ~pos] *)
+
+  val createRadialGradient:
+    'a t -> center1:(float * float) -> rad1:float ->
+    center2:(float * float) -> rad2:float -> Gradient.t
+  (** [createRadialGradient c ~center1 ~rad1 ~center2 ~rad2] creates a new
+      radial gradient between the disks with centers [center1] and [center2]
+      and radi [rad1] and [rad2] in window coordinates for canvas [c] *)
+
+  val createRadialGradient_ :
+    'a t -> (float * float) -> float -> (float * float) -> float -> Gradient.t
+  (** [createRadialGradient_ center1 rad1 center2 rad2] is a labelless
+      equivalent of [createLinearGradient c ~center1 ~rad1 ~center2 ~rad2] *)
 
   (** {1 Comparison functions} *)
 
@@ -440,13 +485,35 @@ module Canvas : sig
   (** [setStrokeColor c col] sets the current stroke color
       for canvas [c] to [col] *)
 
+  val getStrokeStyle : 'a t -> style
+  (** [getStrokeStyle c] returns the current stroke style for canvas [c] *)
+
+  val setStrokeStyle : 'a t -> style -> unit
+  (** [setStrokeStyle c style] sets the current stroke style for
+      canvas [c] to style [style]*)
+
+  val setStrokeGradient : 'a t -> Gradient.t -> unit
+  (** [setStrokeGradient c grad] sets the current stroke style for
+      canvas [c] to the gradient [grad] *)
+
   val getFillColor : 'a t -> Color.t
   (** [getFillColor c] returns the current fill color for canvas [c] *)
 
   val setFillColor : 'a t -> Color.t -> unit
   (** [setFillColor c col] sets the current fill color
       for canvas [c] to [col] *)
-  
+
+  val getFillStyle : 'a t -> style
+  (** [getFillStyle c] return the current fill style for canvas [c] *)
+
+  val setFillStyle : 'a t -> style -> unit
+  (** [setFillStyle c style] sets the current fill style for
+      canvas [c] to style [style]*)
+
+  val setFillGradient : 'a t -> Gradient.t -> unit
+  (** [setFillGradient c grad] sets the current fill style for
+      canvas [c] to the gradient [grad] *)
+
   val getGlobalAlpha : 'a t -> float
   (** [getGlobalAlpha c] returns the current global alpha for canvas [c] *)
 
@@ -654,6 +721,9 @@ module Canvas : sig
       canvas [c] at position [pos] *)
 
 end
+
+
+
 
 module Event : sig
 (** Event descriptions *)

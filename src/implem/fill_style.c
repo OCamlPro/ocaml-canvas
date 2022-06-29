@@ -8,31 +8,29 @@
 /*                                                                        */
 /**************************************************************************/
 
-#ifndef __POLY_RENDER_H
-#define __POLY_RENDER_H
-
-#include <stdint.h>
-#include <stdbool.h>
-
-#include "rect.h"
-#include "color.h"
-#include "transform.h"
+#include "gradient.h"
 #include "fill_style.h"
-#include "polygon.h"
-#include "surface.h"
 
 void
-poly_render_init(
-  void);
+fill_style_destroy(
+  fill_style_t *fs)
+{
+  assert(fs != NULL);
 
-void
-poly_render(
-  surface_t *s,
-  const polygon_t *p,
-  const rect_t *bbox,
-  fill_style_t fill_style,
-  double global_alpha,
-  bool non_zero,
-  transform_t *transform);
+  if (fs->fill_type == FILL_TYPE_GRADIENT) {
+    gradient_release(fs->content.gradient);
+  }
+}
 
-#endif /* __POLY_RENDER_H */
+fill_style_t
+fill_style_copy(
+  const fill_style_t *fs)
+{
+  assert(fs != NULL);
+
+  fill_style_t fsc = (fill_style_t)*fs;
+  if (fsc.fill_type == FILL_TYPE_GRADIENT) {
+    gradient_retain(fsc.content.gradient);
+  }
+  return fsc;
+}

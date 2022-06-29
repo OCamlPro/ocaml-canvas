@@ -29,6 +29,7 @@
 #include "../implem/event.h"
 #include "../implem/canvas.h"
 #include "../implem/backend.h"
+#include "../implem/gradient.h"
 
 #include "ml_tags.h"
 #include "ml_convert.h"
@@ -99,6 +100,72 @@ ml_canvas_image_data_export_png(
   if (res == false) {
     caml_failwith("unable to export pixmap to PNG file");
   }
+  CAMLreturn(Val_unit);
+}
+
+
+
+/* Gradients */
+
+static void
+_ml_canvas_gradient_destroy_callback(
+  gradient_t *gradient)
+{
+  CAMLparam0();
+  value *mlGradient_ptr = gradient_get_data(gradient);
+  if (mlGradient_ptr != NULL) {
+    caml_remove_generational_global_root(mlGradient_ptr);
+    gradient_set_data(gradient, NULL);
+    free(mlGradient_ptr);
+  }
+//  Nullify_val(mlGradient);
+  CAMLreturn0;
+}
+
+CAMLprim value
+ml_canvas_create_linear_gradient(
+  value mlCanvas,
+  value mlPos1,
+  value mlPos2)
+{
+  CAMLparam3(mlCanvas, mlPos1, mlPos2);
+  gradient_t *gradient =
+    gradient_create_linear(Double_val(Field(mlPos1, 0)),
+                           Double_val(Field(mlPos1, 1)),
+                           Double_val(Field(mlPos2, 0)),
+                           Double_val(Field(mlPos2, 1)));
+  CAMLreturn(Val_gradient(gradient));
+}
+
+CAMLprim value
+ml_canvas_create_radial_gradient(
+  value mlCanvas,
+  value mlCenter1,
+  value mlRadius1,
+  value mlCenter2,
+  value mlRadius2)
+{
+  CAMLparam5(mlCanvas, mlCenter1, mlRadius1, mlCenter2, mlRadius2);
+  gradient_t *gradient =
+    gradient_create_radial(Double_val(Field(mlCenter1, 0)),
+                           Double_val(Field(mlCenter1, 1)),
+                           Double_val(mlRadius1),
+                           Double_val(Field(mlCenter2, 0)),
+                           Double_val(Field(mlCenter2, 1)),
+                           Double_val(mlRadius2));
+  CAMLreturn(Val_gradient(gradient));
+}
+
+CAMLprim value
+ml_canvas_gradient_add_color_stop(
+  value mlGradient,
+  value mlColor,
+  value mlStop)
+{
+  CAMLparam3(mlGradient, mlColor, mlStop);
+  gradient_add_color_stop(Gradient_val(mlGradient),
+                          color_of_int(Unsigned_int_val(mlColor)),
+                          Double_val(mlStop));
   CAMLreturn(Val_unit);
 }
 
@@ -487,8 +554,8 @@ ml_canvas_get_stroke_color(
   value mlCanvas)
 {
   CAMLparam1(mlCanvas);
-  CAMLreturn(Val_int(color_to_int(
-             canvas_get_stroke_color(Canvas_val(mlCanvas))) & 0x00FFFFFF));
+  CAMLreturn(Val_int(
+    color_to_int(canvas_get_stroke_color(Canvas_val(mlCanvas)))));
 }
 
 CAMLprim value
@@ -503,12 +570,53 @@ ml_canvas_set_stroke_color(
 }
 
 CAMLprim value
+ml_canvas_get_stroke_style(
+  value mlCanvas)
+{
+  CAMLparam1(mlCanvas);
+  CAMLreturn(Val_style(canvas_get_stroke_style(Canvas_val(mlCanvas))));
+}
+
+CAMLprim value
+ml_canvas_set_stroke_style(
+  value mlCanvas,
+  value mlStyle)
+{
+  CAMLparam2(mlCanvas, mlStyle);
+  switch (Tag_val(mlStyle)) {
+    case TAG_COLOR:
+      canvas_set_stroke_color(Canvas_val(mlCanvas),
+        color_of_int(Unsigned_int_val(Field(mlStyle, 0)) | 0xFF000000));
+      break;
+    case TAG_GRADIENT:
+      canvas_set_stroke_gradient(Canvas_val(mlCanvas),
+                                 Gradient_val(Field(mlStyle, 0)));
+      break;
+    default:
+      assert(!"Invalid style specified");
+      break;
+  }
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
+ml_canvas_set_stroke_gradient(
+  value mlCanvas,
+  value mlGradient)
+{
+  CAMLparam2(mlCanvas, mlGradient);
+  canvas_set_stroke_gradient(Canvas_val(mlCanvas),
+                             Gradient_val(mlGradient));
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
 ml_canvas_get_fill_color(
   value mlCanvas)
 {
   CAMLparam1(mlCanvas);
-  CAMLreturn(Val_int(color_to_int(
-             canvas_get_fill_color(Canvas_val(mlCanvas))) & 0x00FFFFFF));
+  CAMLreturn(Val_int(
+    color_to_int(canvas_get_fill_color(Canvas_val(mlCanvas)))));
 }
 
 CAMLprim value
@@ -519,6 +627,47 @@ ml_canvas_set_fill_color(
   CAMLparam2(mlCanvas, mlColor);
   canvas_set_fill_color(Canvas_val(mlCanvas),
                         color_of_int(Unsigned_int_val(mlColor) | 0xFF000000));
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
+ml_canvas_get_fill_style(
+  value mlCanvas)
+{
+  CAMLparam1(mlCanvas);
+  CAMLreturn(Val_style(canvas_get_fill_style(Canvas_val(mlCanvas))));
+}
+
+CAMLprim value
+ml_canvas_set_fill_style(
+  value mlCanvas,
+  value mlStyle)
+{
+  CAMLparam2(mlCanvas, mlStyle);
+  switch (Tag_val(mlStyle)) {
+    case TAG_COLOR:
+      canvas_set_fill_color(Canvas_val(mlCanvas),
+        color_of_int(Unsigned_int_val(Field(mlStyle,0)) | 0xFF000000));
+      break;
+    case TAG_GRADIENT:
+      canvas_set_fill_gradient(Canvas_val(mlCanvas),
+                               Gradient_val(Field(mlStyle,0)));
+      break;
+    default:
+      assert(!"Invalid style specified");
+      break;
+  }
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
+ml_canvas_set_fill_gradient(
+  value mlCanvas,
+  value mlGradient)
+{
+  CAMLparam2(mlCanvas, mlGradient);
+  canvas_set_fill_gradient(Canvas_val(mlCanvas),
+                           Gradient_val(mlGradient));
   CAMLreturn(Val_unit);
 }
 
@@ -996,6 +1145,10 @@ ml_canvas_init(
     mlBackendList = Field(mlBackendList, 1);
     impl_type_t impl_type = _ml_canvas_impl_type(mlBackend);
     _ml_canvas_initialized = backend_init(impl_type);
+  }
+
+  if (_ml_canvas_initialized == true) {
+    gradient_set_destroy_callback(_ml_canvas_gradient_destroy_callback);
   }
 
   CAMLreturn(Val_bool(_ml_canvas_initialized));

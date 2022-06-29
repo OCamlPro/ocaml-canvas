@@ -17,6 +17,7 @@
 #include "color.h"
 #include "transform.h"
 #include "font_desc.h"
+#include "fill_style.h"
 #include "state.h"
 
 state_t *
@@ -41,6 +42,9 @@ state_create(
     return NULL;
   }
 
+  s->fill_style.fill_type = FILL_TYPE_COLOR;
+  s->stroke_style.fill_type = FILL_TYPE_COLOR;
+
   state_reset(s);
 
   return s;
@@ -54,8 +58,11 @@ state_destroy(
   assert(s->font_desc != NULL);
   assert(s->transform != NULL);
 
+  fill_style_destroy(&s->fill_style);
+  fill_style_destroy(&s->stroke_style);
   font_desc_destroy(s->font_desc);
   transform_destroy(s->transform);
+
   free(s);
 }
 
@@ -64,15 +71,20 @@ state_reset(
   state_t *s)
 {
   assert(s != NULL);
+  assert(s->transform != NULL);
+  assert(s->font_desc != NULL);
 
   transform_reset(s->transform);
   font_desc_reset(s->font_desc);
-  s->stroke_color = color_black;
-  s->fill_color = color_white;
+  fill_style_destroy(&s->fill_style);
+  s->fill_style.fill_type = FILL_TYPE_COLOR;
+  s->fill_style.content.color = color_white;
+  fill_style_destroy(&s->stroke_style);
+  s->stroke_style.fill_type = FILL_TYPE_COLOR;
+  s->stroke_style.content.color = color_black;
   s->global_alpha = 1.0;
   s->line_width = 1.0;
 }
-
 
 state_t *
 state_copy(
@@ -80,6 +92,7 @@ state_copy(
 {
   assert(s != NULL);
   assert(s->transform != NULL);
+  assert(s->font_desc != NULL);
 
   state_t *sc = (state_t *)calloc(1, sizeof(state_t));
   if (sc == NULL) {
@@ -98,9 +111,8 @@ state_copy(
     free(sc);
     return NULL;
   }
-
-  sc->stroke_color = s->stroke_color;
-  sc->fill_color = s->fill_color;
+  sc->fill_style = fill_style_copy(&s->fill_style);
+  sc->stroke_style = fill_style_copy(&s->stroke_style);
   sc->global_alpha = s->global_alpha;
   sc->line_width = s->line_width;
 
