@@ -20,7 +20,7 @@ let march_config _c =
   [ "-march=native" ], [ ]
 
 let gdi_config _c =
-  [ "-DHAS_GDI"; "-DUNICODE"; "-D_UNICODE" ], [ "-lkernel32"; "-lgdi32" ]
+  [ "-DHAS_GDI"; "-DUNICODE"; "-D_UNICODE" ], [ "-lkernel32"; "-lgdi32"; "-lgdiplus" ]
 
 let qtz_config _c =
   [ "-DHAS_QUARTZ"; "-Qunused-arguments"; "-framework"; "Cocoa"; "-x"; "objective-c" ],
@@ -52,6 +52,14 @@ let ft_config c =
     query_or_default c "freetype2"
       [ "-I/usr/include/freetype2"; (*"-I/usr/include/libpng16"*) ]
       [ "-lfreetype" ]
+  in
+  cflags, libs
+
+let png_config c =
+  let cflags, libs =
+    query_or_default c "libpng"
+      [ "-I/usr/include/libpng16"; ]
+      [ "-lpng16"; "-lz" ]
   in
   cflags, libs
 
@@ -130,6 +138,15 @@ int main()
 }
 |}
 
+let png_test = {|
+#include <png.h>
+int main()
+{
+  png_uint_32 v = png_access_version_number();
+  return 0;
+}
+|}
+
 let () =
   C.main ~name:"canvas" (fun c ->
     let c_flags = [] in
@@ -148,7 +165,8 @@ let () =
           (x11_config, x11_test);
           (wl_config, wl_test);
           (fc_config, fc_test);
-          (ft_config, ft_test); ]
+          (ft_config, ft_test);
+          (png_config, png_test); ]
     in
     C.Flags.write_sexp "ccopt.sexp" (fst options);
     C.Flags.write_sexp "cclib.sexp" (snd options))

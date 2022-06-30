@@ -786,6 +786,17 @@ ml_canvas_set_image_data(
   CAMLreturn(Val_unit);
 }
 
+CAMLprim value
+ml_canvas_export_png(
+  value mlCanvas,
+  value mlFilename)
+{
+  CAMLparam2(mlCanvas, mlFilename);
+  canvas_export_png(Canvas_val(mlCanvas),
+                    String_val(mlFilename));
+  CAMLreturn(Val_unit);
+}
+
 
 
 /* Event */

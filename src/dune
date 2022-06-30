@@ -19,6 +19,7 @@
          window surface
          path arc polygon polygonize poly_render
          font_desc gdi_font qtz_font ft_font font
+         impexp gdi_impexp qtz_impexp unx_impexp
          transform state
          canvas backend
          ml_convert ml_canvas)

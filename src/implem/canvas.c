@@ -1189,3 +1189,16 @@ canvas_set_image_data(
 
   surface_set_image_data(c->surface, dx, dy, data, sx, sy, width, height);
 }
+
+/* Import / export functions */
+
+bool
+canvas_export_png(
+  const canvas_t *c,
+  const char *filename)
+{
+  assert(c != NULL);
+  assert(filename != NULL);
+
+  return surface_export_png(c->surface, filename);
+}

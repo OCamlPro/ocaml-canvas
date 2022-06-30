@@ -91,4 +91,9 @@ surface_set_image_data(
   int32_t width,
   int32_t height);
 
+bool
+surface_export_png(
+  const surface_t *s,
+  const char *filename);
+
 #endif /* __SURFACE_H */

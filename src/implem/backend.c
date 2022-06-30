@@ -22,6 +22,7 @@
 #include "canvas.h"
 #include "canvas_internal.h"
 #include "poly_render.h"
+#include "impexp.h"
 
 #ifdef HAS_GDI
 #include "gdi/gdi_backend.h"
@@ -138,8 +139,9 @@ backend_init(
   }
 
   if (result == true) {
-    poly_render_init();
     set_impl_type(impl_type);
+    poly_render_init();
+    impexp_init();
 
     switch_IMPL() {
       case_GDI(gdi_backend_set_listener(&_backend_event_listener));
@@ -169,6 +171,7 @@ backend_terminate(
     default_fail();
   }
 
+  impexp_terminate();
   ht_delete(_backend_id_to_canvas);
   set_impl_type(IMPL_NONE);
 }
