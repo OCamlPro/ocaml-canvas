@@ -375,4 +375,13 @@ canvas_set_image_data(
   int32_t width,
   int32_t height);
 
+
+
+/* Import / export functions */
+
+bool
+canvas_export_png(
+  const canvas_t *c,
+  const char *filename);
+
 #endif /* __CANVAS_H */

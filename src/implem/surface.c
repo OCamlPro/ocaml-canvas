@@ -20,6 +20,7 @@
 #include "present_data.h"
 #include "color.h"
 #include "image_data.h"
+#include "impexp.h"
 #include "surface.h"
 #include "surface_internal.h"
 
@@ -426,4 +427,15 @@ surface_set_image_data(
              width * COLOR_SIZE);
     }
   }
+}
+
+bool
+surface_export_png(
+  const surface_t *s,
+  const char *filename)
+{
+  assert(s != NULL);
+  assert(filename != NULL);
+
+  return impexp_export_png(s->data, s->width, s->height, filename);
 }

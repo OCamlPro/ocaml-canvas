@@ -611,6 +611,10 @@ module Canvas : sig
   (** [setImageData_ c dpos id spos size] is a labelless equivalent of
       [setImageData c ~dpos id ~spos ~size]  *)
 
+  val exportPNG : 'a t -> string -> unit
+  (** [exportPNG c filename] saves the contents of canvas [c]
+      to a file with name [filename] *)
+
 end
 
 module Event : sig

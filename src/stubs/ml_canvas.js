@@ -735,6 +735,20 @@ function ml_canvas_set_image_data(canvas, dpos, data, spos, size) {
                            spos[1], spos[2], size[1], size[2]);
 }
 
+//Provides: ml_canvas_export_png
+function ml_canvas_export_png(canvas, filename) {
+  var link = document.createElement('a');
+  link.download = filename;
+  link.href = canvas.surface.toDataURL("image/png");
+  link.dataset.downloadurl = ["image/png", link.download, link.href].join(':');
+  document.body.appendChild(link);
+  link.click();
+  window.setTimeout(function () {
+      window.URL.revokeObjectURL(link.href);
+      document.body.removeChild(link);
+  }, 1000);
+}
+
 
 
 /* Event */

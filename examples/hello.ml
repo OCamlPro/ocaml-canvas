@@ -45,6 +45,8 @@ let () =
 
   Canvas.show c;
 
+  let _ = Canvas.exportPNG c "picture.png" in
+
   Backend.run (function
 
     | Event.KeyAction { canvas = _; timestamp = _;

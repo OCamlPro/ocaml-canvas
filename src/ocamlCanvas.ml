@@ -356,6 +356,9 @@ module Canvas = struct
     'a t -> (int * int) -> image_data -> (int * int) -> (int * int) -> unit
     = "ml_canvas_set_image_data"
 
+  external exportPNG : 'a t -> string -> unit
+    = "ml_canvas_export_png"
+
 end
 
 module Event = struct
