@@ -753,9 +753,11 @@ x11_backend_run(
         (ts_next_frame.tv_nsec - ts_current.tv_nsec) / 1000;
 
       /* Wait for new events or frame */
-      if ((tv_frame_timeout.tv_usec < 0) ||
-          (FD_SET(x11_back->fd, &fds),
-           select(1, &fds, NULL, NULL, &tv_frame_timeout) == 0)) {
+      if (tv_frame_timeout.tv_usec > 0) {
+        FD_SET(x11_back->fd, &fds);
+      };
+      if ((tv_frame_timeout.tv_usec <= 0) ||
+          (select(1, &fds, NULL, NULL, &tv_frame_timeout) == 0)) {
         _x11_render_all_windows();
 
         /* Compute time until next frame, skip frames if needed */

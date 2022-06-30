@@ -87,6 +87,7 @@ _ft_font_weight(
     case 10: return 215;
     default: assert(!"Bad font weight");
   }
+  return -1;
 }
 
 ft_font_t *
