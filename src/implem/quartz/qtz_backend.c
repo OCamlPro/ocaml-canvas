@@ -239,6 +239,7 @@ _qtz_key_event_code(
     default:
       assert(!"Unhandled key event");
   }
+  return KEY_UNDEFINED;
 }
 
 static int32_t
@@ -255,6 +256,7 @@ _qtz_key_event_char(
     default:
       assert(!"Unhandled key event");
   }
+  return 0;
 }
 
 static key_modifier_t
@@ -276,6 +278,7 @@ _qtz_key_event_modifiers(
     default:
       assert(!"Unhandled key event");
   }
+  return MOD_NONE;
 }
 
 static key_state_t
@@ -311,6 +314,7 @@ _qtz_key_event_state(
     default:
       assert(!"Unhandled key event state");
   }
+  return KEY_UP;
 }
 
 static button_t
@@ -333,6 +337,7 @@ _qtz_mouse_event_button(
     default:
       assert(!"Unhandled mouse event button");
   }
+  return BUTTON_NONE;
 }
 
 static button_state_t
@@ -352,6 +357,7 @@ _qtz_mouse_event_state(
     default:
       assert(!"Unhandled mouse event state");
   }
+  return BUTTON_UP;
 }
 
 static qtz_window_t *
