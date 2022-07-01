@@ -10,6 +10,7 @@
 
 #if defined HAS_X11 || defined HAS_WAYLAND
 
+#include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
