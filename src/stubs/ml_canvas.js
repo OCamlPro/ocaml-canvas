@@ -726,7 +726,7 @@ function ml_canvas_get_image_data(canvas, pos, size) {
   var image = canvas.ctxt.getImageData(pos[1], pos[2], width, height);
   var ta = new window.Uint8Array(image.data.buffer);
   return caml_ba_create_unsafe(3 /* Uint8Array */, 0 /* c_layout */,
-                               [width, height, 4], ta);
+                               [height, width, 4], ta);
 }
 
 //Provides: ml_canvas_set_image_data
@@ -735,11 +735,11 @@ function ml_canvas_set_image_data(canvas, dpos, data, spos, size) {
   var ta = new window.Uint8ClampedArray(caml_ba_to_typed_array(data).buffer);
   if (window.ImageData === undefined) {
     var image =
-      canvas.ctxt.createImageData(caml_ba_dim_1(data), caml_ba_dim_2(data));
+      canvas.ctxt.createImageData(caml_ba_dim_2(data), caml_ba_dim_1(data));
     image.data.set(ta);
   } else {
     var image =
-      new window.ImageData(ta, caml_ba_dim_1(data), caml_ba_dim_2(data));
+      new window.ImageData(ta, caml_ba_dim_2(data), caml_ba_dim_1(data));
   }
   canvas.ctxt.putImageData(image, dpos[1], dpos[2],
                            spos[1], spos[2], size[1], size[2]);
