@@ -733,6 +733,6 @@ Image_data_val(
   }
 
   CAMLreturnT(image_data_t,
-              image_data((int32_t)height, (int32_t)width,
+              image_data((int32_t)width, (int32_t)height,
                          (color_t_ *)Caml_ba_data_val(mlImageData)));
 }

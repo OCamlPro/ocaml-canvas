@@ -8,6 +8,14 @@
 )
 
 (executable
+ (name ppm_dump)
+ (public_name ocaml-canvas-ppm-dump)
+ (modes byte_complete native js)
+ (modules ppm_dump)
+ (libraries ocaml-canvas)
+)
+
+(executable
  (name test_canvas)
  (public_name ocaml-canvas-test)
  (modes byte_complete native js)
