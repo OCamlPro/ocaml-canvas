@@ -143,7 +143,7 @@ let f1 () =
           Canvas.setFillColor c (Color.of_string "Cyan");
           Canvas.arc c ~center:(50.0, 50.0) ~radius:20.0
             ~theta1:0.0 ~theta2:1.5 ~ccw:false;
-          Canvas.fill c false;
+          Canvas.fill c ~nonzero:false;
 
           true
 
@@ -193,7 +193,7 @@ let f2 () =
       | ButtonAction { canvas = _; timestamp = _;
                        position = _; button = _; state = _ } ->
           true
-      | MouseMove { canvas = _; timestamp = _; position = (x, y) } ->
+      | MouseMove { canvas = _; timestamp = _; position = (_x, _y) } ->
           true
       | Frame { canvas = c; timestamp = _ } ->
           let color =
@@ -288,7 +288,7 @@ let f3 () =
   Canvas.fillRect c5 ~pos:(0.0, 0.0) ~size:(500.0, 500.0);
   Canvas.show c5;
 
-  let c6 = Canvas.createOffscreen (200, 200) in
+  let c6 = Canvas.createOffscreen ~size:(200, 200) in
   Canvas.setFillColor c6 (Color.of_string "Pink");
   Canvas.fillRect c6 ~pos:(0.0, 0.0) ~size:(200.0, 200.0);
 
@@ -337,7 +337,7 @@ Format.print_flush ();
             ~size:(float_of_int width, float_of_int height);
           true;
 
-      | CanvasMoved { canvas = c; timestamp = _; position = (x, y) } ->
+      | CanvasMoved { canvas = _c; timestamp = _; position = (x, y) } ->
       Printf.printf "Canvas moved %d, %d\n" x y;
       Format.print_flush ();
           false
@@ -414,7 +414,7 @@ Format.print_flush ();
           Canvas.setPixel c (x, y+1) Color.red;
 
           true
-      | MouseMove { canvas = c; timestamp = _; position = _ } ->
+      | MouseMove { canvas = _c; timestamp = _; position = _ } ->
 (*        Printf.printf "Mouse\n";
         Format.print_flush (); *)
 (*
@@ -430,7 +430,7 @@ Format.print_flush ();
         Canvas.setFillColor c (Color.of_string "Cyan");
         Canvas.arc c ~center:(100.0, 100.0) ~radius:20.0
           ~theta1:0.0 ~theta2:1.5 ~ccw:false;
-        Canvas.fill c false;
+        Canvas.fill c ~nonzero:false;
 
 (*
 
@@ -452,7 +452,7 @@ Format.print_flush ();
       Printf.printf "We're done\n";
       Format.print_flush ();
       Backend.run (function
-          | KeyAction { canvas = c; timestamp = _;
+          | KeyAction { canvas = _c; timestamp = _;
                         key = _; char = _; flags = _; state = Down } ->
             Backend.stop ();
             true
@@ -557,7 +557,7 @@ if not !_done then begin
           Canvas.arc c ~center:(-100.0, -100.0) ~radius:50.0
             ~theta1:0.0 ~theta2:(Float.pi *. 1.5) ~ccw:false;
           Canvas.stroke c;
-          (*Canvas.fill c;*)
+          (*Canvas.fill c ~nonzero:false ;*)
 *)
 
 (*
@@ -565,7 +565,7 @@ if not !_done then begin
           Canvas.arcTo c ~p1:(100.0, -100.0) ~p2:(100.0, 100.0) ~radius:20.0;
           Canvas.lineTo c (100.0, 100.0);
           Canvas.stroke c;
-          (*Canvas.fill c;*)
+          (*Canvas.fill c ~nonzero:false;*)
 *)
 
 (*
@@ -592,7 +592,7 @@ if not !_done then begin
           Canvas.lineTo c (-100.0, 0.0);
           Canvas.closePath c;
 
-          Canvas.fill c true;
+          Canvas.fill c ~nonzero:true;
 
 _done := true;
 end;
@@ -679,13 +679,13 @@ end;
           Canvas.arc c ~center:(350.0, 150.0) ~radius:50.0
             ~theta1:0.0 ~theta2:(Float.pi /. 2.0) ~ccw:false;
           Canvas.lineTo c (300.0, 200).0;
-          Canvas.fill c;
+          Canvas.fill c ~nonzero:false;
 
           Canvas.moveTo c (100.0, 400.0);
           Canvas.arc c ~center:(150.0, 350.0) ~radius:50.0
             ~theta1:0.0 ~theta2:(Float.pi *. 1.5) ~ccw:true;
           Canvas.lineTo c (100.0, 300.0);
-          Canvas.fill c;
+          Canvas.fill c ~nonzero:false;
 *)
 
 
@@ -700,7 +700,7 @@ end;
           Canvas.quadraticCurveTo c ~cp:(100.0, 50.0) ~p:(190.0, 100.0);
 *)
 
-(*          Canvas.fill c; *)
+(*          Canvas.fill c ~nonzero:false; *)
 
           true
     ) (function () -> ())

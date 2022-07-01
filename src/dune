@@ -1,8 +1,8 @@
 (include_subdirs unqualified)
 
 (env
- (dev (c_flags -O0 -g -ggdb -fstrict-aliasing -Wstrict-aliasing))
- (release (c_flags -O2 -DNDEBUG -fstrict-aliasing -Wstrict-aliasing)))
+ (dev (c_flags -O0 -g -ggdb -Wall -Werror -fstrict-aliasing -Wstrict-aliasing))
+ (release (c_flags -O2 -DNDEBUG -Wall -Werror -fstrict-aliasing -Wstrict-aliasing)))
 
 (library
  (name ocaml_canvas)
