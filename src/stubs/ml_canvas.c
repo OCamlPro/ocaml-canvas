@@ -159,6 +159,17 @@ ml_canvas_create_offscreen(
 }
 
 CAMLprim value
+ml_canvas_create_offscreen_from_png(
+  value mlFilename)
+{
+  CAMLparam1(mlFilename);
+  CAMLlocal1(mlCanvas);
+  mlCanvas = Val_canvas(
+    canvas_create_offscreen_from_png(String_val(mlFilename)));
+  CAMLreturn(mlCanvas);
+}
+
+CAMLprim value
 ml_canvas_destroy(
   value mlCanvas)
 {
@@ -812,6 +823,20 @@ ml_canvas_export_png(
 {
   CAMLparam2(mlCanvas, mlFilename);
   canvas_export_png(Canvas_val(mlCanvas),
+                    String_val(mlFilename));
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
+ml_canvas_import_png(
+  value mlCanvas,
+  value mlDPos,
+  value mlFilename)
+{
+  CAMLparam3(mlCanvas, mlDPos, mlFilename);
+  canvas_import_png(Canvas_val(mlCanvas),
+                    Int32_val_clip(Field(mlDPos, 0)),
+                    Int32_val_clip(Field(mlDPos, 1)),
                     String_val(mlFilename));
   CAMLreturn(Val_unit);
 }

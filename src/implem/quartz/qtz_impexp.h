@@ -31,4 +31,13 @@ qtz_impexp_export_png(
   int32_t height,
   const char *filename);
 
+bool
+qtz_impexp_import_png(
+  color_t_ **p_data,
+  int32_t *p_width,
+  int32_t *p_height,
+  int32_t dx,
+  int32_t dy,
+  const char *filename);
+
 #endif /* __QTZ_IMPEXP_H */

@@ -319,6 +319,10 @@ module Canvas : sig
   (** [createOffscreen_ size] is a labelless equivalent of
       [createOffscreen ~size]  *)
 
+  val createOffscreenFromPNG : string -> [> `Offscreen] t
+  (** [createOffscreen filename] creates an offscreen canvas
+      with the contents of PNG file [filename] *)
+
   val destroy : 'a t -> unit
   (** [destroy c] destroys the canvas [c], i.e. it destroys any underlying
       object and frees any used memory. Any attempt to use [c] after
@@ -621,6 +625,10 @@ module Canvas : sig
   val exportPNG : 'a t -> string -> unit
   (** [exportPNG c filename] saves the contents of canvas [c]
       to a file with name [filename] *)
+
+  val importPNG : 'a t -> pos:(int * int) -> string -> unit
+  (** [importPNG c ~pos filename] loads the file [filename] into
+      canvas [c] at position [pos] *)
 
 end
 

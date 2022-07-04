@@ -31,4 +31,13 @@ impexp_export_png(
   int32_t height,
   const char *filename);
 
+bool
+impexp_import_png(
+  color_t_ **p_data,
+  int32_t *p_width,
+  int32_t *p_height,
+  int32_t x,
+  int32_t y,
+  const char *filename);
+
 #endif /* __IMPEXP_H */

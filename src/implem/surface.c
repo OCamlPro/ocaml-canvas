@@ -16,6 +16,7 @@
 #include <assert.h>
 
 #include "config.h"
+#include "tuples.h"
 #include "target.h"
 #include "present_data.h"
 #include "color.h"
@@ -73,6 +74,26 @@ surface_create(
 
   s->data = (color_t_ *)calloc(width * height, sizeof(color_t_));
   if (s->data == NULL) {
+    free(s);
+    return NULL;
+  }
+
+  return s;
+}
+
+surface_t *
+surface_create_from_png(
+  const char *filename)
+{
+  assert(filename != NULL);
+
+  surface_t *s = _surface_create_internal(1, 1);
+  if (s == NULL) {
+    return NULL;
+  }
+
+  bool res = impexp_import_png(&s->data, &s->width, &s->height, 0, 0, filename);
+  if (res == false) {
     free(s);
     return NULL;
   }
@@ -142,6 +163,15 @@ surface_destroy(
   }
 
   free(s);
+}
+
+pair_t(int32_t)
+surface_get_size(
+  const surface_t *s)
+{
+  assert(s != NULL);
+
+  return pair(int32_t, s->width, s->height);
 }
 
 static void
@@ -438,4 +468,17 @@ surface_export_png(
   assert(filename != NULL);
 
   return impexp_export_png(s->data, s->width, s->height, filename);
+}
+
+bool
+surface_import_png(
+  surface_t *s,
+  int32_t x,
+  int32_t y,
+  const char *filename)
+{
+  assert(s != NULL);
+  assert(filename != NULL);
+
+  return impexp_import_png(&s->data, &s->width, &s->height, x, y, filename);
 }

@@ -47,6 +47,17 @@ let () =
 
   let _ = Canvas.exportPNG c "picture.png" in
 
+
+  Canvas.setFillColor c Color.red;
+  Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(300.0, 200.0);
+
+  let _ = Canvas.importPNG c ~pos:(0,0) "picture.png" in
+(*
+  let c2 = Canvas.createOffscreenFromPNG "picture.png" in
+  let size = Canvas.getSize c2 in
+  Canvas.blit ~dst:c ~dpos:(100, 50) ~src:c2 ~spos:(10, 5)
+    ~size:(fst size - 20, snd size - 10);
+*)
   Backend.run (function
 
     | Event.KeyAction { canvas = _; timestamp = _;

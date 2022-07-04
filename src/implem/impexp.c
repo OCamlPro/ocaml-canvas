@@ -80,3 +80,34 @@ impexp_export_png(
 
   return res;
 }
+
+bool
+impexp_import_png(
+  color_t_ **p_data,
+  int32_t *p_width,
+  int32_t *p_height,
+  int32_t x,
+  int32_t y,
+  const char *filename)
+{
+  assert(p_data != NULL);
+  assert(p_width != NULL);
+  assert(p_height != NULL);
+  assert(filename != NULL);
+
+  bool res = false;
+
+  switch_IMPL() {
+    case_GDI(
+      res = gdi_impexp_import_png(p_data, p_width, p_height, x, y, filename));
+    case_QUARTZ(
+      res = qtz_impexp_import_png(p_data, p_width, p_height, x, y, filename));
+    case_X11(
+      res = unx_impexp_import_png(p_data, p_width, p_height, x, y, filename));
+    case_WAYLAND(
+      res = unx_impexp_import_png(p_data, p_width, p_height, x, y, filename));
+    default_fail();
+  }
+
+  return res;
+}
