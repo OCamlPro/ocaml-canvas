@@ -17,6 +17,7 @@
 #include "transform.h"
 #include "font_desc.h"
 #include "fill_style.h"
+#include "polygonize.h"
 
 typedef struct state_t {
   transform_t *transform;
@@ -27,6 +28,8 @@ typedef struct state_t {
   fill_style_t stroke_style;
   double global_alpha; // 0.0 - 1.0
   double line_width;
+  join_type_t join_type;
+  cap_type_t cap_type;
   // globalCompositeOperation (source-over, source-in, source-out...)
   // lineWidth, lineCap, lineJoin, miterLimit, lineDashOffset
   // shadowOffsetXn shadowOffsetY, shadowBlur, shadowColor

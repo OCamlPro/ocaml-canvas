@@ -17,6 +17,20 @@
 #include "rect.h"
 #include "path.h"
 #include "polygon.h"
+#include "transform.h"
+
+typedef enum join_type_t {
+  JOIN_ROUND = 0,
+  JOIN_MITER = 1,
+  JOIN_BEVEL = 2,
+} join_type_t;
+
+typedef enum cap_type_t {
+  CAP_BUTT = 0,
+  CAP_SQUARE = 1,
+  CAP_ROUND = 2
+} cap_type_t;
+
 
 void
 quadratic_to_poly(
@@ -46,12 +60,20 @@ polygonize_outline(
   path_t *path,
   double w,
   polygon_t *p,
-  rect_t *bbox);
+  rect_t *bbox,
+  join_type_t join_type,
+  cap_type_t cap_type,
+  const transform_t *lin,
+  const transform_t *inv_lin);
 
 void
 polygon_offset(
   const polygon_t *p,
   polygon_t *np,
-  double w);
+  double w,
+  join_type_t join_type,
+  cap_type_t cap_type,
+  const transform_t *lin,
+  const transform_t *inv_lin);
 
 #endif /* __POLYGONIZE_H */

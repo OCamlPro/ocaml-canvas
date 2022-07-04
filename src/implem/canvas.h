@@ -21,6 +21,7 @@
 #include "font_desc.h"
 #include "gradient.h"
 #include "fill_style.h"
+#include "polygonize.h"
 
 typedef struct canvas_t canvas_t;
 
@@ -193,6 +194,24 @@ void
 canvas_set_line_width(
   canvas_t *canvas,
   double line_width);
+
+join_type_t
+canvas_get_join_type(
+  const canvas_t *canvas);
+
+void
+canvas_set_join_type(
+  canvas_t *canvas,
+  join_type_t join_type);
+
+cap_type_t
+canvas_get_cap_type(
+  const canvas_t *canvas);
+
+void
+canvas_set_cap_type(
+  canvas_t *canvas,
+  cap_type_t cap_type);
 
 color_t_
 canvas_get_stroke_color(

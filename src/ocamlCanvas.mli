@@ -287,8 +287,19 @@ module Canvas : sig
   type style =
     | ColorStyle of Color.t
     | GradientStyle of Gradient.t
-  (** A type to represent stroke and fill styles *)
+    (** A type to represent stroke and fill styles *)
 
+  type line_join =
+    | Round
+    | Miter
+    | Bevel
+    (** An enum type for representing line join types *)
+
+  type line_cap =
+    | Butt
+    | Square
+    | RoundCap
+    (** An enum type for representing line cap types *)
 
   (** {1 Gradient creation functions} *)
 
@@ -479,6 +490,18 @@ module Canvas : sig
 
   val setLineWidth : 'a t -> float -> unit
   (** [setLineWidth c w] sets the current line width for canvas [c] to [w] *)
+
+  val getLineJoin : 'a t -> line_join
+  (** [getLineJoin c] returns the current line join type for canvas [c] *)
+
+  val setLineJoin : 'a t -> line_join -> unit
+  (** [setLineJoin c j] sets the current line join type for canvas[c] to [j] *)
+
+  val getLineCap : 'a t -> line_cap
+  (** [getLineJoin c] returns the current line cap type for canvas [c] *)
+
+  val setLineCap : 'a t -> line_cap -> unit
+  (** [setLineJoin c j] sets the current line cap type for canvas[c] to [j] *)
 
   val getStrokeColor : 'a t -> Color.t
   (** [getStrokeColor c] returns the current stroke color for canvas [c] *)

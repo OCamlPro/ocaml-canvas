@@ -8,12 +8,6 @@
 /*                                                                        */
 /**************************************************************************/
 
-//Provides: STYLE_TAG
-var STYLE_TAG = {
-  COLOR    : 0,
-  GRADIENT : 1
-};
-
 //Provides: SLANT_TAG
 var SLANT_TAG = {
   ROMAN   : 0,
@@ -201,4 +195,24 @@ var EVENT_TAG = {
   KEY_ACTION     : 5,
   BUTTON_ACTION  : 6,
   MOUSE_MOVE     : 7
+};
+
+//Provides: STYLE_TAG
+var STYLE_TAG = {
+  COLOR    : 0,
+  GRADIENT : 1
+};
+
+//Provides: LINE_JOIN_TAG
+var LINE_JOIN_TAG = {
+  ROUND : 0,
+  MITER : 1,
+  BEVEL : 2
+}
+
+//Provides: LINE_CAP_TAG
+var LINE_CAP_TAG = {
+  BUTT   : 0,
+  SQUARE : 1,
+  ROUND  : 2
 };

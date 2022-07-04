@@ -34,20 +34,6 @@ transform_copy(
   const transform_t *t);
 
 void
-transform_extract_ft(
-  const transform_t *t,
-  double *a,
-  double *b,
-  double *c,
-  double *d);
-
-void
-transform_get_translation(
-  const transform_t *t,
-  double *e,
-  double *f);
-
-void
 transform_set(
   transform_t *t,
   double a,
@@ -99,12 +85,6 @@ transform_apply(
   const transform_t *t,
   point_t *p);
 
-void
-transform_extract_scale(
-  const transform_t *t,
-  double *sx,
-  double *sy);
-
 bool
 transform_is_identity(
   const transform_t *t);
@@ -112,5 +92,38 @@ transform_is_identity(
 bool
 transform_is_pure_translation(
   const transform_t *t);
+
+void
+transform_extract_ft(
+  const transform_t *t,
+  double *a,
+  double *b,
+  double *c,
+  double *d);
+
+void
+transform_extract_translation(
+  const transform_t *t,
+  double *e,
+  double *f);
+
+void
+transform_extract_scale(
+  const transform_t *t,
+  double *sx,
+  double *sy);
+
+transform_t *
+transform_extract_linear(
+  const transform_t *t);
+
+point_t
+point_offset_ortho_transform(
+  point_t p1,
+  point_t p2,
+  double o,
+  const transform_t *lin,
+  const transform_t *inv_lin);
+
 
 #endif /* __TRANSFORM_H */

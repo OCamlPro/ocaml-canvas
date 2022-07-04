@@ -368,3 +368,55 @@ var button_state_to_tag = new joo_global_object.Map([
 function Val_button_state(state) {
   return button_state_to_tag.get(state);
 }
+
+//Provides: Val_join_type
+//Requires: LINE_JOIN_TAG
+
+var join_type_to_tag = new joo_global_object.Map([
+  ["round", LINE_JOIN_TAG.ROUND],
+  ["miter", LINE_JOIN_TAG.MITER],
+  ["bevel", LINE_JOIN_TAG.BEVEL],
+]);
+
+function Val_join_type(join) {
+  return join_type_to_tag.get(join);
+}
+
+//Provides: Join_type_val
+//Requires: LINE_JOIN_TAG
+
+var tag_to_join_type = new joo_global_object.Map([
+  [LINE_JOIN_TAG.ROUND, "round"],
+  [LINE_JOIN_TAG.MITER, "miter"],
+  [LINE_JOIN_TAG.BEVEL, "bevel"],
+]);
+
+function Join_type_val(join) {
+  return tag_to_join_type.get(join);
+}
+
+//Provides: Val_cap_type
+//Requires: LINE_CAP_TAG
+
+var cap_type_to_tag = new joo_global_object.Map([
+  ["butt",   LINE_CAP_TAG.BUTT],
+  ["square", LINE_CAP_TAG.SQUARE],
+  ["round",  LINE_CAP_TAG.ROUND],
+]);
+
+function Val_cap_type(cap) {
+  return cap_type_to_tag.get(cap);
+}
+
+//Provides: Cap_type_val
+//Requires: LINE_CAP_TAG
+
+var tag_to_cap_type = new joo_global_object.Map([
+  [LINE_CAP_TAG.BUTT,   "butt"],
+  [LINE_CAP_TAG.SQUARE, "square"],
+  [LINE_CAP_TAG.ROUND,  "round"],
+]);
+
+function Cap_type_val(cap) {
+  return tag_to_cap_type.get(cap);
+}
