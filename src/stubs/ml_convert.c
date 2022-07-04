@@ -29,6 +29,8 @@
 #include "../implem/color.h"
 #include "../implem/font_desc.h"
 #include "../implem/fill_style.h"
+#include "../implem/gradient.h"
+#include "../implem/polygonize.h"
 
 #include "ml_tags.h"
 #include "ml_convert.h"
@@ -791,19 +793,94 @@ Val_style(
 {
   CAMLparam0();
   CAMLlocal1(mlStyle);
-  switch (style.fill_type)
-  {
-  case FILL_TYPE_COLOR:
-    mlStyle = caml_alloc(1,TAG_COLOR);
-    Store_field(mlStyle,0,Val_int(color_to_int(style.content.color)));
-    break;
-  case FILL_TYPE_GRADIENT:
-    mlStyle = caml_alloc(1,TAG_GRADIENT);
-    Store_field(mlStyle,0,Val_gradient(style.content.gradient));
-  default:
-    break;
+  switch (style.fill_type) {
+    case FILL_TYPE_COLOR:
+      mlStyle = caml_alloc(1, TAG_COLOR);
+      Store_field(mlStyle, 0, Val_int(color_to_int(style.content.color)));
+      break;
+    case FILL_TYPE_GRADIENT:
+      mlStyle = caml_alloc(1, TAG_GRADIENT);
+      Store_field(mlStyle, 0, Val_gradient(style.content.gradient));
+    default:
+      assert(!"Unknown style");
+      break;
   }
   CAMLreturn(mlStyle);
+}
+
+fill_style_t
+Style_val(
+  value mlStyle)
+{
+  CAMLparam1(mlStyle);
+  fill_style_t style = { 0 };
+  switch (Tag_val(mlStyle)) {
+    case TAG_COLOR:
+      style.fill_type = FILL_TYPE_COLOR;
+      style.content.color =
+        color_of_int(Unsigned_int_val(Field(mlStyle, 0)) | 0xFF000000);
+      break;
+    case TAG_GRADIENT:
+      style.fill_type = FILL_TYPE_GRADIENT;
+      style.content.gradient = gradient_retain(Gradient_val(Field(mlStyle, 0)));
+      break;
+    default:
+      assert(!"Unknown style");
+      break;
+  }
+  CAMLreturnT(fill_style_t, style);
+}
+
+value
+Val_join_type(
+  join_type_t join)
+{
+  CAMLparam0();
+  static intnat map[3] = {
+    [JOIN_ROUND] = TAG_ROUND,
+    [JOIN_MITER] = TAG_MITER,
+    [JOIN_BEVEL] = TAG_BEVEL
+  };
+  CAMLreturn(Val_int(map[join]));
+}
+
+join_type_t
+Join_type_val(
+  value mlLineJoin)
+{
+  CAMLparam1(mlLineJoin);
+  static const join_type_t map[3] = {
+    [TAG_ROUND] = JOIN_ROUND,
+    [TAG_MITER] = JOIN_MITER,
+    [TAG_BEVEL] = JOIN_BEVEL
+  };
+  CAMLreturnT(join_type_t, map[Int_val(mlLineJoin)]);
+}
+
+value
+Val_cap_type(
+  cap_type_t cap)
+{
+  CAMLparam0();
+  static intnat map[3] = {
+    [CAP_BUTT]   = TAG_CAP_BUTT,
+    [CAP_ROUND]  = TAG_CAP_ROUND,
+    [CAP_SQUARE] = TAG_CAP_SQUARE
+  };
+  CAMLreturn(Val_int(map[cap]));
+}
+
+cap_type_t
+Cap_type_val(
+  value mlLineCap)
+{
+  CAMLparam1(mlLineCap);
+  static const cap_type_t map[3] = {
+    [TAG_CAP_BUTT]   = CAP_BUTT,
+    [TAG_CAP_ROUND]  = CAP_ROUND,
+    [TAG_CAP_SQUARE] = CAP_SQUARE
+  };
+  CAMLreturnT(cap_type_t, map[Int_val(mlLineCap)]);
 }
 
 value

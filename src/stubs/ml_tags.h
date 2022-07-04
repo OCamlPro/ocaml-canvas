@@ -11,11 +11,6 @@
 #ifndef __ML_TAGS_H
 #define __ML_TAGS_H
 
-typedef enum style_tag_t {
-  TAG_COLOR = 0,
-  TAG_GRADIENT = 1
-} style_tag_t;
-
 typedef enum slant_tag_t {
   TAG_ROMAN   = 0,
   TAG_ITALIC  = 1,
@@ -197,6 +192,23 @@ typedef enum event_tag_t {
   TAG_BUTTON_ACTION  = 6,
   TAG_MOUSE_MOVE     = 7
 } event_tag_t;
+
+typedef enum style_tag_t {
+  TAG_COLOR    = 0,
+  TAG_GRADIENT = 1
+} style_tag_t;
+
+typedef enum line_join_tag_t {
+  TAG_ROUND = 0,
+  TAG_MITER = 1,
+  TAG_BEVEL = 2
+} line_join_tag_t;
+
+typedef enum line_cap_tag_t {
+  TAG_CAP_BUTT   = 0,
+  TAG_CAP_SQUARE = 1,
+  TAG_CAP_ROUND  = 2
+} line_cap_tag_t;
 
 typedef enum backend_tag_t {
   TAG_CANVAS  = 0,

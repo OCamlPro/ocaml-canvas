@@ -146,7 +146,10 @@ font_char_as_poly_outline(
     return false;
   }
 
-  polygon_offset(tp, p, w);
+  //TODO : Replace the debug transform_create by something else
+  transform_t *identity = transform_create();
+  polygon_offset(tp, p, w, JOIN_ROUND, CAP_BUTT, identity, identity);
+  transform_destroy(identity);
 
   polygon_destroy(tp);
 

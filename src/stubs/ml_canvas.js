@@ -643,6 +643,30 @@ function ml_canvas_set_line_width(canvas, width) {
   canvas.ctxt.lineWidth = width;
 }
 
+//Provides: ml_canvas_get_line_cap
+//Requires: Val_cap_type
+function ml_canvas_get_line_cap(canvas) {
+  return Val_cap_type(canvas.lineCap);
+}
+
+//Provides: ml_canvas_set_line_cap
+//Requires: Cap_type_val
+function ml_canvas_set_line_cap(canvas, cap) {
+  canvas.ctxt.lineCap = Cap_type_val(cap);
+}
+
+//Provides: ml_canvas_get_line_join
+//Requires: Val_join_type
+function ml_canvas_get_line_join(canvas) {
+  return Val_join_type(canvas.lineJoin);
+}
+
+//Provides: ml_canvas_set_line_join
+//Requires: Join_type_val
+function ml_canvas_set_line_join(canvas, join) {
+  canvas.ctxt.lineJoin = Join_type_val(join);
+}
+
 //Provides: ml_canvas_get_stroke_color
 //Requires: _int_of_color
 function ml_canvas_get_stroke_color(canvas) {
@@ -826,7 +850,6 @@ function ml_canvas_ellipse(canvas, p, radius, rotation, theta1, theta2, ccw) {
   canvas.ctxt.ellipse(p[1], p[2], radius[1], radius[2],
                       rotation, theta1, theta2, ccw);
 }
-
 
 
 /* Path stroking/filling */

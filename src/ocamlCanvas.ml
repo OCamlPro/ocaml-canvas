@@ -122,6 +122,16 @@ module Canvas = struct
     | ColorStyle of Color.t
     | GradientStyle of Gradient.t
 
+  type line_join =
+    | Round
+    | Miter
+    | Bevel
+
+  type line_cap =
+    | Butt
+    | Square
+    | RoundCap
+
   (* Gradients *)
 
   external createLinearGradient :
@@ -262,6 +272,18 @@ module Canvas = struct
 
   external setLineWidth : 'a t -> float -> unit
     = "ml_canvas_set_line_width"
+
+  external getLineJoin : 'a t -> line_join
+    = "ml_canvas_get_line_join"
+
+  external setLineJoin : 'a t -> line_join -> unit
+    = "ml_canvas_set_line_join"
+
+  external getLineCap : 'a t -> line_cap
+    = "ml_canvas_get_line_cap"
+
+  external setLineCap : 'a t -> line_cap -> unit
+    = "ml_canvas_set_line_cap"
 
   external getStrokeColor : 'a t -> Color.t
     = "ml_canvas_get_stroke_color"

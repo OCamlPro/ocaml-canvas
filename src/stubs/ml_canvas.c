@@ -592,6 +592,44 @@ ml_canvas_set_line_width(
 }
 
 CAMLprim value
+ml_canvas_get_line_join(
+  value mlCanvas)
+{
+  CAMLparam1(mlCanvas);
+  CAMLreturn(Val_join_type(canvas_get_join_type(Canvas_val(mlCanvas))));
+}
+
+CAMLprim value
+ml_canvas_set_line_join(
+  value mlCanvas,
+  value mlLineJoin)
+{
+  CAMLparam2(mlCanvas,mlLineJoin);
+  canvas_set_join_type(Canvas_val(mlCanvas),
+                       Join_type_val(mlLineJoin));
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
+ml_canvas_get_line_cap(
+  value mlCanvas)
+{
+  CAMLparam1(mlCanvas);
+  CAMLreturn(Val_cap_type(canvas_get_cap_type(Canvas_val(mlCanvas))));
+}
+
+CAMLprim value
+ml_canvas_set_line_cap(
+  value mlCanvas,
+  value mlLineCap)
+{
+  CAMLparam2(mlCanvas,mlLineCap);
+  canvas_set_cap_type(Canvas_val(mlCanvas),
+                      Cap_type_val(mlLineCap));
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
 ml_canvas_get_stroke_color(
   value mlCanvas)
 {
@@ -635,7 +673,7 @@ ml_canvas_set_stroke_style(
                                  Gradient_val(Field(mlStyle, 0)));
       break;
     default:
-      assert(!"Invalid style specified");
+      assert(!"Unknown style");
       break;
   }
   CAMLreturn(Val_unit);
@@ -696,7 +734,7 @@ ml_canvas_set_fill_style(
                                Gradient_val(Field(mlStyle,0)));
       break;
     default:
-      assert(!"Invalid style specified");
+      assert(!"Unknown style");
       break;
   }
   CAMLreturn(Val_unit);

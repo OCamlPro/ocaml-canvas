@@ -38,3 +38,11 @@
  (modules snake)
  (libraries ocaml-canvas)
 )
+
+(executable
+ (name thicklines)
+ (public_name ocaml-canvas-thicklines)
+ (modes byte_complete native js)
+ (modules thicklines)
+ (libraries ocaml-canvas)
+)

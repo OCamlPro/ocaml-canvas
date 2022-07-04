@@ -582,6 +582,48 @@ canvas_set_line_width(
   canvas->state->line_width = line_width;
 }
 
+join_type_t
+canvas_get_join_type(
+  const canvas_t *canvas)
+{
+  assert(canvas != NULL);
+  assert(canvas->state != NULL);
+
+  return canvas->state->join_type;
+}
+
+void
+canvas_set_join_type(
+  canvas_t *canvas,
+  join_type_t join_type)
+{
+  assert(canvas != NULL);
+  assert(canvas->state != NULL);
+
+  canvas->state->join_type = join_type;
+}
+
+cap_type_t
+canvas_get_cap_type(
+  const canvas_t *canvas)
+{
+  assert(canvas != NULL);
+  assert(canvas->state != NULL);
+
+  return canvas->state->cap_type;
+}
+
+void
+canvas_set_cap_type(
+  canvas_t *canvas,
+  cap_type_t cap_type)
+{
+  assert(canvas != NULL);
+  assert(canvas->state != NULL);
+
+  canvas->state->cap_type = cap_type;
+}
+
 color_t_
 canvas_get_stroke_color(
   const canvas_t *canvas)
@@ -1063,12 +1105,15 @@ canvas_stroke(
   }
 
   rect_t bbox = rect(point(0.0, 0.0), point(c->width, c->height));
-
-  if (polygonize_outline(c->path, c->state->line_width, p, &bbox) == true) {
+  transform_t *lin = transform_extract_linear(c->state->transform);
+  transform_t *inv_lin = transform_copy(lin);
+  transform_inverse(inv_lin);
+  if (polygonize_outline(c->path, c->state->line_width, p, &bbox, c->state->join_type, c->state->cap_type, lin, inv_lin) == true) {
     poly_render(c->surface, p, &bbox, c->state->stroke_style,
                 c->state->global_alpha, true, c->state->transform);
   }
-
+  transform_destroy(lin);
+  transform_destroy(inv_lin);
   polygon_destroy(p);
 
   // Thoughts: we could polygonize on the fly when building the path
@@ -1165,11 +1210,13 @@ canvas_stroke_rect(
   if (p == NULL) {
     return;
   }
-
-  polygon_offset(p, tp, c->state->line_width);
+  transform_t *lin = transform_extract_linear(c->state->transform);
+  transform_t *inv_lin = transform_copy(lin);
+  polygon_offset(p, tp, c->state->line_width, JOIN_ROUND, CAP_BUTT, lin, inv_lin);
   poly_render(c->surface, tp, &bbox, c->state->stroke_style,
               c->state->global_alpha, true, c->state->transform);
-
+  transform_destroy(lin);
+  transform_destroy(inv_lin);
   polygon_destroy(tp);
   polygon_destroy(p);
 }
@@ -1300,7 +1347,7 @@ canvas_blit(
 
   if (transform_is_pure_translation(dc->state->transform) == true) {
     double tx = 0.0, ty = 0.0;
-    transform_get_translation(dc->state->transform, &tx, &ty);
+    transform_extract_translation(dc->state->transform, &tx, &ty);
     pixmap_blit(&dp, dx + tx, dy + ty, &sp, sx, sy, width, height);
   }
   else

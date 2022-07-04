@@ -84,6 +84,8 @@ state_reset(
   s->stroke_style.content.color = color_black;
   s->global_alpha = 1.0;
   s->line_width = 1.0;
+  s->join_type = JOIN_ROUND;
+  s->cap_type = CAP_BUTT;
 }
 
 state_t *
@@ -115,6 +117,7 @@ state_copy(
   sc->stroke_style = fill_style_copy(&s->stroke_style);
   sc->global_alpha = s->global_alpha;
   sc->line_width = s->line_width;
-
+  sc->join_type = s->join_type;
+  sc->cap_type = s->cap_type;
   return sc;
 }

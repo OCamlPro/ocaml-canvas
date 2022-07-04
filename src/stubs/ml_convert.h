@@ -20,8 +20,9 @@
 #include "../implem/event.h"
 #include "../implem/pixmap.h"
 #include "../implem/font_desc.h"
-#include "../implem/gradient.h"
 #include "../implem/fill_style.h"
+#include "../implem/gradient.h"
+#include "../implem/polygonize.h"
 
 #if OCAML_VERSION < 41200
 
@@ -95,6 +96,30 @@ Gradient_val(
 value
 Val_style(
   fill_style_t style);
+
+fill_style_t
+Style_val(
+  value mlStyle);
+
+value
+Val_join_type(
+  join_type_t join);
+
+join_type_t
+Join_type_val(
+  value mlLineJoin);
+
+value
+Val_cap_type(
+  cap_type_t cap);
+
+cap_type_t
+Cap_type_val(
+  value mlLineCap);
+
+void
+Nullify_val(
+  value mlValue);
 
 value
 Val_pixmap(

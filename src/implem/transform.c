@@ -83,37 +83,6 @@ transform_copy(
 }
 
 void
-transform_extract_ft(
-  const transform_t *t,
-  double *a,
-  double *b,
-  double *c,
-  double *d)
-{
-  assert(t != NULL);
-  assert(a != NULL);
-  assert(b != NULL);
-  assert(c != NULL);
-  assert(d != NULL);
-
-  *a = t->a; *b = t->b;
-  *c = t->c; *d = t->d;
-}
-
-void
-transform_get_translation(
-  const transform_t *t,
-  double *e,
-  double *f)
-{
-  assert(t != NULL);
-  assert(e != NULL);
-  assert(f != NULL);
-
-  *e = t->e; *f = t->f;
-}
-
-void
 transform_set(
   transform_t *t,
   double a,
@@ -274,23 +243,6 @@ transform_apply(
   p->y = y;
 }
 
-// https://frederic-wang.fr/decomposition-of-2d-transform-matrices.html
-void
-transform_extract_scale(
-  const transform_t *t,
-  double *sx,
-  double *sy)
-{
-  assert(t != NULL);
-  assert(sx != NULL);
-  assert(sy != NULL);
-
-  double det = t->a * t->d - t->b * t->c;
-  double r = sqrt(t->a * t->a + t->b * t->b);
-  *sx = r;
-  *sy = det / r;
-}
-
 static const double _epsilon = 0.0001;
 
 bool
@@ -315,4 +267,94 @@ transform_is_pure_translation(
     between(t->d - 1.0, -_epsilon, _epsilon) &&
     between(t->b, -_epsilon, _epsilon) &&
     between(t->c, -_epsilon, _epsilon);
+}
+
+void
+transform_extract_ft(
+  const transform_t *t,
+  double *a,
+  double *b,
+  double *c,
+  double *d)
+{
+  assert(t != NULL);
+  assert(a != NULL);
+  assert(b != NULL);
+  assert(c != NULL);
+  assert(d != NULL);
+
+  *a = t->a; *b = t->b;
+  *c = t->c; *d = t->d;
+}
+
+void
+transform_extract_translation(
+  const transform_t *t,
+  double *e,
+  double *f)
+{
+  assert(t != NULL);
+  assert(e != NULL);
+  assert(f != NULL);
+
+  *e = t->e; *f = t->f;
+}
+
+// https://frederic-wang.fr/decomposition-of-2d-transform-matrices.html
+void
+transform_extract_scale(
+  const transform_t *t,
+  double *sx,
+  double *sy)
+{
+  assert(t != NULL);
+  assert(sx != NULL);
+  assert(sy != NULL);
+
+  double det = t->a * t->d - t->b * t->c;
+  double r = sqrt(t->a * t->a + t->b * t->b);
+  *sx = r;
+  *sy = det / r;
+}
+
+transform_t *
+transform_extract_linear(
+  const transform_t *t
+)
+{
+  assert(t != NULL);
+
+  transform_t *tc = (transform_t *)calloc(1, sizeof(transform_t));
+  if (tc == NULL) {
+    return NULL;
+  }
+
+  tc->a = t->a;
+  tc->b = t->b;
+  tc->c = t->c;
+  tc->d = t->d;
+  tc->e = 0;
+  tc->f = 0;
+
+  return tc;
+}
+
+point_t
+point_offset_ortho_transform(
+  point_t p1,
+  point_t p2,
+  double o,
+  const transform_t *lin,
+  const transform_t *inv_linear)
+{
+  point_t dp = point(p2.x - p1.x, p2.y - p1.y);
+
+  transform_apply(inv_linear, &dp);
+  point_t ortho = point(-dp.y, dp.x);
+  double norm = point_dist(ortho, point(0.0, 0.0));
+
+  transform_apply(lin, &ortho);
+  ortho = point((ortho.x / norm) * o, (ortho.y / norm) * o);
+
+  return point(p1.x + ortho.x, p1.y + ortho.y);
 }
