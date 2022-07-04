@@ -14,11 +14,13 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <memory.h>
 #include <setjmp.h>
 #include <assert.h>
 
 #include <png.h>
 
+#include "../util.h"
 #include "../color.h"
 
 bool
@@ -47,8 +49,6 @@ unx_impexp_export_png(
   assert(height > 0);
   assert(filename != NULL);
 
-  png_byte **row_pointers = NULL;
-
   FILE *fp = fopen(filename, "wb");
   if (fp == NULL) {
     return false;
@@ -68,46 +68,27 @@ unx_impexp_export_png(
     return false;
   }
 
+  png_byte **row_pointers = NULL;
+
   if (setjmp(png_jmpbuf(png))) {
     if (row_pointers != NULL) {
       png_free(png, row_pointers);
-    };
+    }
     png_destroy_write_struct(&png, &info);
     fclose(fp);
     return false;
   }
 
-  // Turn of a check
   png_set_check_for_invalid_index(png, 0);
 
-/* Initialize the default input/output functions for the PNG file to standard C streams. To replace the default read and write functions, use png_set_read_fn() and png_set_write_fn() respectively.
- Again, if you wish to handle writing data in
-another way, see the discussion on libpng I/O handling in the Customizing
-Libpng section below. */
   png_init_io(png, fp);
 
-// here, can set up a row callback if needed
-
-/*
-Can set filters if needed
-png_set_filter(png_ptr, 0,
-       PNG_FILTER_NONE  | PNG_FILTER_VALUE_NONE |
-       PNG_FILTER_SUB   | PNG_FILTER_VALUE_SUB  |
-       PNG_FILTER_UP    | PNG_FILTER_VALUE_UP   |
-       PNG_FILTER_AVG   | PNG_FILTER_VALUE_AVG  |
-       PNG_FILTER_PAETH | PNG_FILTER_VALUE_PAETH|
-       PNG_ALL_FILTERS  | PNG_FAST_FILTERS);
-*/
-
-// here, can set up zlib compression level
-
-  png_set_IHDR(png, info, width, height, 8, PNG_COLOR_TYPE_RGBA,
+  png_set_IHDR(png, info, width, height, 8, PNG_COLOR_TYPE_RGB_ALPHA,
     PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 
-// here, may call other png_set...
+  png_set_bgr(png);
 
-
-// High-level interface
+  png_write_info(png, info);
 
   row_pointers = (png_byte **)png_malloc(png, height * sizeof(png_byte *));
   if (row_pointers == NULL) {
@@ -120,36 +101,180 @@ png_set_filter(png_ptr, 0,
     row_pointers[i] = (png_byte *)&data[i * width];
   }
 
-  png_set_rows(png, info, row_pointers); // doc says &row_pointers
-                                        // does the lib try to free them ?
-
-  png_write_png(png, info, PNG_TRANSFORM_BGR, NULL);
-
-  png_free(png, row_pointers);
-
-  png_destroy_write_struct(&png, &info);
-
-  fclose(fp);
-
-  return true;
-// Low-level interface
-/*
-  png_write_info(png, info);
-
-  // To remove the alpha channel for PNG_COLOR_TYPE_RGB format,
-  // Use png_set_filler().
-  //png_set_filler(png, 0, PNG_FILLER_AFTER);
-
-  if (!row_pointers) abort();
-
   png_write_image(png, row_pointers);
   png_write_end(png, NULL);
 
-  for(int y = 0; y < height; y++) {
-    free(row_pointers[y]);
+  png_free(png, row_pointers);
+  png_destroy_write_struct(&png, &info);
+  fclose(fp);
+
+  return true;
+}
+
+bool
+unx_impexp_import_png(
+  color_t_ **p_data,
+  int32_t *p_width,
+  int32_t *p_height,
+  int32_t dx,
+  int32_t dy,
+  const char *filename)
+{
+  assert(p_data != NULL);
+  assert((*p_data != NULL) || ((dx == 0) && (dy == 0)));
+  assert(p_width != NULL);
+  assert(p_height != NULL);
+  assert((*p_data == NULL) || ((*p_width > 0) && (*p_height > 0)));
+  assert(filename != NULL);
+
+  bool res = false;
+
+  bool alloc = (*p_data == NULL);
+
+  png_struct *png = NULL;
+  png_info *info = NULL;
+  png_byte *row = NULL;
+  color_t_ *data = NULL;
+
+  FILE *fp = fopen(filename, "rb");
+  if (fp == NULL) {
+    goto error;
   }
-  free(row_pointers);
-*/
+
+  png_byte sig[8] = { 0 };
+  size_t n = fread(sig, 1, 8, fp);
+  rewind(fp);
+  if ((n != 8) || (png_sig_cmp(sig, 0, 8) != 0)) {
+    goto error;
+  }
+
+  png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+  if (png == NULL) {
+    goto error;
+  }
+
+  info = png_create_info_struct(png);
+  if (info == NULL) {
+    goto error;
+  }
+
+  if (setjmp(png_jmpbuf(png))) {
+    goto error;
+  }
+
+  png_init_io(png, fp);
+
+  png_read_info(png, info);
+
+  png_byte color_type = png_get_color_type(png, info);
+  png_byte bit_depth = png_get_bit_depth(png, info);
+
+  if (bit_depth == 16) {
+    png_set_strip_16(png);
+  }
+
+  if (png_get_valid(png, info, PNG_INFO_tRNS)) {
+    png_set_tRNS_to_alpha(png);
+  }
+
+  if (color_type == PNG_COLOR_TYPE_GRAY && bit_depth < 8) {
+    png_set_expand_gray_1_2_4_to_8(png);
+  }
+
+  if (color_type == PNG_COLOR_TYPE_GRAY ||
+      color_type == PNG_COLOR_TYPE_GRAY_ALPHA) {
+    png_set_gray_to_rgb(png);
+  }
+
+  if (color_type == PNG_COLOR_TYPE_PALETTE) {
+    png_set_palette_to_rgb(png);
+  }
+
+  if (color_type == PNG_COLOR_TYPE_RGB ||
+      color_type == PNG_COLOR_TYPE_GRAY ||
+      color_type == PNG_COLOR_TYPE_PALETTE) {
+    png_set_filler(png, 0xFF, PNG_FILLER_AFTER);
+  }
+
+  png_set_bgr(png);
+
+  int32_t swidth = png_get_image_width(png, info);
+  int32_t sheight = png_get_image_height(png, info);
+
+  int32_t dwidth = 0, dheight = 0;
+  if (alloc == true) {
+    dwidth = swidth;
+    dheight = sheight;
+  } else {
+    dwidth = *p_width;
+    dheight = *p_height;
+  }
+
+  int32_t sx = 0, sy = 0;
+  int32_t width = swidth, height = sheight;
+  adjust_blit_info(dwidth, dheight, dx, dy,
+                   swidth, sheight, sx, sy,
+                   width, height);
+
+  row = (png_byte *)png_malloc(png, swidth * COLOR_SIZE);
+  if (row == NULL) {
+    goto error;
+  }
+
+  if (alloc == true) {
+    data = calloc(width * height, COLOR_SIZE);
+    if (data == NULL) {
+      goto error;
+    }
+  } else {
+    data = *p_data;
+  }
+
+  int passes = png_set_interlace_handling(png);
+  png_read_update_info(png, info);
+
+  for (int p = 0; p < passes; ++p) {
+    for (int32_t i = 0; i < sy; ++i) {
+      png_read_row(png, row, NULL);
+    }
+    for (int32_t i = 0; i < height; ++i) {
+      if (p > 0) {
+        memcpy(row + sx * COLOR_SIZE,
+               (void *)&data[(dy + i) * dwidth + dx],
+               width * COLOR_SIZE);
+      }
+      png_read_row(png, row, NULL);
+      memcpy((void *)&data[(dy + i) * dwidth + dx],
+             row + sx * COLOR_SIZE,
+             width * COLOR_SIZE);
+    }
+    for (int32_t i = sy + height; i < sheight; ++i) {
+      png_read_row(png, row, NULL);
+    }
+  }
+
+  png_read_end(png, NULL);
+
+  if (alloc == true) {
+    *p_data = data;
+    *p_width = dwidth;
+    *p_height = dheight;
+  }
+
+  res = true;
+
+error:
+  if ((res == false) && (alloc == true) && (data != NULL)) {
+    free(data);
+  }
+  if (row != NULL) {
+    png_free(png, row);
+  }
+  if (png != NULL) {
+    png_destroy_read_struct(&png, (info == NULL) ? NULL : &info, NULL);
+  }
+  fclose(fp);
+  return res;
 }
 
 #else

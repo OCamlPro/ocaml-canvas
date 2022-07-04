@@ -41,6 +41,10 @@ canvas_create_offscreen(
   int32_t width,
   int32_t height);
 
+canvas_t *
+canvas_create_offscreen_from_png(
+  const char *filename);
+
 void
 canvas_destroy(
   canvas_t *canvas);
@@ -391,6 +395,13 @@ canvas_set_image_data(
 bool
 canvas_export_png(
   const canvas_t *c,
+  const char *filename);
+
+bool
+canvas_import_png(
+  canvas_t *c,
+  int32_t x,
+  int32_t y,
   const char *filename);
 
 #endif /* __CANVAS_H */

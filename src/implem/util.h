@@ -51,4 +51,16 @@ double
 normalize_angle(
   double a);
 
+#define adjust_blit_info(dwidth,dheight,dx,dy,swidth,sheight,sx,sy,width,height) \
+  do { \
+    if ((dx) < 0) { (sx) -= (dx); (width)  += (dx); (dx) = 0; } \
+    if ((dy) < 0) { (sy) -= (dy); (height) += (dy); (dy) = 0; } \
+    if ((sx) < 0) { (dx) -= (sx); (width)  += (sx); (sx) = 0; } \
+    if ((sy) < 0) { (dy) -= (sy); (height) += (sy); (sy) = 0; } \
+    if ((dx) + (width)  > (dwidth))  { width  = (dwidth)  - (dx); } \
+    if ((dy) + (height) > (dheight)) { height = (dheight) - (dy); } \
+    if ((sx) + (width)  > (swidth))  { width  = (swidth)  - (sx); } \
+    if ((sy) + (height) > (sheight)) { height = (sheight) - (sy); } \
+  } while (0)
+
 #endif /* __UTIL_H */

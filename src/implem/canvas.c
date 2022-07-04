@@ -51,7 +51,8 @@ _canvas_create_internal(
   int32_t x,
   int32_t y,
   int32_t width,
-  int32_t height)
+  int32_t height,
+  const char *filename)
 {
   width = max(1, width);
   height = max(1, height);
@@ -85,7 +86,14 @@ _canvas_create_internal(
 
     canvas->window = NULL;
 
-    canvas->surface = surface_create(width, height);
+    if (filename == NULL) {
+      canvas->surface = surface_create(width, height);
+    } else {
+      canvas->surface = surface_create_from_png(filename);
+      pair_t(int32_t) size = surface_get_size(canvas->surface);
+      width = fst(size);
+      height = snd(size);
+    }
     if (canvas->surface == NULL) {
       goto error_offscreen_surface;
     }
@@ -154,7 +162,8 @@ canvas_create_framed(
 {
   assert(title != NULL);
 
-  return _canvas_create_internal(CANVAS_FRAMED, title, x, y, width, height);
+  return _canvas_create_internal(CANVAS_FRAMED, title,
+                                 x, y, width, height, NULL);
 }
 
 canvas_t *
@@ -164,7 +173,8 @@ canvas_create_frameless(
   int32_t width,
   int32_t height)
 {
-  return _canvas_create_internal(CANVAS_FRAMELESS, NULL, x, y, width, height);
+  return _canvas_create_internal(CANVAS_FRAMELESS, NULL,
+                                 x, y, width, height, NULL);
 }
 
 canvas_t *
@@ -172,7 +182,16 @@ canvas_create_offscreen(
   int32_t width,
   int32_t height)
 {
-  return _canvas_create_internal(CANVAS_OFFSCREEN, NULL, 0, 0, width, height);
+  return _canvas_create_internal(CANVAS_OFFSCREEN, NULL,
+                                 0, 0, width, height, NULL);
+}
+
+canvas_t *
+canvas_create_offscreen_from_png(
+  const char *filename)
+{
+  return _canvas_create_internal(CANVAS_OFFSCREEN, NULL,
+                                 0, 0, 0, 0, filename);
 }
 
 void
@@ -1230,4 +1249,17 @@ canvas_export_png(
   assert(filename != NULL);
 
   return surface_export_png(c->surface, filename);
+}
+
+bool
+canvas_import_png(
+  canvas_t *c,
+  int32_t x,
+  int32_t y,
+  const char *filename)
+{
+  assert(c != NULL);
+  assert(filename != NULL);
+
+  return surface_import_png(c->surface, x, y, filename);
 }

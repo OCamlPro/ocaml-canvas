@@ -346,6 +346,21 @@ function ml_canvas_create_offscreen(size) {
   return canvas;
 }
 
+//Provides: ml_canvas_create_offscreen_from_png
+//Requires: ml_canvas_create_offscreen, _ml_canvas_image_of_png_file
+function ml_canvas_create_offscreen_from_png(filename) {
+  var img = _ml_canvas_image_of_png_file(filename);
+  if (img === null) {
+    return null;
+  }
+  var canvas = ml_canvas_create_offscreen([ 0, img.width, img.height ])
+  if (canvas === null) {
+    return null;
+  }
+  canvas.ctxt.drawImage(img, 0, 0);
+  return canvas;
+}
+
 // Provides: ml_canvas_destroy
 function ml_canvas_destroy(canvas) {
   if (canvas.header !== null) {
@@ -746,17 +761,33 @@ function ml_canvas_set_image_data(canvas, dpos, data, spos, size) {
 }
 
 //Provides: ml_canvas_export_png
+//Requires: caml_create_file
 function ml_canvas_export_png(canvas, filename) {
-  var link = document.createElement('a');
-  link.download = filename;
-  link.href = canvas.surface.toDataURL("image/png");
-  link.dataset.downloadurl = ["image/png", link.download, link.href].join(':');
-  document.body.appendChild(link);
-  link.click();
-  window.setTimeout(function () {
-      window.URL.revokeObjectURL(link.href);
-      document.body.removeChild(link);
-  }, 1000);
+  var data = canvas.surface.toDataURL("image/png").substring(22);
+  caml_create_file(filename, window.atob(data));
+}
+
+//Provides: ml_canvas_import_png
+//Requires: _ml_canvas_image_of_png_file
+function ml_canvas_import_png(canvas, pos, filename) {
+  var img = _ml_canvas_image_of_png_file(filename);
+  if (img !== null) {
+    canvas.ctxt.drawImage(img, pos[1], pos[2]);
+    // image, sx, sy, sWitdh, sHeight, dx, dy, dWidth, dHeight
+  }
+}
+
+//Provides: _ml_canvas_image_of_png_file
+//Requires: caml_read_file_content
+function _ml_canvas_image_of_png_file(filename) {
+  var file = caml_read_file_content(filename);
+  if (file === null) {
+    return null;
+  }
+  var data = window.btoa(caml_read_file_content(filename));
+  var img = new window.Image();
+  img.src = 'data:image/png;base64,' + data;
+  return img;
 }
 
 

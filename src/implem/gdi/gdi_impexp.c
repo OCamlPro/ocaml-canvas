@@ -17,16 +17,10 @@
 #include <assert.h>
 
 #include <windows.h>
-// on real windows, this contains C++ stuff
-// and the correct include is GdiplusGpStubs.h
-//#include <gdiplus/gdiplustypes.h>
-// on real windows SDK, this is just gdiplusflat.h
-// tweak dune file, if pure windows, don't include gdiplus
-// or, including gdiplus anyways does not hurt ?
-//#include <gdiplus/gdiplusflat.h>
-#include <gdiplus/gdiplus.h> // compiles differently if C++
+#include <gdiplus/gdiplus.h>
 
 #include "../unicode.h"
+#include "../util.h"
 #include "../color.h"
 
 static bool _gdi_impexp_initialized = false;
@@ -133,6 +127,131 @@ gdi_impexp_export_png(
   free(wfilename);
 
   return (status == Ok);
+}
+
+static bool
+_gdi_impexp_get_bitmap_size(
+  GpBitmap *bitmap,
+  int32_t *p_width,
+  int32_t *p_height)
+{
+  assert(bitmap != NULL);
+  assert(p_width != NULL);
+  assert(p_height != NULL);
+
+  UINT width = 0;
+  UINT height = 0;
+
+  GpStatus status = GdipGetImageWidth((GpImage *)bitmap, &width);
+  if (status != Ok) {
+    return false;
+  }
+
+  status = GdipGetImageHeight((GpImage *)bitmap, &height);
+  if (status != Ok) {
+    return false;
+  }
+
+  *p_width = (int32_t)width;
+  *p_height = (int32_t)height;
+
+  return true;
+}
+
+bool
+gdi_impexp_import_png( // Actually, this imports any supported format
+  color_t_ **p_data,
+  int32_t *p_width,
+  int32_t *p_height,
+  int32_t dx,
+  int32_t dy,
+  const char *filename)
+{
+  assert(_gdi_impexp_initialized == true);
+  assert(p_data != NULL);
+  assert((*p_data != NULL) || ((dx == 0) && (dy == 0)));
+  assert(p_width != NULL);
+  assert(p_height != NULL);
+  assert((*p_data == NULL) || ((*p_width > 0) && (*p_height > 0)));
+  assert(filename != NULL);
+
+  bool res = false;
+
+  bool alloc = (*p_data == NULL);
+
+  color_t_ *data = NULL;
+
+  WCHAR *wfilename = mbs_to_wcs(filename);
+  if (wfilename == NULL) {
+    goto error;
+  }
+
+  GpBitmap *bitmap = NULL;
+  GpStatus status = GdipCreateBitmapFromFile(wfilename, &bitmap);
+  if (status != Ok) {
+    goto error;
+  }
+
+  int32_t swidth = 0, sheight = 0;
+  if (_gdi_impexp_get_bitmap_size(bitmap, &swidth, &sheight) == false) {
+    goto error;
+  }
+
+  int32_t dwidth = 0, dheight = 0;
+  if (alloc == true) {
+    dwidth = swidth;
+    dheight = sheight;
+  } else {
+    dwidth = *p_width;
+    dheight = *p_height;
+  }
+
+  int32_t sx = 0, sy = 0;
+  int32_t width = swidth, height = sheight;
+  adjust_blit_info(dwidth, dheight, dx, dy,
+                   swidth, sheight, sx, sy,
+                   width, height);
+
+  if (alloc == true) {
+    data = calloc(width * height, COLOR_SIZE);
+    if (data == NULL) {
+      goto error;
+    }
+  } else {
+    data = *p_data;
+  }
+
+  GpRect src_rect = { sx, sy, width, height };
+  BitmapData bitmap_data = {
+    width, height, dwidth * COLOR_SIZE, PixelFormat32bppARGB,
+    (void *)data + (dy * dwidth + dx) * COLOR_SIZE, (UINT_PTR)NULL
+  };
+  status = GdipBitmapLockBits(bitmap, &src_rect,
+                              ImageLockModeRead | ImageLockModeUserInputBuf,
+                              PixelFormat32bppARGB, &bitmap_data);
+  if (status != Ok) {
+    goto error;
+  }
+
+  if (alloc == true) {
+    *p_data = data;
+    *p_width = dwidth;
+    *p_height = dheight;
+  }
+
+  res = true;
+
+error:
+  if ((res == false) && (alloc == true) && (data != NULL)) {
+    free(data);
+  }
+  if (bitmap != NULL) {
+    GdipDisposeImage((GpImage *)bitmap);
+  }
+  if (wfilename != NULL) {
+    free(wfilename);
+  }
+  return res;
 }
 
 #else

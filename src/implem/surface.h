@@ -15,6 +15,7 @@
 #include <stdbool.h>
 
 #include "config.h"
+#include "tuples.h"
 #include "target.h"
 #include "present_data.h"
 #include "color.h"
@@ -28,6 +29,10 @@ surface_create(
   int32_t height);
 
 surface_t *
+surface_create_from_png(
+  const char *filename);
+
+surface_t *
 surface_create_onscreen(
   target_t *target,
   int32_t width,
@@ -36,6 +41,10 @@ surface_create_onscreen(
 void
 surface_destroy(
   surface_t *s);
+
+pair_t(int32_t)
+surface_get_size(
+  const surface_t *s);
 
 bool
 surface_resize(
@@ -94,6 +103,13 @@ surface_set_image_data(
 bool
 surface_export_png(
   const surface_t *s,
+  const char *filename);
+
+bool
+surface_import_png(
+  surface_t *s,
+  int32_t x,
+  int32_t y,
   const char *filename);
 
 #endif /* __SURFACE_H */

@@ -132,6 +132,9 @@ module Canvas = struct
   external createOffscreen_ : (int * int) -> [> `Offscreen] t
     = "ml_canvas_create_offscreen"
 
+  external createOffscreenFromPNG : string -> [> `Offscreen] t
+    = "ml_canvas_create_offscreen_from_png"
+
   external destroy : 'a t -> unit
     = "ml_canvas_destroy"
 
@@ -364,6 +367,9 @@ module Canvas = struct
 
   external exportPNG : 'a t -> string -> unit
     = "ml_canvas_export_png"
+
+  external importPNG : 'a t -> pos:(int * int) -> string -> unit
+    = "ml_canvas_import_png"
 
 end
 
