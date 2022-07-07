@@ -87,7 +87,7 @@ surface_create_from_image_data(
   image_data_t *image_data)
 {
   assert(image_data != NULL);
-  assert(image_data_valid(image_data) == true);
+  assert(image_data_valid(*image_data) == true);
 
   return _surface_create_internal(image_data->width,
                                   image_data->height,
@@ -102,7 +102,7 @@ surface_create_from_png(
 
   int32_t width = 0;
   int32_t height = 0;
-  color_t *data = NULL;
+  color_t_ *data = NULL;
 
   bool res = impexp_import_png(&data, &width, &height, 0, 0, filename);
   if (res == false) {
