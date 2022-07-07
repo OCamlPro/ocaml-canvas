@@ -85,6 +85,22 @@ module Font = struct
 
 end
 
+module ImageData = struct
+
+  type t =
+    (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array3.t
+
+  external createFromPNG : string -> t
+    = "ml_canvas_image_data_create_from_png"
+
+  external importPNG : t -> pos:(int * int) -> string -> unit
+    = "ml_canvas_image_data_import_png"
+
+  external exportPNG : t -> string -> unit
+    = "ml_canvas_image_data_export_png"
+
+end
+
 module Canvas = struct
 
   type 'a t
@@ -131,6 +147,9 @@ module Canvas = struct
 
   external createOffscreen_ : (int * int) -> [> `Offscreen] t
     = "ml_canvas_create_offscreen"
+
+  external createOffscreenFromImageData : ImageData.t -> [> `Offscreen] t
+    = "ml_canvas_create_offscreen_from_image_data"
 
   external createOffscreenFromPNG : string -> [> `Offscreen] t
     = "ml_canvas_create_offscreen_from_png"
@@ -211,10 +230,10 @@ module Canvas = struct
 
   external setFillColor : 'a t -> Color.t -> unit
     = "ml_canvas_set_fill_color"
-  
+
   external getGlobalAlpha : 'a t -> float
     = "ml_canvas_get_global_alpha"
-  
+
   external setGlobalAlpha : 'a t -> float -> unit
     = "ml_canvas_set_global_alpha"
 
@@ -345,24 +364,21 @@ module Canvas = struct
   external setPixel : 'a t -> (int * int) -> Color.t -> unit
     = "ml_canvas_set_pixel"
 
-  type image_data =
-    (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array3.t
-
   external getImageData :
-    'a t -> pos:(int * int) -> size:(int * int) -> image_data
+    'a t -> pos:(int * int) -> size:(int * int) -> ImageData.t
     = "ml_canvas_get_image_data"
 
   external getImageData_ :
-    'a t -> (int * int) -> (int * int) -> image_data
+    'a t -> (int * int) -> (int * int) -> ImageData.t
     = "ml_canvas_get_image_data"
 
   external setImageData :
-    'a t -> dpos:(int * int) -> image_data ->
+    'a t -> dpos:(int * int) -> ImageData.t ->
     spos:(int * int) -> size:(int * int) -> unit
     = "ml_canvas_set_image_data"
 
   external setImageData_ :
-    'a t -> (int * int) -> image_data -> (int * int) -> (int * int) -> unit
+    'a t -> (int * int) -> ImageData.t -> (int * int) -> (int * int) -> unit
     = "ml_canvas_set_image_data"
 
   external exportPNG : 'a t -> string -> unit

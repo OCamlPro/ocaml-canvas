@@ -16,12 +16,10 @@
 #include <assert.h>
 
 #include "config.h"
-#include "tuples.h"
 #include "target.h"
 #include "present_data.h"
 #include "color.h"
-#include "image_data.h"
-#include "impexp.h"
+#include "pixmap.h"
 #include "surface.h"
 #include "surface_internal.h"
 
@@ -83,36 +81,18 @@ surface_create(
 }
 
 surface_t *
-surface_create_from_image_data(
-  image_data_t *image_data)
+surface_create_from_pixmap(
+  pixmap_t *pixmap)
 {
-  assert(image_data != NULL);
-  assert(image_data_valid(*image_data) == true);
+  assert(pixmap != NULL);
+  assert(pixmap_valid(*pixmap) == true);
 
-  return _surface_create_internal(image_data->width,
-                                  image_data->height,
-                                  image_data->data);
-}
-
-surface_t *
-surface_create_from_png(
-  const char *filename)
-{
-  assert(filename != NULL);
-
-  int32_t width = 0;
-  int32_t height = 0;
-  color_t_ *data = NULL;
-
-  bool res = impexp_import_png(&data, &width, &height, 0, 0, filename);
-  if (res == false) {
-    return NULL;
-  }
-
-  surface_t *s = _surface_create_internal(width, height, data);
-  if (s == NULL) {
-    free(data);
-    return NULL;
+  surface_t *s =
+    _surface_create_internal(pixmap->width, pixmap->height, pixmap->data);
+  if (s != NULL) {
+    pixmap->data = NULL;
+    pixmap->width = 0;
+    pixmap->height = 0;
   }
 
   return s;
@@ -181,15 +161,6 @@ surface_destroy(
   }
 
   free(s);
-}
-
-pair_t(int32_t)
-surface_get_size(
-  const surface_t *s)
-{
-  assert(s != NULL);
-
-  return pair(int32_t, s->width, s->height);
 }
 
 static void
@@ -364,143 +335,12 @@ surface_blit(
 
 }
 
-color_t_
-surface_get_pixel(
-  const surface_t *s,
-  int32_t x,
-  int32_t y)
-{
-  assert(s != NULL);
-  assert(s->data != NULL);
-
-  color_t_ color = color_black;
-
-  if ((x >= 0) && (x < s->width) && (y >= 0) && (y < s->height)) {
-    color = s->data[y * s->width + x];
-  }
-
-  return color;
-}
-
-void
-surface_set_pixel(
-  surface_t *s,
-  int32_t x,
-  int32_t y,
-  color_t_ color)
-{
-  assert(s != NULL);
-  assert(s->data != NULL);
-
-  if ((x >= 0) && (x < s->width) && (y >= 0) && (y < s->height)) {
-    s->data[y * s->width + x] = color;
-  }
-}
-
-image_data_t
-surface_get_image_data(
-  const surface_t *ss,
-  int32_t sx,
-  int32_t sy,
-  int32_t width,
-  int32_t height)
-{
-  assert(ss != NULL);
-  assert(width > 0);
-  assert(height > 0);
-
-  image_data_t dd = image_data(width, height, NULL);
-  if (image_data_valid(dd) == false) {
-    return dd;
-  }
-
-  int32_t dx = 0;
-  int32_t dy = 0;
-
-  if (sx < 0) { dx -= sx; width += sx; sx = 0; }
-  if (sy < 0) { dy -= sy; height += sy; sy = 0; }
-
-  if (sx + width > ss->width) { width = ss->width - sx; }
-  if (sy + height > ss->height) { height = ss->height - sy; }
-
-  if ((width > 0) && (height > 0)) {
-    for (int32_t i = 0; i < height; ++i) {
-      memcpy(&dd.data[(dy+i) * dd.width + dx],
-             &ss->data[(sy+i) * ss->width + sx],
-             width * COLOR_SIZE);
-    }
-  }
-
-  return dd;
-}
-
-void
-surface_set_image_data(
-  surface_t *ds,
-  int32_t dx,
-  int32_t dy,
-  const image_data_t *sd,
-  int32_t sx,
-  int32_t sy,
-  int32_t width,
-  int32_t height)
-{
-  assert(ds != NULL);
-  assert(sd != NULL);
-  assert(width > 0);
-  assert(height > 0);
-
-  if (dx < 0) { sx -= dx; width += dx; dx = 0; }
-  if (dy < 0) { sy -= dy; height += dy; dy = 0; }
-
-  if (sx < 0) { dx -= sx; width += sx; sx = 0; }
-  if (sy < 0) { dy -= sy; height += sy; sy = 0; }
-
-  if (dx + width > ds->width) { width = ds->width - dx; }
-  if (dy + height > ds->height) { height = ds->height - dy; }
-
-  if (sx + width > sd->width) { width = sd->width - sx; }
-  if (sy + height > sd->height) { height = sd->height - sy; }
-
-  if ((width > 0) && (height > 0)) {
-    for (int32_t i = 0; i < height; ++i) {
-      memcpy(&ds->data[(dy+i) * ds->width + dx],
-             &sd->data[(sy+i) * sd->width + sx],
-             width * COLOR_SIZE);
-    }
-  }
-}
-
-image_data_t
-surface_get_raw_image_data(
+pixmap_t
+surface_get_raw_pixmap(
   surface_t *s)
 {
   assert(s != NULL);
   assert(s->data != NULL);
 
-  return image_data(s->width, s->height, s->data);
-}
-
-bool
-surface_export_png(
-  const surface_t *s,
-  const char *filename)
-{
-  assert(s != NULL);
-  assert(filename != NULL);
-
-  return impexp_export_png(s->data, s->width, s->height, filename);
-}
-
-bool
-surface_import_png(
-  surface_t *s,
-  int32_t x,
-  int32_t y,
-  const char *filename)
-{
-  assert(s != NULL);
-  assert(filename != NULL);
-
-  return impexp_import_png(&s->data, &s->width, &s->height, x, y, filename);
+  return pixmap(s->width, s->height, s->data);
 }

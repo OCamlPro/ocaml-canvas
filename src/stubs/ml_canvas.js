@@ -145,6 +145,82 @@ function _frame_handler(timestamp) {
 
 
 
+/* Image Data (aka Pixmaps) */
+
+//Provides: _ml_canvas_ba_of_img
+//Requires: caml_ba_create_unsafe
+function _ml_canvas_ba_of_img(img) {
+  var surface = document.createElement("canvas");
+  surface.width = img.width;
+  surface.height = img.height;
+  var ctxt = surface.getContext("2d");
+  ctxt.drawImage(img, 0, 0);
+  var image = ctxt.getImageData(0, 0, img.width, img.height);
+  var ta = new window.Uint8Array(image.data.buffer);
+  return caml_ba_create_unsafe(3 /* Uint8Array */, 0 /* c_layout */,
+                               [img.height, img.width, 4], ta);
+}
+
+//Provides: _ml_canvas_surface_of_ba
+//Requires: caml_ba_to_typed_array,caml_ba_dim_1,caml_ba_dim_2
+function _ml_canvas_surface_of_ba(data) {
+  var surface = document.createElement("canvas");
+  surface.width = caml_ba_dim_2(data);
+  surface.height = caml_ba_dim_1(data);
+  var ctxt = surface.getContext("2d");
+  var ta = new window.Uint8ClampedArray(caml_ba_to_typed_array(data).buffer);
+  if (window.ImageData === undefined) {
+    var image = ctxt.createImageData(surface.width, surface.height);
+    image.data.set(ta);
+  } else {
+    var image = new window.ImageData(ta, surface.width, surface.height);
+  }
+  ctxt.putImageData(image, 0, 0);
+  return surface;
+}
+
+//Provides: ml_canvas_image_data_create_from_png
+//Requires: _ml_canvas_image_of_png_file,_ml_canvas_ba_of_img
+function ml_canvas_image_data_create_from_png(filename) {
+  var img = _ml_canvas_image_of_png_file(filename);
+  if (img === null) {
+    return null;
+  }
+  return _ml_canvas_ba_of_img(img);
+}
+
+//Provides: ml_canvas_image_data_import_png
+//Requires: _ml_canvas_surface_of_ba,_ml_canvas_image_of_png_file
+//Requires: caml_ba_to_typed_array,caml_ba_dim_1,caml_ba_dim_2
+function ml_canvas_image_data_import_png(data, pos, filename) {
+  var surface = _ml_canvas_surface_of_ba(data);
+  var img = _ml_canvas_image_of_png_file(filename);
+  if ((surface !== null) && (img !== null)) {
+    var ctxt = surface.getContext("2d");
+    ctxt.drawImage(img, pos[1], pos[2]);
+    var image = ctxt.getImageData(0, 0, surface.width, surface.height);
+    var sta = new window.Uint8Array(image.data.buffer);
+    var dta = caml_ba_to_typed_array(data);
+    for (var i = 0; i < dta.length; i++) {
+      dta[i] = sta[i];
+    }
+  }
+}
+
+//Provides: ml_canvas_image_data_export_png
+//Requires: _ml_canvas_surface_of_ba,caml_create_file
+function ml_canvas_image_data_export_png(data, filename) {
+  var surface = _ml_canvas_surface_of_ba(data);
+  if (surface !== null) {
+    var data = surface.toDataURL("image/png").substring(22);
+    caml_create_file(filename, window.atob(data));
+  }
+}
+
+
+
+/* Canvas */
+
 /* Comparison */
 
 // Provides: ml_canvas_hash
@@ -346,8 +422,28 @@ function ml_canvas_create_offscreen(size) {
   return canvas;
 }
 
+//Provides: ml_canvas_create_offscreen_from_image_data
+//Requires: ml_canvas_create_offscreen,caml_ba_to_typed_array,caml_ba_dim_1,caml_ba_dim_2
+function ml_canvas_create_offscreen_from_image_data(data) {
+  var width = caml_ba_dim_2(data);
+  var height = caml_ba_dim_1(data);
+  var canvas = ml_canvas_create_offscreen([ 0, width, height ])
+  if (canvas === null) {
+    return null;
+  }
+  var ta = new window.Uint8ClampedArray(caml_ba_to_typed_array(data).buffer);
+  if (window.ImageData === undefined) {
+    var image = canvas.ctxt.createImageData(width, height);
+    image.data.set(ta);
+  } else {
+    var image = new window.ImageData(ta, width, height);
+  }
+  canvas.ctxt.putImageData(image, 0, 0);
+  return canvas;
+}
+
 //Provides: ml_canvas_create_offscreen_from_png
-//Requires: ml_canvas_create_offscreen, _ml_canvas_image_of_png_file
+//Requires: ml_canvas_create_offscreen,_ml_canvas_image_of_png_file
 function ml_canvas_create_offscreen_from_png(filename) {
   var img = _ml_canvas_image_of_png_file(filename);
   if (img === null) {

@@ -63,4 +63,9 @@ normalize_angle(
     if ((sy) + (height) > (sheight)) { height = (sheight) - (sy); } \
   } while (0)
 
+void *
+memdup(
+  void *p,
+  size_t size);
+
 #endif /* __UTIL_H */

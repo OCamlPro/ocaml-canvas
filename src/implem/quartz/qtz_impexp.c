@@ -20,6 +20,7 @@
 
 #include "../util.h"
 #include "../color.h"
+#include "../pixmap.h"
 
 bool
 qtz_impexp_init(
@@ -37,14 +38,11 @@ qtz_impexp_terminate(
 
 bool
 qtz_impexp_export_png(
-  const color_t_ *data,
-  int32_t width,
-  int32_t height,
+  const pixmap_t *pixmap,
   const char *filename)
 {
-  assert(data != NULL);
-  assert(width > 0);
-  assert(height > 0);
+  assert(pixmap != NULL);
+  assert(pixmap_valid(*pixmap));
   assert(filename != NULL);
 
   bool res = false;
@@ -76,15 +74,16 @@ qtz_impexp_export_png(
   }
 
   CGDataProviderRef provider =
-    CGDataProviderCreateWithData(NULL, (void *)data,
-                                 width * height * COLOR_SIZE, NULL);
+    CGDataProviderCreateWithData(NULL, (void *)pixmap->data,
+                                 pixmap->width * pixmap->height * COLOR_SIZE,
+                                 NULL);
   if (provider == NULL) {
     goto error_provider;
   }
 
   CGImageRef image =
-    CGImageCreate(width, height, 8, 8 * COLOR_SIZE,
-                  width * COLOR_SIZE, color_space,
+    CGImageCreate(pixmap->width, pixmap->height, 8, 8 * COLOR_SIZE,
+                  pixmap->width * COLOR_SIZE, color_space,
                   kCGImageAlphaPremultipliedFirst |
                   kCGBitmapByteOrder32Little,
                   provider, NULL, false,
@@ -118,23 +117,21 @@ error_string:
 
 bool
 qtz_impexp_import_png(
-  color_t_ **p_data,
-  int32_t *p_width,
-  int32_t *p_height,
+  pixmap_t *pixmap,
   int32_t dx,
   int32_t dy,
   const char *filename)
 {
-  assert(p_data != NULL);
-  assert((*p_data != NULL) || ((dx == 0) && (dy == 0)));
-  assert(p_width != NULL);
-  assert(p_height != NULL);
-  assert((*p_data == NULL) || ((*p_width > 0) && (*p_height > 0)));
+  assert(pixmap != NULL);
+  assert((pixmap->data != NULL) ||
+         ((dx == 0) && (dy == 0)));
+  assert((pixmap->data == NULL) ||
+         ((pixmap->width > 0) && (pixmap->height > 0)));
   assert(filename != NULL);
 
   bool res = false;
 
-  bool alloc = (*p_data == NULL);
+  bool alloc = (pixmap->data == NULL);
 
   CGDataProviderRef provider =
     CGDataProviderCreateWithFilename(filename);
@@ -163,8 +160,8 @@ qtz_impexp_import_png(
     dwidth = swidth;
     dheight = sheight;
   } else {
-    dwidth = *p_width;
-    dheight = *p_height;
+    dwidth = pixmap->width;
+    dheight = pixmap->height;
   }
 
   int32_t sx = 0, sy = 0;
@@ -180,7 +177,7 @@ qtz_impexp_import_png(
       goto error_data;
     }
   } else {
-    data = *p_data;
+    data = pixmap->data;
   }
 
   CGContextRef ctxt =
@@ -196,9 +193,9 @@ qtz_impexp_import_png(
                                       swidth, sheight), image);
 
   if (alloc == true) {
-    *p_data = data;
-    *p_width = dwidth;
-    *p_height = dheight;
+    pixmap->data = data;
+    pixmap->width = dwidth;
+    pixmap->height = dheight;
   }
 
   res = true;

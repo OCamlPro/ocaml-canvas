@@ -25,7 +25,8 @@
 #include "window.h"
 #include "target.h"
 #include "surface.h"
-#include "image_data.h"
+#include "pixmap.h"
+#include "impexp.h"
 #include "state.h"
 #include "font_desc.h"
 #include "font.h"
@@ -47,12 +48,12 @@ typedef enum canvas_type_t {
 static canvas_t *
 _canvas_create_internal(
   canvas_type_t type,
-  const char *title,
+  const char *title, // as UTF-8
   int32_t x,
   int32_t y,
   int32_t width,
   int32_t height,
-  const char *filename)
+  pixmap_t *pixmap)
 {
   width = max(1, width);
   height = max(1, height);
@@ -86,13 +87,12 @@ _canvas_create_internal(
 
     canvas->window = NULL;
 
-    if (filename == NULL) {
+    if (pixmap == NULL) {
       canvas->surface = surface_create(width, height);
     } else {
-      canvas->surface = surface_create_from_png(filename);
-      pair_t(int32_t) size = surface_get_size(canvas->surface);
-      width = fst(size);
-      height = snd(size);
+      canvas->surface = surface_create_from_pixmap(pixmap);
+      width = pixmap->width;
+      height = pixmap->height;
     }
     if (canvas->surface == NULL) {
       goto error_offscreen_surface;
@@ -154,7 +154,7 @@ error_id:
 
 canvas_t *
 canvas_create_framed(
-  const char *title,
+  const char *title, // as UTF-8
   int32_t x,
   int32_t y,
   int32_t width,
@@ -187,11 +187,29 @@ canvas_create_offscreen(
 }
 
 canvas_t *
-canvas_create_offscreen_from_png(
-  const char *filename)
+canvas_create_offscreen_from_pixmap(
+  pixmap_t *pixmap)
 {
+  assert(pixmap != NULL);
+  assert(pixmap_valid(*pixmap) == true);
+
   return _canvas_create_internal(CANVAS_OFFSCREEN, NULL,
-                                 0, 0, 0, 0, filename);
+                                 0, 0, pixmap->width, pixmap->height, pixmap);
+}
+
+canvas_t *
+canvas_create_offscreen_from_png(
+  const char *filename) // as UTF-8
+{
+  assert(filename != NULL);
+
+  pixmap_t pixmap = { 0 };
+  bool res = impexp_import_png(&pixmap, 0, 0, filename);
+  if (res == false) {
+    return NULL;
+  }
+  return _canvas_create_internal(CANVAS_OFFSCREEN, NULL,
+                                 0, 0, pixmap.width, pixmap.height, &pixmap);
 }
 
 void
@@ -1193,8 +1211,18 @@ canvas_get_pixel(
   int32_t y)
 {
   assert(c != NULL);
+  assert(c->surface != NULL);
 
-  return surface_get_pixel(c->surface, x, y);
+  color_t_ color = color_black;
+
+  const pixmap_t pm = surface_get_raw_pixmap((surface_t *)c->surface);
+  if (pixmap_valid(pm) == true) {
+    if ((x >= 0) && (x < pm.width) && (y >= 0) && (y < pm.height)) {
+      color = pixmap_at(pm, x, y);
+    }
+  }
+
+  return color;
 }
 
 void
@@ -1205,12 +1233,18 @@ canvas_set_pixel(
   color_t_ color)
 {
   assert(c != NULL);
+  assert(c->surface != NULL);
 
-  surface_set_pixel(c->surface, x, y, color);
+  pixmap_t pm = surface_get_raw_pixmap(c->surface);
+  if (pixmap_valid(pm) == true) {
+    if ((x >= 0) && (x < pm.width) && (y >= 0) && (y < pm.height)) {
+      pixmap_at(pm, x, y) = color;
+    }
+  }
 }
 
-image_data_t
-canvas_get_image_data(
+pixmap_t
+canvas_get_pixmap(
   const canvas_t *c,
   int32_t sx,
   int32_t sy,
@@ -1218,24 +1252,41 @@ canvas_get_image_data(
   int32_t height)
 {
   assert(c != NULL);
+  assert(c->surface != NULL);
 
-  return surface_get_image_data(c->surface, sx, sy, width, height);
+  pixmap_t dp = { 0 };
+
+  const pixmap_t sp = surface_get_raw_pixmap((surface_t *)c->surface);
+  if (pixmap_valid(sp) == true) {
+    dp = pixmap(width, height, NULL);
+    if (pixmap_valid(dp) == true) {
+      pixmap_blit(&dp, 0, 0, &sp, sx, sy, width, height);
+    }
+  }
+
+  return dp;
 }
 
 void
-canvas_set_image_data(
+canvas_set_pixmap(
   canvas_t *c,
   int32_t dx,
   int32_t dy,
-  const image_data_t *data,
+  const pixmap_t *sp,
   int32_t sx,
   int32_t sy,
   int32_t width,
   int32_t height)
 {
   assert(c != NULL);
+  assert(c->surface != NULL);
+  assert(sp != NULL);
+  assert(pixmap_valid(*sp) == true);
 
-  surface_set_image_data(c->surface, dx, dy, data, sx, sy, width, height);
+  pixmap_t dp = surface_get_raw_pixmap(c->surface);
+  if (pixmap_valid(dp) == true) {
+    pixmap_blit(&dp, dx, dy, sp, sx, sy, width, height);
+  }
 }
 
 /* Import / export functions */
@@ -1243,12 +1294,17 @@ canvas_set_image_data(
 bool
 canvas_export_png(
   const canvas_t *c,
-  const char *filename)
+  const char *filename) // as UTF-8
 {
   assert(c != NULL);
+  assert(c->surface != NULL);
   assert(filename != NULL);
 
-  return surface_export_png(c->surface, filename);
+  const pixmap_t pm = surface_get_raw_pixmap((surface_t *)c->surface);
+  if (pixmap_valid(pm) == false) {
+    return false;
+  }
+  return impexp_export_png(&pm, filename);
 }
 
 bool
@@ -1256,10 +1312,15 @@ canvas_import_png(
   canvas_t *c,
   int32_t x,
   int32_t y,
-  const char *filename)
+  const char *filename) // as UTF-8
 {
   assert(c != NULL);
+  assert(c->surface != NULL);
   assert(filename != NULL);
 
-  return surface_import_png(c->surface, x, y, filename);
+  pixmap_t pm = surface_get_raw_pixmap(c->surface);
+  if (pixmap_valid(pm) == false) {
+    return false;
+  }
+  return impexp_import_png(&pm, x, y, filename);
 }
