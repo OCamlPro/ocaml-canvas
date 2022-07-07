@@ -41,7 +41,8 @@
 static surface_t *
 _surface_create_internal(
   int32_t width,
-  int32_t height)
+  int32_t height,
+  color_t_ *data) // May be NULL
 {
   assert(width > 0);
   assert(height > 0);
@@ -52,7 +53,7 @@ _surface_create_internal(
   }
 
   s->impl = NULL;
-  s->data = NULL;
+  s->data = data;
   s->width = width;
   s->height = height;
 
@@ -67,18 +68,30 @@ surface_create(
   assert(width > 0);
   assert(height > 0);
 
-  surface_t *s = _surface_create_internal(width, height);
-  if (s == NULL) {
+  color_t_ *data = (color_t_ *)calloc(width * height, sizeof(color_t_));
+  if (data == NULL) {
     return NULL;
   }
 
-  s->data = (color_t_ *)calloc(width * height, sizeof(color_t_));
-  if (s->data == NULL) {
-    free(s);
+  surface_t *s = _surface_create_internal(width, height, data);
+  if (s == NULL) {
+    free(data);
     return NULL;
   }
 
   return s;
+}
+
+surface_t *
+surface_create_from_image_data(
+  image_data_t *image_data)
+{
+  assert(image_data != NULL);
+  assert(image_data_valid(image_data) == true);
+
+  return _surface_create_internal(image_data->width,
+                                  image_data->height,
+                                  image_data->data);
 }
 
 surface_t *
@@ -87,14 +100,18 @@ surface_create_from_png(
 {
   assert(filename != NULL);
 
-  surface_t *s = _surface_create_internal(1, 1);
-  if (s == NULL) {
+  int32_t width = 0;
+  int32_t height = 0;
+  color_t *data = NULL;
+
+  bool res = impexp_import_png(&data, &width, &height, 0, 0, filename);
+  if (res == false) {
     return NULL;
   }
 
-  bool res = impexp_import_png(&s->data, &s->width, &s->height, 0, 0, filename);
-  if (res == false) {
-    free(s);
+  surface_t *s = _surface_create_internal(width, height, data);
+  if (s == NULL) {
+    free(data);
     return NULL;
   }
 
@@ -111,7 +128,7 @@ surface_create_onscreen(
   assert(width > 0);
   assert(height > 0);
 
-  surface_t *s = _surface_create_internal(width, height);
+  surface_t *s = _surface_create_internal(width, height, NULL);
   if (s == NULL) {
     return NULL;
   }
@@ -135,6 +152,7 @@ surface_create_onscreen(
     free(s);
     return NULL;
   }
+  assert(s->data != NULL);
 
   return s;
 }
@@ -148,7 +166,7 @@ surface_destroy(
   if (s->impl != NULL) {
     switch_IMPL() {
       case_GDI(surface_destroy_gdi_impl((surface_impl_gdi_t *)s->impl);
-               s->data = NULL; /* fred but not nulled */);
+               s->data = NULL; /* freed but not nulled */);
       case_QUARTZ(surface_destroy_qtz_impl((surface_impl_qtz_t *)s->impl);
                   /* s->data = NULL; // if not done already -- check */);
       case_X11(surface_destroy_x11_impl((surface_impl_x11_t *)s->impl));
@@ -285,12 +303,6 @@ surface_present(
   }
 }
 
-
-
-
-
-// TODO: non-integer data
-// TODO: subject to rotate/scale
 void
 surface_blit(
   surface_t *ds,
@@ -457,6 +469,16 @@ surface_set_image_data(
              width * COLOR_SIZE);
     }
   }
+}
+
+image_data_t
+surface_get_raw_image_data(
+  surface_t *s)
+{
+  assert(s != NULL);
+  assert(s->data != NULL);
+
+  return image_data(s->width, s->height, s->data);
 }
 
 bool

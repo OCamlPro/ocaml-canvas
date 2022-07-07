@@ -35,6 +35,6 @@ typedef struct image_data_t {
   } while (0)
 
 #define image_data_valid(_id) \
-  ((_id).data != NULL)
+  (((_id).data != NULL) && ((_id).width > 0) && ((_id).height > 0))
 
 #endif /* __IMAGE_DATA_H */
