@@ -52,12 +52,30 @@ let () =
   Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(300.0, 200.0);
 
   let _ = Canvas.importPNG c ~pos:(0,0) "picture.png" in
+
 (*
   let c2 = Canvas.createOffscreenFromPNG "picture.png" in
   let size = Canvas.getSize c2 in
-  Canvas.blit ~dst:c ~dpos:(100, 50) ~src:c2 ~spos:(10, 5)
-    ~size:(fst size - 20, snd size - 10);
+  Canvas.blit ~dst:c ~dpos:(100, 50) ~src:c2 ~spos:(5, 5)
+    ~size:(fst size - 10, snd size - 10);
 *)
+(*
+  let id = ImageData.createFromPNG "picture.png" in
+  ImageData.exportPNG id "picture2.png";
+  ImageData.importPNG id ~pos:(-200, -100) "picture2.png";
+  let c2 = Canvas.createOffscreenFromImageData id in
+  let size = Canvas.getSize c2 in
+  Canvas.blit ~dst:c ~dpos:(-20, -20) ~src:c2 ~spos:(5, 5)
+    ~size:(fst size - 10, snd size - 10);
+*)
+(*
+  let id = Canvas.getImageData c ~pos:(50,100) ~size:(100,100) in
+  (* let id = Canvas.getImageData c ~pos:(0,0) ~size:(100,100) in *)
+  ImageData.exportPNG id "id.png";
+
+  Canvas.setImageData c ~dpos:(-50,-50) id ~spos:(0,0) ~size:(100,100);
+*)
+
   Backend.run (function
 
     | Event.KeyAction { canvas = _; timestamp = _;

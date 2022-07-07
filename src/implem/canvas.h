@@ -16,7 +16,7 @@
 
 #include "tuples.h"
 #include "color.h"
-#include "image_data.h"
+#include "pixmap.h"
 #include "font_desc.h"
 
 typedef struct canvas_t canvas_t;
@@ -40,6 +40,12 @@ canvas_t *
 canvas_create_offscreen(
   int32_t width,
   int32_t height);
+
+// Creates a canvas from a pixmap
+// The data pointer is transfered to the canvas; do NOT free it
+canvas_t *
+canvas_create_offscreen_from_pixmap(
+  pixmap_t *pixmap);
 
 canvas_t *
 canvas_create_offscreen_from_png(
@@ -369,8 +375,10 @@ canvas_set_pixel(
   int32_t y,
   color_t_ color);
 
-image_data_t
-canvas_get_image_data(
+// Creates a copy of the surface pixels
+// Be sure to free the data pointer when done
+pixmap_t
+canvas_get_pixmap(
   const canvas_t *c,
   int32_t sx,
   int32_t sy,
@@ -378,11 +386,11 @@ canvas_get_image_data(
   int32_t height);
 
 void
-canvas_set_image_data(
+canvas_set_pixmap(
   canvas_t *c,
   int32_t dx,
   int32_t dy,
-  const image_data_t *data,
+  const pixmap_t *data,
   int32_t sx,
   int32_t sy,
   int32_t width,

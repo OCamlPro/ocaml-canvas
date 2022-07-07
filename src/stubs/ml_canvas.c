@@ -24,6 +24,8 @@
 #include "../implem/config.h"
 #include "../implem/tuples.h"
 #include "../implem/color.h"
+#include "../implem/pixmap.h"
+#include "../implem/impexp.h"
 #include "../implem/event.h"
 #include "../implem/canvas.h"
 #include "../implem/backend.h"
@@ -52,6 +54,57 @@ CAMLprim value name(value *a, int n) \
 { return name##_n(a[0],a[1],a[2],a[3],a[4],a[5],a[6],a[7],a[8],a[9]); }
 
 
+
+/* Image Data (aka Pixmaps) */
+
+CAMLprim value
+ml_canvas_image_data_create_from_png(
+  value mlFilename)
+{
+  CAMLparam1(mlFilename);
+  pixmap_t pixmap = { 0 };
+  bool res = impexp_import_png(&pixmap, 0, 0, String_val(mlFilename));
+  if ((res == false) || (pixmap_valid(pixmap) == false)) {
+    caml_failwith("unable to create pixmap from PNG file");
+  }
+  CAMLreturn(Val_pixmap(&pixmap));
+}
+
+CAMLprim value
+ml_canvas_image_data_import_png(
+  value mlPixmap,
+  value mlDPos,
+  value mlFilename)
+{
+  CAMLparam3(mlPixmap, mlDPos, mlFilename);
+  pixmap_t pixmap = Pixmap_val(mlPixmap);
+  bool res = impexp_import_png(&pixmap,
+                               Int32_val_clip(Field(mlDPos, 0)),
+                               Int32_val_clip(Field(mlDPos, 1)),
+                               String_val(mlFilename));
+  if ((res == false) || (pixmap_valid(pixmap) == false)) {
+    caml_failwith("unable to import PNG file into pixmap");
+  }
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
+ml_canvas_image_data_export_png(
+  value mlPixmap,
+  value mlFilename)
+{
+  CAMLparam2(mlPixmap, mlFilename);
+  pixmap_t pixmap = Pixmap_val(mlPixmap);
+  bool res = impexp_export_png(&pixmap, String_val(mlFilename));
+  if (res == false) {
+    caml_failwith("unable to export pixmap to PNG file");
+  }
+  CAMLreturn(Val_unit);
+}
+
+
+
+/* Canvas */
 
 /* Comparison */
 
@@ -120,15 +173,17 @@ ml_canvas_create_framed(
   value mlSize)
 {
   CAMLparam3(mlTitle, mlPos, mlSize);
-  CAMLlocal1(mlCanvas);
   const char *title = String_val(mlTitle);
-  mlCanvas = Val_canvas(
+  canvas_t *canvas =
     canvas_create_framed(title,
                          Int32_val_clip(Field(mlPos, 0)),
                          Int32_val_clip(Field(mlPos, 1)),
                          Int32_val_clip(Field(mlSize, 0)),
-                         Int32_val_clip(Field(mlSize, 1))));
-  CAMLreturn(mlCanvas);
+                         Int32_val_clip(Field(mlSize, 1)));
+  if (canvas == NULL) {
+    caml_failwith("unable to create the specified framed canvas");
+  }
+  CAMLreturn(Val_canvas(canvas));
 }
 
 CAMLprim value
@@ -137,13 +192,15 @@ ml_canvas_create_frameless(
   value mlSize)
 {
   CAMLparam2(mlPos, mlSize);
-  CAMLlocal1(mlCanvas);
-  mlCanvas = Val_canvas(
+  canvas_t *canvas =
     canvas_create_frameless(Int32_val_clip(Field(mlPos, 0)),
                             Int32_val_clip(Field(mlPos, 1)),
                             Int32_val_clip(Field(mlSize, 0)),
-                            Int32_val_clip(Field(mlSize, 1))));
-  CAMLreturn(mlCanvas);
+                            Int32_val_clip(Field(mlSize, 1)));
+  if (canvas == NULL) {
+    caml_failwith("unable to create the specified frameless canvas");
+  }
+  CAMLreturn(Val_canvas(canvas));
 }
 
 CAMLprim value
@@ -151,11 +208,37 @@ ml_canvas_create_offscreen(
   value mlSize)
 {
   CAMLparam1(mlSize);
-  CAMLlocal1(mlCanvas);
-  mlCanvas = Val_canvas(
+  canvas_t *canvas =
     canvas_create_offscreen(Int32_val_clip(Field(mlSize, 0)),
-                            Int32_val_clip(Field(mlSize, 1))));
-  CAMLreturn(mlCanvas);
+                            Int32_val_clip(Field(mlSize, 1)));
+  if (canvas == NULL) {
+    caml_failwith("unable to create the specified offscreen canvas");
+  }
+  CAMLreturn(Val_canvas(canvas));
+}
+
+CAMLprim value
+ml_canvas_create_offscreen_from_image_data(
+  value mlPixmap)
+{
+  CAMLparam1(mlPixmap);
+  CAMLlocal1(mlCanvas);
+  pixmap_t pixmap = Pixmap_val(mlPixmap);
+  // We need to duplicate the pixmap, as canvas_create_offscreen_from_pixmap
+  // steals the data pointer
+  pixmap = pixmap_copy(pixmap);
+  if (pixmap_valid(pixmap) == false) {
+    caml_failwith("unable to create a canvas from the given image data");
+  }
+  canvas_t *canvas = canvas_create_offscreen_from_pixmap(&pixmap);
+  if (canvas == NULL) {
+    caml_failwith("unable to create a canvas from the given image data");
+  }
+  // We delete the pixmap copy we did earlier; it is safe to do so,
+  // as pixmap deletion checks if the data pointer is NULL (which
+  // is the case if canvas creation succeeds)
+  pixmap_destroy(pixmap);
+  CAMLreturn(Val_canvas(canvas));
 }
 
 CAMLprim value
@@ -163,10 +246,11 @@ ml_canvas_create_offscreen_from_png(
   value mlFilename)
 {
   CAMLparam1(mlFilename);
-  CAMLlocal1(mlCanvas);
-  mlCanvas = Val_canvas(
-    canvas_create_offscreen_from_png(String_val(mlFilename)));
-  CAMLreturn(mlCanvas);
+  canvas_t *canvas = canvas_create_offscreen_from_png(String_val(mlFilename));
+  if (canvas == NULL) {
+    caml_failwith("unable to create a canvas from the given PNG");
+  }
+  CAMLreturn(Val_canvas(canvas));
 }
 
 CAMLprim value
@@ -774,8 +858,6 @@ ml_canvas_set_pixel(
 
 
 
-intnat dim[CAML_BA_MAX_NUM_DIMS] = { 5, 5, 4 };
-
 CAMLprim value
 ml_canvas_get_image_data(
   value mlCanvas,
@@ -783,36 +865,36 @@ ml_canvas_get_image_data(
   value mlSize)
 {
   CAMLparam3(mlCanvas, mlPos, mlSize);
-  image_data_t image_data =
-    canvas_get_image_data(Canvas_val(mlCanvas),
-                          Int32_val_clip(Field(mlPos, 0)),
-                          Int32_val_clip(Field(mlPos, 1)),
-                          Int32_val_clip(Field(mlSize, 0)),
-                          Int32_val_clip(Field(mlSize, 1)));
-  if (image_data_valid(image_data) == false) {
-    printf("Failed\n");
+  pixmap_t pixmap =
+    canvas_get_pixmap(Canvas_val(mlCanvas),
+                      Int32_val_clip(Field(mlPos, 0)),
+                      Int32_val_clip(Field(mlPos, 1)),
+                      Int32_val_clip(Field(mlSize, 0)),
+                      Int32_val_clip(Field(mlSize, 1)));
+  if (pixmap_valid(pixmap) == false) {
+    caml_failwith("unable to retrieve image data");
   }
-  CAMLreturn(Val_image_data(&image_data));
+  CAMLreturn(Val_pixmap(&pixmap));
 }
 
 CAMLprim value
 ml_canvas_set_image_data(
   value mlCanvas,
   value mlDPos,
-  value mlImageData,
+  value mlPixmap,
   value mlSPos,
   value mlSize)
 {
-  CAMLparam5(mlCanvas, mlDPos, mlImageData, mlSPos, mlSize);
-  image_data_t image_data = Image_data_val(mlImageData);
-  canvas_set_image_data(Canvas_val(mlCanvas),
-                        Int32_val_clip(Field(mlDPos, 0)),
-                        Int32_val_clip(Field(mlDPos, 1)),
-                        &image_data,
-                        Int32_val_clip(Field(mlSPos, 0)),
-                        Int32_val_clip(Field(mlSPos, 1)),
-                        Int32_val_clip(Field(mlSize, 0)),
-                        Int32_val_clip(Field(mlSize, 1)));
+  CAMLparam5(mlCanvas, mlDPos, mlPixmap, mlSPos, mlSize);
+  pixmap_t pixmap = Pixmap_val(mlPixmap);
+  canvas_set_pixmap(Canvas_val(mlCanvas),
+                    Int32_val_clip(Field(mlDPos, 0)),
+                    Int32_val_clip(Field(mlDPos, 1)),
+                    &pixmap,
+                    Int32_val_clip(Field(mlSPos, 0)),
+                    Int32_val_clip(Field(mlSPos, 1)),
+                    Int32_val_clip(Field(mlSize, 0)),
+                    Int32_val_clip(Field(mlSize, 1)));
   CAMLreturn(Val_unit);
 }
 
@@ -822,8 +904,11 @@ ml_canvas_export_png(
   value mlFilename)
 {
   CAMLparam2(mlCanvas, mlFilename);
-  canvas_export_png(Canvas_val(mlCanvas),
-                    String_val(mlFilename));
+  bool res = canvas_export_png(Canvas_val(mlCanvas),
+                               String_val(mlFilename));
+  if (res == false) {
+    caml_failwith("unable to export to PNG");
+  }
   CAMLreturn(Val_unit);
 }
 
@@ -834,10 +919,14 @@ ml_canvas_import_png(
   value mlFilename)
 {
   CAMLparam3(mlCanvas, mlDPos, mlFilename);
-  canvas_import_png(Canvas_val(mlCanvas),
-                    Int32_val_clip(Field(mlDPos, 0)),
-                    Int32_val_clip(Field(mlDPos, 1)),
-                    String_val(mlFilename));
+  bool res =
+    canvas_import_png(Canvas_val(mlCanvas),
+                      Int32_val_clip(Field(mlDPos, 0)),
+                      Int32_val_clip(Field(mlDPos, 1)),
+                      String_val(mlFilename));
+  if (res == false) {
+    caml_failwith("unable to import PNG");
+  }
   CAMLreturn(Val_unit);
 }
 

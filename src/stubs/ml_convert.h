@@ -18,7 +18,7 @@
 
 #include "../implem/canvas.h"
 #include "../implem/event.h"
-#include "../implem/image_data.h"
+#include "../implem/pixmap.h"
 #include "../implem/font_desc.h"
 
 #if OCAML_VERSION < 41200
@@ -87,11 +87,11 @@ Nullify_val(
   value mlValue);
 
 value
-Val_image_data(
-  image_data_t *image_data);
+Val_pixmap(
+  pixmap_t *pixmap);
 
-image_data_t
-Image_data_val(
-  value mlImageData);
+pixmap_t
+Pixmap_val(
+  value mlPixmap);
 
 #endif /* __ML_CONVERT_H */

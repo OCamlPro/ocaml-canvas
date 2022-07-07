@@ -245,6 +245,28 @@ module Font : sig
 
 end
 
+module ImageData : sig
+(** Image data manipulation functions *)
+
+  type t =
+    (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array3.t
+  (** Image data are big arrays of dimension 3 (width, height, component),
+      where the components are in BGRA order *)
+
+  val createFromPNG : string -> t
+  (** [createFromPNG filename] creates an image data
+      with the contents of PNG file [filename] *)
+
+  val importPNG : t -> pos:(int * int) -> string -> unit
+  (** [importPNG id ~pos filename] loads the file [filename] into
+      image data [id] at position [pos] *)
+
+  val exportPNG : t -> string -> unit
+  (** [exportPNG id filename] saves the contents of image data [id]
+      to a file with name [filename] *)
+
+end
+
 module Canvas : sig
 (** Canvas manipulation functions *)
 
@@ -318,6 +340,10 @@ module Canvas : sig
   val createOffscreen_ : (int * int) -> [> `Offscreen] t
   (** [createOffscreen_ size] is a labelless equivalent of
       [createOffscreen ~size]  *)
+
+  val createOffscreenFromImageData : ImageData.t -> [> `Offscreen] t
+  (** [createOffscreenFromImageData id] creates an offscreen canvas
+      with the contents of image data [id] *)
 
   val createOffscreenFromPNG : string -> [> `Offscreen] t
   (** [createOffscreen filename] creates an offscreen canvas
@@ -599,26 +625,23 @@ module Canvas : sig
   (** [setPixel c pos col] sets the color of the pixel
       at position [pos] in canvas [c] to color [col] *)
 
-  type image_data =
-    (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array3.t
-
-  val getImageData : 'a t -> pos:(int * int) -> size:(int * int) -> image_data
+  val getImageData : 'a t -> pos:(int * int) -> size:(int * int) -> ImageData.t
   (** [getImageData c ~pos ~size] returns a copy of the pixel
       data at position [pos] of size [size] in canvas [c] *)
 
-  val getImageData_ : 'a t -> (int * int) -> (int * int) -> image_data
+  val getImageData_ : 'a t -> (int * int) -> (int * int) -> ImageData.t
   (** [getImageData_ c pos size] is a labelless equivalent of
       [getImageData c ~pos ~size]  *)
 
   val setImageData :
-    'a t -> dpos:(int * int) -> image_data ->
+    'a t -> dpos:(int * int) -> ImageData.t ->
     spos:(int * int) -> size:(int * int) -> unit
   (** [setImageData c ~dpos id ~spos ~size] overwrite the pixels
       at position [dpos] in canvas [c] with the provided pixel data
       starting at position [spos] and of size [size] *)
 
   val setImageData_ :
-    'a t -> (int * int) -> image_data -> (int * int) -> (int * int) -> unit
+    'a t -> (int * int) -> ImageData.t -> (int * int) -> (int * int) -> unit
   (** [setImageData_ c dpos id spos size] is a labelless equivalent of
       [setImageData c ~dpos id ~spos ~size]  *)
 

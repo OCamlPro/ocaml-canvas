@@ -14,7 +14,7 @@
 #include <assert.h>
 
 #include "config.h"
-#include "color.h"
+#include "pixmap.h"
 
 #ifdef HAS_GDI
 #include "gdi/gdi_impexp.h"
@@ -58,23 +58,20 @@ impexp_terminate(
 
 bool
 impexp_export_png(
-  const color_t_ *data,
-  int32_t width,
-  int32_t height,
+  const pixmap_t *pixmap,
   const char *filename)
 {
-  assert(data != NULL);
-  assert(width > 0);
-  assert(height > 0);
+  assert(pixmap != NULL);
+  assert(pixmap_valid(*pixmap));
   assert(filename != NULL);
 
   bool res = false;
 
   switch_IMPL() {
-    case_GDI(res = gdi_impexp_export_png(data, width, height, filename));
-    case_QUARTZ(res = qtz_impexp_export_png(data, width, height, filename));
-    case_X11(res = unx_impexp_export_png(data, width, height, filename));
-    case_WAYLAND(res = unx_impexp_export_png(data, width, height, filename));
+    case_GDI(res = gdi_impexp_export_png(pixmap, filename));
+    case_QUARTZ(res = qtz_impexp_export_png(pixmap, filename));
+    case_X11(res = unx_impexp_export_png(pixmap, filename));
+    case_WAYLAND(res = unx_impexp_export_png(pixmap, filename));
     default_fail();
   }
 
@@ -83,29 +80,21 @@ impexp_export_png(
 
 bool
 impexp_import_png(
-  color_t_ **p_data,
-  int32_t *p_width,
-  int32_t *p_height,
+  pixmap_t *pixmap,
   int32_t x,
   int32_t y,
   const char *filename)
 {
-  assert(p_data != NULL);
-  assert(p_width != NULL);
-  assert(p_height != NULL);
+  assert(pixmap != NULL);
   assert(filename != NULL);
 
   bool res = false;
 
   switch_IMPL() {
-    case_GDI(
-      res = gdi_impexp_import_png(p_data, p_width, p_height, x, y, filename));
-    case_QUARTZ(
-      res = qtz_impexp_import_png(p_data, p_width, p_height, x, y, filename));
-    case_X11(
-      res = unx_impexp_import_png(p_data, p_width, p_height, x, y, filename));
-    case_WAYLAND(
-      res = unx_impexp_import_png(p_data, p_width, p_height, x, y, filename));
+    case_GDI(res = gdi_impexp_import_png(pixmap, x, y, filename));
+    case_QUARTZ(res = qtz_impexp_import_png(pixmap, x, y, filename));
+    case_X11(res = unx_impexp_import_png(pixmap, x, y, filename));
+    case_WAYLAND(res = unx_impexp_import_png(pixmap, x, y, filename));
     default_fail();
   }
 

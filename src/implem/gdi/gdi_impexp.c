@@ -19,9 +19,10 @@
 #include <windows.h>
 #include <gdiplus/gdiplus.h>
 
-#include "../unicode.h"
 #include "../util.h"
+#include "../unicode.h"
 #include "../color.h"
+#include "../pixmap.h"
 
 static bool _gdi_impexp_initialized = false;
 static ULONG_PTR _gdi_impexp_gdiplus_token = 0;
@@ -92,15 +93,12 @@ _gdi_find_encoder(
 
 bool
 gdi_impexp_export_png(
-  const color_t_ *data,
-  int32_t width,
-  int32_t height,
+  const pixmap_t *pixmap,
   const char *filename)
 {
   assert(_gdi_impexp_initialized == true);
-  assert(data != NULL);
-  assert(width > 0);
-  assert(height > 0);
+  assert(pixmap != NULL);
+  assert(pixmap_valid(*pixmap));
   assert(filename != NULL);
 
   CLSID clsid;
@@ -115,8 +113,10 @@ gdi_impexp_export_png(
 
   GpBitmap *bitmap = NULL;
   GpStatus status =
-    GdipCreateBitmapFromScan0(width, height, width * COLOR_SIZE,
-                              PixelFormat32bppARGB, (BYTE *)data, &bitmap);
+    GdipCreateBitmapFromScan0(pixmap->width, pixmap->height,
+                              pixmap->width * COLOR_SIZE,
+                              PixelFormat32bppARGB,
+                              (BYTE *)pixmap->data, &bitmap);
   if (status != Ok) {
     free(wfilename);
     return false;
@@ -160,24 +160,22 @@ _gdi_impexp_get_bitmap_size(
 
 bool
 gdi_impexp_import_png( // Actually, this imports any supported format
-  color_t_ **p_data,
-  int32_t *p_width,
-  int32_t *p_height,
+  pixmap_t *pixmap,
   int32_t dx,
   int32_t dy,
   const char *filename)
 {
   assert(_gdi_impexp_initialized == true);
-  assert(p_data != NULL);
-  assert((*p_data != NULL) || ((dx == 0) && (dy == 0)));
-  assert(p_width != NULL);
-  assert(p_height != NULL);
-  assert((*p_data == NULL) || ((*p_width > 0) && (*p_height > 0)));
+  assert(pixmap != NULL);
+  assert((pixmap->data != NULL) ||
+         ((dx == 0) && (dy == 0)));
+  assert((pixmap->data == NULL) ||
+         ((pixmap->width > 0) && (pixmap->height > 0)));
   assert(filename != NULL);
 
   bool res = false;
 
-  bool alloc = (*p_data == NULL);
+  bool alloc = (pixmap->data == NULL);
 
   color_t_ *data = NULL;
 
@@ -202,8 +200,8 @@ gdi_impexp_import_png( // Actually, this imports any supported format
     dwidth = swidth;
     dheight = sheight;
   } else {
-    dwidth = *p_width;
-    dheight = *p_height;
+    dwidth = pixmap->width;
+    dheight = pixmap->height;
   }
 
   int32_t sx = 0, sy = 0;
@@ -218,7 +216,7 @@ gdi_impexp_import_png( // Actually, this imports any supported format
       goto error;
     }
   } else {
-    data = *p_data;
+    data = pixmap->data;
   }
 
   GpRect src_rect = { sx, sy, width, height };
@@ -234,9 +232,9 @@ gdi_impexp_import_png( // Actually, this imports any supported format
   }
 
   if (alloc == true) {
-    *p_data = data;
-    *p_width = dwidth;
-    *p_height = dheight;
+    pixmap->data = data;
+    pixmap->width = dwidth;
+    pixmap->height = dheight;
   }
 
   res = true;

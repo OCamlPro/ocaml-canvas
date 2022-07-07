@@ -81,3 +81,18 @@ normalize_angle(
   else if (b == 2.0 * M_PI) b = 0.0; // [0; 2Pi[
   return b;
 }
+
+void *
+memdup(
+  void *p,
+  size_t size)
+{
+  assert(p != NULL);
+  assert(size > 0);
+
+  void *d = malloc(size);
+  if (d != NULL) {
+    memcpy(d, p, size);
+  }
+  return d;
+}

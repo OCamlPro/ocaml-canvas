@@ -8,32 +8,42 @@
 /*                                                                        */
 /**************************************************************************/
 
-#ifndef __UNX_IMPEXP_H
-#define __UNX_IMPEXP_H
-
-#include <stdbool.h>
+#include <stdlib.h>
 #include <stdint.h>
+#include <memory.h>
+#include <assert.h>
 
-#include "../pixmap.h"
-
-bool
-unx_impexp_init(
-  void);
+#include "util.h"
+#include "color.h"
+#include "pixmap.h"
 
 void
-unx_impexp_terminate(
-  void);
-
-bool
-unx_impexp_export_png(
-  const pixmap_t *pixmap,
-  const char *filename);
-
-bool
-unx_impexp_import_png(
-  pixmap_t *pixmap,
+pixmap_blit(
+  pixmap_t *dp,
   int32_t dx,
   int32_t dy,
-  const char *filename);
+  const pixmap_t *sp,
+  int32_t sx,
+  int32_t sy,
+  int32_t width,
+  int32_t height)
+{
+  assert(dp != NULL);
+  assert(pixmap_valid(*sp));
+  assert(sp != NULL);
+  assert(pixmap_valid(*dp));
+  assert(width > 0);
+  assert(height > 0);
 
-#endif /* __UNX_IMPEXP_H */
+  adjust_blit_info(dp->width, dp->height, dx, dy,
+                   sp->width, sp->height, sx, sy,
+                   width, height);
+
+  if ((width > 0) && (height > 0)) {
+    for (int32_t i = 0; i < height; ++i) {
+      memcpy(&pixmap_at(*dp, dy + i, dx),
+             &pixmap_at(*sp, sy + i, sx),
+             width * COLOR_SIZE);
+    }
+  }
+}

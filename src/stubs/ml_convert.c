@@ -24,7 +24,7 @@
 #include "../implem/canvas.h"
 #include "../implem/window.h"
 #include "../implem/event.h"
-#include "../implem/image_data.h"
+#include "../implem/pixmap.h"
 #include "../implem/color.h"
 #include "../implem/font_desc.h"
 
@@ -687,32 +687,32 @@ Nullify_val(
 }
 
 value
-Val_image_data(
-  image_data_t *image_data)
+Val_pixmap(
+  pixmap_t *pixmap)
 {
   CAMLparam0();
   CAMLlocal1(mlImageData);
-  intnat dims[CAML_BA_MAX_NUM_DIMS] = { (intnat)image_data->height,
-                                        (intnat)image_data->width, 4 };
+  intnat dims[CAML_BA_MAX_NUM_DIMS] = { (intnat)pixmap->height,
+                                        (intnat)pixmap->width, 4 };
   mlImageData =
     caml_ba_alloc(CAML_BA_UINT8 | CAML_BA_C_LAYOUT | CAML_BA_MANAGED,
-                  3, (void *)image_data->data, dims);
+                  3, (void *)pixmap->data, dims);
   CAMLreturn(mlImageData);
 }
 
-image_data_t
-Image_data_val(
-  value mlImageData)
+pixmap_t
+Pixmap_val(
+  value mlPixmap)
 {
-  CAMLparam1(mlImageData);
+  CAMLparam1(mlPixmap);
 
-  if (Caml_ba_array_val(mlImageData)->num_dims != 3) {
+  if (Caml_ba_array_val(mlPixmap)->num_dims != 3) {
     caml_invalid_argument("Image data must have exactly 3 dimensions");
   }
 
-  intnat height = Caml_ba_array_val(mlImageData)->dim[0];
-  intnat width = Caml_ba_array_val(mlImageData)->dim[1];
-  intnat bpp = Caml_ba_array_val(mlImageData)->dim[2];
+  intnat height = Caml_ba_array_val(mlPixmap)->dim[0];
+  intnat width = Caml_ba_array_val(mlPixmap)->dim[1];
+  intnat bpp = Caml_ba_array_val(mlPixmap)->dim[2];
 
   if (bpp != 4) {
     caml_invalid_argument("Image data third dimension must be 4");
@@ -722,17 +722,17 @@ Image_data_val(
     caml_invalid_argument("Image data dimensions must be strictly positive");
   }
 
-  if ((Caml_ba_array_val(mlImageData)->flags
+  if ((Caml_ba_array_val(mlPixmap)->flags
        & CAML_BA_KIND_MASK) != CAML_BA_UINT8) {
     caml_invalid_argument("Image data kind must be uint8");
   }
 
-  if ((Caml_ba_array_val(mlImageData)->flags
+  if ((Caml_ba_array_val(mlPixmap)->flags
        & CAML_BA_LAYOUT_MASK) != CAML_BA_C_LAYOUT) {
     caml_invalid_argument("Image data layout must be C");
   }
 
-  CAMLreturnT(image_data_t,
-              image_data((int32_t)width, (int32_t)height,
-                         (color_t_ *)Caml_ba_data_val(mlImageData)));
+  CAMLreturnT(pixmap_t,
+              pixmap((int32_t)width, (int32_t)height,
+                     (color_t_ *)Caml_ba_data_val(mlPixmap)));
 }

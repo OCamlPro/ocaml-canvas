@@ -14,7 +14,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "../color.h"
+#include "../pixmap.h"
 
 bool
 gdi_impexp_init(
@@ -26,16 +26,12 @@ gdi_impexp_terminate(
 
 bool
 gdi_impexp_export_png(
-  const color_t_ *data,
-  int32_t width,
-  int32_t height,
+  const pixmap_t *pixmap,
   const char *filename);
 
 bool
 gdi_impexp_import_png(
-  color_t_ **p_data,
-  int32_t *p_width,
-  int32_t *p_height,
+  pixmap_t *pixmap,
   int32_t dx,
   int32_t dy,
   const char *filename);
