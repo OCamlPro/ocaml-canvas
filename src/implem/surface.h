@@ -28,6 +28,12 @@ surface_create(
   int32_t width,
   int32_t height);
 
+// Creates a surface from image data
+// The data pointer is transfered to the surface; do NOT free it
+surface_t *
+surface_create_from_image_data(
+  image_data_t *image_data);
+
 surface_t *
 surface_create_from_png(
   const char *filename);
@@ -81,6 +87,8 @@ surface_set_pixel(
   int32_t y,
   color_t_ color);
 
+// Creates a copy of the surface pixels
+// Be sure to free the data pointer when done
 image_data_t
 surface_get_image_data(
   const surface_t *ss,
@@ -99,6 +107,12 @@ surface_set_image_data(
   int32_t sy,
   int32_t width,
   int32_t height);
+
+// Direct access to the surface pixels
+// Do NOT free the data pointer !
+image_data_t
+surface_get_raw_image_data(
+  surface_t *s);
 
 bool
 surface_export_png(
