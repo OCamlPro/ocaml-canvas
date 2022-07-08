@@ -219,6 +219,72 @@ function ml_canvas_image_data_export_png(data, filename) {
 
 
 
+/* Path2D */
+
+//Provides: ml_canvas_path_create
+function ml_canvas_path_create() {
+  return new window.Path2D();
+}
+
+//Provides: ml_canvas_path_close
+function ml_canvas_path_close(path) {
+  path.closePath();
+}
+
+//Provides: ml_canvas_path_move_to
+function ml_canvas_path_move_to(path, p) {
+  path.moveTo(p[1], p[2]);
+}
+
+//Provides: ml_canvas_path_line_to
+function ml_canvas_path_line_to(path, p) {
+  path.lineTo(p[1], p[2]);
+}
+
+//Provides: ml_canvas_path_arc
+function ml_canvas_path_arc(path, p, radius, theta1, theta2, ccw) {
+  path.arc(p[1], p[2], radius, theta1, theta2, ccw);
+}
+
+//Provides: ml_canvas_path_arc_to
+function ml_canvas_path_arc_to(path, p1, p2, radius) {
+  path.arcTo(p1[1], p1[2], p2[1], p2[2], radius);
+}
+
+//Provides: ml_canvas_path_quadratic_curve_to
+function ml_canvas_path_quadratic_curve_to(path, cp, p) {
+  path.quadraticCurveTo(cp[1], cp[2], p[1], p[2]);
+}
+
+//Provides : ml_canvas_path_bezier_curve_to
+function ml_canvas_path_bezier_curve_to(path, cp1, cp2, p) {
+  path.bezierCurveTo(cp1[1], cp1[2], cp2[1], cp2[2], p[1], p[2]);
+}
+
+//Provides: ml_canvas_path_rect
+function ml_canvas_path_rect(path, pos, size) {
+  path.rect(pos[1], pos[2], size[1], size[2]);
+}
+
+//Provides: ml_canvas_path_ellipse
+function ml_canvas_path_ellipse(path, p, radius, rotation, theta1, theta2, ccw) {
+  path.ellipse(p[1], p[2], radius[1], radius[2],
+               rotation, theta1, theta2, ccw);
+}
+
+//Provides: ml_canvas_path_add
+function ml_canvas_path_add(path1, path2) {
+  path1.addPath(path2);
+}
+
+//Provides: ml_canvas_path_add_transformed
+function ml_canvas_path_add_transformed(path1, path2, t) {
+  var m = new window.DOMMatrix([[1], t[2], t[3], t[4], t[5], t[6]]);
+  path1.addPath(path2, m);
+}
+
+
+
 /* Gradients */
 
 //Provides: ml_canvas_create_linear_gradient
@@ -868,9 +934,23 @@ function ml_canvas_fill(canvas, nonzero) {
   }
 }
 
+//Provides: ml_canvas_fill_path
+function ml_canvas_fill_path(canvas, path, nonzero) {
+  if (nonzero) {
+    canvas.ctxt.fill(path, "nonzero");
+  } else {
+    canvas.ctxt.fill(path);
+  }
+}
+
 //Provides: ml_canvas_stroke
 function ml_canvas_stroke(canvas) {
   canvas.ctxt.stroke();
+}
+
+//Provides: ml_canvas_stroke_path
+function ml_canvas_stroke_path(canvas, path) {
+  canvas.ctxt.stroke(path);
 }
 
 

@@ -25,11 +25,13 @@
 #include "../implem/canvas.h"
 #include "../implem/window.h"
 #include "../implem/event.h"
-#include "../implem/pixmap.h"
 #include "../implem/color.h"
+#include "../implem/pixmap.h"
+#include "../implem/transform.h"
 #include "../implem/font_desc.h"
-#include "../implem/fill_style.h"
 #include "../implem/gradient.h"
+#include "../implem/fill_style.h"
+#include "../implem/path2d.h"
 #include "../implem/polygonize.h"
 #include "../implem/color_composition.h"
 
@@ -634,6 +636,22 @@ Val_event(
   CAMLreturn(mlEvent);
 }
 
+transform_t
+Transform_val(
+  value mlTransform)
+{
+  CAMLparam1(mlTransform);
+  transform_t transform = { 0 };
+  transform_set(&transform,
+                Double_field(mlTransform, 0),
+                Double_field(mlTransform, 1),
+                Double_field(mlTransform, 2),
+                Double_field(mlTransform, 3),
+                Double_field(mlTransform, 4),
+                Double_field(mlTransform, 5));
+  CAMLreturnT(transform_t, transform);
+}
+
 int ml_canvas_compare_raw(value mlCanvas1, value mlCanvas2);
 intnat ml_canvas_hash_raw(value mlCanvas);
 
@@ -665,7 +683,7 @@ Val_canvas(
   canvas_t *canvas)
 {
   CAMLparam0();
-  CAMLlocal2(mlCanvas,mlWeakPointer);
+  CAMLlocal2(mlCanvas, mlWeakPointer);
 
   value *mlWeakPointer_ptr = (value *)canvas_get_data(canvas);
 
@@ -752,7 +770,7 @@ Val_gradient(
   gradient_t *gradient)
 {
   CAMLparam0();
-  CAMLlocal2(mlGradient,mlWeakPointer);
+  CAMLlocal2(mlGradient, mlWeakPointer);
 
   value *mlWeakPointer_ptr = (value *)gradient_get_data(gradient);
 
@@ -786,6 +804,93 @@ Gradient_val(
     caml_failwith("invalid gradient object");
   }
   CAMLreturnT(gradient_t *, gradient);
+}
+
+void
+_ml_canvas_path2d_finalize(
+  value mlPath2d)
+{
+  path2d_t *path2d = *((path2d_t **)Data_custom_val(mlPath2d));
+  if (path2d != NULL) {
+    path2d_release(path2d);
+  }
+}
+
+int
+_ml_canvas_path2d_compare(
+  value mlPath2d1,
+  value mlPath2d2)
+{
+  path2d_t *p1 = *((path2d_t **)Data_custom_val(mlPath2d1));
+  if (p1 == NULL) {
+    caml_failwith("invalid path2d object");
+  }
+  path2d_t *p2 = *((path2d_t **)Data_custom_val(mlPath2d2));
+  if (p2 == NULL) {
+    caml_failwith("invalid path2d object");
+  }
+  if (p1 < p2) {
+    return -1;
+  }
+  else if (p1 > p2) {
+    return 1;
+  }
+  else {
+    return 0;
+  }
+}
+
+static struct custom_operations _ml_path2d_ops = {
+  "com.ocamlpro.ocaml-canvas.path2d",
+  _ml_canvas_path2d_finalize,
+  _ml_canvas_path2d_compare,
+  custom_hash_default,
+  custom_serialize_default,
+  custom_deserialize_default,
+  custom_compare_ext_default,
+#if OCAML_VERSION >= 40800
+  custom_fixed_length_default
+#endif
+};
+
+value
+Val_path2d(
+  path2d_t *path2d)
+{
+  CAMLparam0();
+  CAMLlocal2(mlPath2d, mlWeakPointer);
+
+  value *mlWeakPointer_ptr = (value *)path2d_get_data(path2d);
+
+  if (mlWeakPointer_ptr != NULL) {
+    mlWeakPointer = *mlWeakPointer_ptr;
+  } else {
+    mlWeakPointer = caml_weak_array_create(1);
+    mlWeakPointer_ptr = (value *)calloc(1, sizeof(value));
+    *mlWeakPointer_ptr = mlWeakPointer;
+    caml_register_generational_global_root(mlWeakPointer_ptr);
+    path2d_set_data(path2d, (void *)mlWeakPointer_ptr);
+  }
+
+  if (caml_weak_array_get(mlWeakPointer, 0, &mlPath2d) == 0) {
+    mlPath2d = caml_alloc_custom(&_ml_path2d_ops, sizeof(path2d_t *), 0, 1);
+    *((path2d_t **)Data_custom_val(mlPath2d)) = path2d_retain(path2d);
+    caml_weak_array_set(mlWeakPointer, 0, mlPath2d);
+  }
+
+  CAMLreturn(mlPath2d);
+}
+
+path2d_t *
+Path2d_val(
+  value mlPath2d)
+{
+  CAMLparam1(mlPath2d);
+  path2d_t *path2d = *((path2d_t **)Data_custom_val(mlPath2d));
+  if (path2d == NULL) {
+    caml_failwith("invalid path2d object");
+  }
+  CAMLreturnT(path2d_t *, path2d);
 }
 
 value

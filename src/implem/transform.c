@@ -17,19 +17,6 @@
 #include "point.h"
 #include "transform.h"
 
-/*
-  A transformation matrix
-  a, d => scaling/flipping
-  b, c => shearing
-  e, f => translation
-  a, b, c, d => rotation
-*/
-typedef struct transform_t {
-  double a; double b; // 0.0
-  double c; double d; // 0.0
-  double e; double f; // 1.0
-} transform_t;
-
 transform_t *
 transform_create(
   void)
@@ -241,6 +228,25 @@ transform_apply(
   double y = p->x * t->b + p->y * t->d + t->f;
   p->x = x;
   p->y = y;
+}
+
+point_t
+transform_apply_new(
+  const transform_t *t,
+  const point_t *p)
+{
+
+  assert(p != NULL);
+
+  if (t == NULL) {
+    return *p;
+  }
+
+  point_t pp = *p;
+
+  transform_apply(t, &pp);
+
+  return pp;
 }
 
 static const double _epsilon = 0.0001;

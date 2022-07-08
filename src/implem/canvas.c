@@ -33,9 +33,10 @@
 #include "fill_style.h"
 #include "gradient.h"
 #include "transform.h"
-#include "path.h"
+#include "path2d.h"
 #include "arc.h"
 #include "polygon.h"
+#include "polygon_internal.h"
 #include "polygonize.h"
 #include "poly_render.h"
 #include "backend.h"
@@ -68,8 +69,8 @@ _canvas_create_internal(
     goto error_id;
   }
 
-  canvas->path = path_create(12, 18);
-  if (canvas->path == NULL) {
+  canvas->path_2d = path2d_create();
+  if (canvas->path_2d == NULL) {
     goto error_path;
   }
 
@@ -130,11 +131,6 @@ _canvas_create_internal(
   canvas->font = NULL;
   canvas->width = width;
   canvas->height = height;
-  canvas->first_x = 0.0;
-  canvas->first_y = 0.0;
-  canvas->last_x = 0.0;
-  canvas->last_y = 0.0;
-  canvas->data = NULL;
   canvas->id = backend_next_id();
 
   backend_add_canvas(canvas);
@@ -150,7 +146,7 @@ error_offscreen_surface:
 error_state_stack:
   state_destroy(canvas->state);
 error_state:
-  path_destroy(canvas->path);
+  path2d_release(canvas->path_2d);
 error_path:
 error_id:
   free(canvas);
@@ -234,7 +230,7 @@ _canvas_destroy(
   assert(canvas->surface != NULL);
   assert(canvas->state != NULL);
   assert(canvas->state_stack != NULL);
-  assert(canvas->path != NULL);
+  assert(canvas->path_2d != NULL);
 
   if (_canvas_destroy_callback != NULL) {
     _canvas_destroy_callback(canvas);
@@ -253,7 +249,7 @@ _canvas_destroy(
     font_destroy(canvas->font);
   }
 
-  path_destroy(canvas->path);
+  path2d_release(canvas->path_2d);
   list_delete(canvas->state_stack);
   state_destroy(canvas->state);
   free(canvas);
@@ -347,16 +343,13 @@ _canvas_reset_state(
   canvas_t *canvas)
 {
   assert(canvas != NULL);
-  assert(canvas->path != NULL);
+  assert(canvas->path_2d != NULL);
   assert(canvas->state != NULL);
   assert(canvas->state_stack != NULL);
 
-  path_reset(canvas->path);
+  path2d_reset(canvas->path_2d);
   state_reset(canvas->state);
   list_reset(canvas->state_stack);
-
-  canvas->first_x = canvas->first_y = 0.0;
-  canvas->last_x = canvas->last_y = 0.0;
 }
 
 void
@@ -811,36 +804,11 @@ canvas_clear_path(
   canvas_t *c)
 {
   assert(c != NULL);
-  assert(c->path != NULL);
+  assert(c->path_2d != NULL);
 
-  path_reset(c->path);
-  c->first_x = c->first_y = 0.0;
-  c->last_x = c->last_y = 0.0;
+  path2d_reset(c->path_2d);
+
   return true;
-}
-
-static void
-_canvas_save_first(
-  canvas_t *c,
-  double x,
-  double y)
-{
-  assert(c != NULL);
-
-  c->first_x = x;
-  c->first_y = y;
-}
-
-static void
-_canvas_save_last(
-  canvas_t *c,
-  double x,
-  double y)
-{
-  assert(c != NULL);
-
-  c->last_x = x;
-  c->last_y = y;
 }
 
 void
@@ -848,17 +816,9 @@ canvas_close_path(
   canvas_t *c)
 {
   assert(c != NULL);
-  assert(c->path != NULL);
+  assert(c->path_2d != NULL);
 
-  path_add_close_path(c->path);
-
-  // Add a move to the first point before the close
-  // This makes handling of primitives after close easier
-  // TODO: this seems clumsy : if a transform is set before the close,
-  // then we're going to move to some random point...
-  // But arc_to needs the last untransformed point, which happens
-  // to be the first point in the subpath when we close it
-  canvas_move_to(c, c->first_x, c->first_y);
+  path2d_close(c->path_2d);
 }
 
 void
@@ -868,16 +828,10 @@ canvas_move_to(
   double y)
 {
   assert(c != NULL);
-  assert(c->path != NULL);
+  assert(c->path_2d != NULL);
   assert(c->state != NULL);
 
-  _canvas_save_first(c, x, y);
-  _canvas_save_last(c, x, y);
-
-  point_t p = { x, y };
-
-  transform_apply(c->state->transform, &p);
-  path_add_move_to(c->path, p.x, p.y);
+  path2d_move_to(c->path_2d, x, y, c->state->transform);
 }
 
 void
@@ -887,38 +841,10 @@ canvas_line_to(
   double y)
 {
   assert(c != NULL);
-  assert(c->path != NULL);
+  assert(c->path_2d != NULL);
   assert(c->state != NULL);
 
-  if (path_empty(c->path)) {
-      _canvas_save_first(c, x, y);
-  }
-  _canvas_save_last(c, x, y);
-
-  point_t p = { x, y };
-
-  transform_apply(c->state->transform, &p);
-  path_add_line_to(c->path, p.x, p.y);
-}
-
-static void
-_canvas_bezier_list(
-  canvas_t *c,
-  const double *values,
-  int nb_bezier)
-{
-  assert(c != NULL);
-  assert(values != NULL);
-  assert(nb_bezier >= 0);
-
-  canvas_line_to(c, values[0], values[1]);
-
-  for (int i = 2; i < 2 + nb_bezier * 6; i += 6) {
-    canvas_bezier_curve_to(c,
-                           values[i+0], values[i+1],
-                           values[i+2], values[i+3],
-                           values[i+4], values[i+5]);
-  }
+  path2d_line_to(c->path_2d, x, y, c->state->transform);
 }
 
 void
@@ -932,12 +858,10 @@ canvas_arc(
   bool ccw)
 {
   assert(c != NULL);
-  assert(c->path != NULL);
+  assert(c->path_2d != NULL);
   assert(c->state != NULL);
 
-  double values[26];
-  int nb_bezier = arc_to_bezier(values, x, y, r, r, di, df, ccw);
-  _canvas_bezier_list(c, values, nb_bezier);
+  path2d_arc(c->path_2d, x, y, r, di, df, ccw, c->state->transform);
 }
 
 void
@@ -950,22 +874,10 @@ canvas_arc_to(
   double r)
 {
   assert(c != NULL);
-  assert(c->path != NULL);
+  assert(c->path_2d != NULL);
   assert(c->state != NULL);
 
-  // When the path is completely empty, we just move to midpoint
-  // Note that even when the path contains a single move,
-  // we consider it is not empty and thus skip this case
-  // Note: we could just call save_first and save_last
-  if (path_empty(c->path)) {
-    canvas_move_to(c, x1, y1);
-    return;
-  }
-
-  double values[26];
-  int nb_bezier =
-    arcto_to_bezier(values, c->last_x, c->last_y, x1, y1, x2, y2, r);
-  _canvas_bezier_list(c, values, nb_bezier);
+  path2d_arc_to(c->path_2d, x1, y1, x2, y2, r, c->state->transform);
 }
 
 void
@@ -977,21 +889,10 @@ canvas_quadratic_curve_to(
   double y)
 {
   assert(c != NULL);
-  assert(c->path != NULL);
+  assert(c->path_2d != NULL);
   assert(c->state != NULL);
 
-  if (path_empty(c->path)) {
-      _canvas_save_first(c, cpx, cpy);
-  }
-  _canvas_save_last(c, x, y);
-
-  point_t cp = { cpx, cpy };
-  point_t p = { x, y };
-
-  transform_apply(c->state->transform, &cp);
-  transform_apply(c->state->transform, &p);
-
-  path_add_quadratic_curve_to(c->path, cp.x, cp.y, p.x, p.y);
+  path2d_quadratic_curve_to(c->path_2d, cpx, cpy, x, y, c->state->transform);
 }
 
 void
@@ -1005,23 +906,11 @@ canvas_bezier_curve_to(
   double y)
 {
   assert(c != NULL);
-  assert(c->path != NULL);
+  assert(c->path_2d != NULL);
   assert(c->state != NULL);
 
-  if (path_empty(c->path)) {
-      _canvas_save_first(c, cp1x, cp1y);
-  }
-  _canvas_save_last(c, x, y);
-
-  point_t cp1 = { cp1x, cp1y };
-  point_t cp2 = { cp2x, cp2y };
-  point_t p = { x, y };
-
-  transform_apply(c->state->transform, &cp1);
-  transform_apply(c->state->transform, &cp2);
-  transform_apply(c->state->transform, &p);
-
-  path_add_bezier_curve_to(c->path, cp1.x, cp1.y, cp2.x, cp2.y, p.x, p.y);
+  path2d_bezier_curve_to(c->path_2d, cp1x, cp1y, cp2x, cp2y, x, y,
+                         c->state->transform);
 }
 
 void
@@ -1033,31 +922,10 @@ canvas_rect(
   double height)
 {
   assert(c != NULL);
-  assert(c->path != NULL);
+  assert(c->path_2d != NULL);
   assert(c->state != NULL);
 
-  canvas_move_to(c, x, y);
-  canvas_line_to(c, x + width, y);
-  canvas_line_to(c, x + width, y + height);
-  canvas_line_to(c, x, y + height);
-  canvas_close_path(c);
-}
-
-static void
-_rotate_list(int nb_points, double *values, double r)
-{
-  assert(values != NULL);
-  assert(nb_points > 0);
-
-  double cos_r = cos(r);
-  double sin_r = sin(r);
-
-  for (int i = 0; i < nb_points * 2; i += 2) {
-    double tx = values[i] * cos_r + values[i+1] * sin_r;
-    double ty = values[i+1] * cos_r - values[i] * sin_r;
-    values[i] = tx;
-    values[i+1] = ty;
-  }
+  path2d_rect(c->path_2d, x, y, width, height, c->state->transform);
 }
 
 void
@@ -1070,16 +938,13 @@ canvas_ellipse(
   double r,
   double di,
   double df,
-  bool cc)
+  bool ccw)
 {
   assert(c != NULL);
-  assert(c->path != NULL);
+  assert(c->path_2d != NULL);
   assert(c->state != NULL);
 
-  double values[26];
-  int nb_bezier = arc_to_bezier(values, x, y, rx, ry, di, df, cc);
-  _rotate_list(1 + nb_bezier * 3, values, -r);
-  _canvas_bezier_list(c, values, nb_bezier);
+  path2d_ellipse(c->path_2d, x, y, rx, ry, r, di, df, ccw, c->state->transform);
 }
 
 
@@ -1092,7 +957,7 @@ canvas_fill(
   bool non_zero)
 {
   assert(c != NULL);
-  assert(c->path != NULL);
+  assert(c->path_2d != NULL);
   assert(c->state != NULL);
   assert(c->surface != NULL);
 
@@ -1103,10 +968,58 @@ canvas_fill(
   }
 
   rect_t bbox = rect(point(0.0, 0.0), point(c->width, c->height));
-
-  if (polygonize(c->path, p, &bbox) == true) {
+  if (polygonize(path2d_get_path(c->path_2d), p, &bbox) == true) {
     poly_render(c->surface, p, &bbox, c->state->fill_style,
-                c->state->global_alpha, c->state->global_composite_operation, non_zero, c->state->transform);
+                c->state->global_alpha, c->state->global_composite_operation,
+                non_zero, c->state->transform);
+  }
+
+  polygon_destroy(p);
+}
+
+void
+canvas_fill_path(
+  canvas_t *c,
+  path2d_t *path,
+  bool non_zero)
+{
+  assert(c != NULL);
+  assert(c->state != NULL);
+  assert(c->surface != NULL);
+  assert(path != NULL);
+
+  // TODO: initial size according to number of primitive
+  polygon_t *p = polygon_create(1024, 16);
+  if (p == NULL) {
+    return;
+  }
+
+  rect_t bbox = rect(point(0.0, 0.0), point(c->width, c->height));
+
+  if (polygonize(path2d_get_path(path), p, &bbox) == true) {
+
+    // Apply transformation
+    for (int i = 0; i < p->nb_points; ++i) {
+      transform_apply(c->state->transform,&(p->points[i]));
+    }
+
+    // Update bbox
+    point_t pt1 = transform_apply_new(c->state->transform, &bbox.p1);
+    point_t pt2 = transform_apply_new(c->state->transform, &bbox.p2);
+    point_t bp3 = point(bbox.p2.x, bbox.p1.y);
+    point_t bp4 = point(bbox.p1.x, bbox.p2.y);
+    point_t pt3 = transform_apply_new(c->state->transform, &bp3);
+    point_t pt4 = transform_apply_new(c->state->transform, &bp4);
+    double xmin = min(pt1.x, min(pt2.x, min(pt3.x, pt4.x)));
+    double ymin = min(pt1.y, min(pt2.y, min(pt3.y, pt4.y)));
+    double xmax = max(pt1.x, max(pt2.x, max(pt3.x, pt4.x)));
+    double ymax = max(pt1.y, max(pt2.y, max(pt3.y, pt4.y)));
+    bbox.p1 = point(xmin, ymin);
+    bbox.p2 = point(xmax, ymax);
+
+    poly_render(c->surface, p, &bbox, c->state->fill_style,
+                c->state->global_alpha, c->state->global_composite_operation,
+                non_zero, c->state->transform);
   }
 
   polygon_destroy(p);
@@ -1117,7 +1030,7 @@ canvas_stroke(
   canvas_t *c)
 {
   assert(c != NULL);
-  assert(c->path != NULL);
+  assert(c->path_2d != NULL);
   assert(c->state != NULL);
   assert(c->surface != NULL);
 
@@ -1128,19 +1041,46 @@ canvas_stroke(
   }
 
   rect_t bbox = rect(point(0.0, 0.0), point(c->width, c->height));
-  transform_t *lin = transform_extract_linear(c->state->transform);
-  transform_t *inv_lin = transform_copy(lin);
-  transform_inverse(inv_lin);
-  if (polygonize_outline(c->path, c->state->line_width, p, &bbox, c->state->join_type, c->state->cap_type, lin, inv_lin) == true) {
+  if (polygonize_outline(path2d_get_path(c->path_2d), c->state->line_width,
+                         p, &bbox, c->state->join_type, c->state->cap_type,
+                         c->state->transform, true) == true) {
     poly_render(c->surface, p, &bbox, c->state->stroke_style,
-                c->state->global_alpha, c->state->global_composite_operation, true, c->state->transform);
+                c->state->global_alpha, c->state->global_composite_operation,
+                true, c->state->transform);
   }
-  transform_destroy(lin);
-  transform_destroy(inv_lin);
   polygon_destroy(p);
 
-  // Thoughts: we could polygonize on the fly when building the path
-  // TODO: the line width actually depends on the current transform !
+  // Thought: we could polygonize on the fly when building the path
+}
+
+void
+canvas_stroke_path(
+  canvas_t *c,
+  path2d_t *path)
+{
+  assert(c != NULL);
+  assert(c->state != NULL);
+  assert(c->surface != NULL);
+  assert(path != NULL);
+
+  // TODO: initial size according to number of primitive
+  polygon_t *p = polygon_create(1024, 16);
+  if (p == NULL) {
+    return;
+  }
+
+  rect_t bbox = rect(point(0.0, 0.0), point(c->width, c->height));
+
+  if (polygonize_outline(path2d_get_path(path),
+                         c->state->line_width, p, &bbox,
+                         c->state->join_type, c->state->cap_type,
+                         c->state->transform, false) == true) {
+    poly_render(c->surface, p, &bbox, c->state->stroke_style,
+                c->state->global_alpha, c->state->global_composite_operation,
+                true, c->state->transform);
+  }
+
+  polygon_destroy(p);
 }
 
 
@@ -1185,7 +1125,8 @@ canvas_fill_rect(
                            max4(p1.y, p2.y, p3.y, p4.y)));
 
   poly_render(c->surface, p, &bbox, c->state->fill_style,
-              c->state->global_alpha, c->state->global_composite_operation, false, c->state->transform);
+              c->state->global_alpha, c->state->global_composite_operation,
+              false, c->state->transform);
 
   polygon_destroy(p);
 }
@@ -1233,13 +1174,12 @@ canvas_stroke_rect(
   if (p == NULL) {
     return;
   }
-  transform_t *lin = transform_extract_linear(c->state->transform);
-  transform_t *inv_lin = transform_copy(lin);
-  polygon_offset(p, tp, c->state->line_width, JOIN_ROUND, CAP_BUTT, lin, inv_lin);
+
+  polygon_offset(p, tp, c->state->line_width, JOIN_ROUND, CAP_BUTT,
+                 c->state->transform, true);
   poly_render(c->surface, tp, &bbox, c->state->stroke_style,
-              c->state->global_alpha, c->state->global_composite_operation, true, c->state->transform);
-  transform_destroy(lin);
-  transform_destroy(inv_lin);
+              c->state->global_alpha, c->state->global_composite_operation,
+              true, c->state->transform);
   polygon_destroy(tp);
   polygon_destroy(p);
 }
@@ -1342,7 +1282,8 @@ canvas_stroke_text(
                                   chr, c->state->line_width,
                                   &pen, p, &bbox) == true) {
       poly_render(c->surface, p, &bbox, c->state->stroke_style,
-                  c->state->global_alpha, c->state->global_composite_operation, true, c->state->transform);
+                  c->state->global_alpha, c->state->global_composite_operation,
+                  true, c->state->transform);
     }
   }
 

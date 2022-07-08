@@ -107,10 +107,14 @@ font_char_as_poly(
   bool res = false;
 
   switch_IMPL() {
-    case_GDI(res = gdi_font_char_as_poly((gdi_font_t *)f, t, c, pen, p, bbox));
-    case_QUARTZ(res = qtz_font_char_as_poly((qtz_font_t *)f, t, c, pen, p, bbox));
-    case_X11(res = ft_font_char_as_poly((ft_font_t *)f, t, c, pen, p, bbox));
-    case_WAYLAND(res = ft_font_char_as_poly((ft_font_t *)f, t, c, pen, p, bbox));
+    case_GDI(
+      res = gdi_font_char_as_poly((gdi_font_t *)f, t, c, pen, p, bbox));
+    case_QUARTZ(
+      res = qtz_font_char_as_poly((qtz_font_t *)f, t, c, pen, p, bbox));
+    case_X11(
+      res = ft_font_char_as_poly((ft_font_t *)f, t, c, pen, p, bbox));
+    case_WAYLAND(
+      res = ft_font_char_as_poly((ft_font_t *)f, t, c, pen, p, bbox));
     default_fail();
   }
 
@@ -146,10 +150,7 @@ font_char_as_poly_outline(
     return false;
   }
 
-  //TODO : Replace the debug transform_create by something else
-  transform_t *identity = transform_create();
-  polygon_offset(tp, p, w, JOIN_ROUND, CAP_BUTT, identity, identity);
-  transform_destroy(identity);
+  polygon_offset(tp, p, w, JOIN_ROUND, CAP_BUTT, t, true);
 
   polygon_destroy(tp);
 

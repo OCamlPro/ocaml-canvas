@@ -30,6 +30,9 @@
 #include "../implem/canvas.h"
 #include "../implem/backend.h"
 #include "../implem/gradient.h"
+#include "../implem/path.h"
+#include "../implem/path2d.h"
+#include "../implem/transform.h"
 
 #include "ml_tags.h"
 #include "ml_convert.h"
@@ -134,6 +137,9 @@ ml_canvas_create_linear_gradient(
                            Double_val(Field(mlPos1, 1)),
                            Double_val(Field(mlPos2, 0)),
                            Double_val(Field(mlPos2, 1)));
+  if (gradient == NULL) {
+    caml_failwith("unable to create the specified linear gradient");
+  }
   mlGradient = Val_gradient(gradient);
   gradient_release(gradient); // Because Val_gradient retains it
   CAMLreturn(mlGradient);
@@ -156,6 +162,9 @@ ml_canvas_create_radial_gradient(
                            Double_val(Field(mlCenter2, 0)),
                            Double_val(Field(mlCenter2, 1)),
                            Double_val(mlRadius2));
+  if (gradient == NULL) {
+    caml_failwith("unable to create the specified radial gradient");
+  }
   mlGradient = Val_gradient(gradient);
   gradient_release(gradient); // Because Val_gradient retains it
   CAMLreturn(mlGradient);
@@ -173,6 +182,9 @@ ml_canvas_create_conic_gradient(
     gradient_create_conic(Double_val(Field(mlCenter, 0)),
                           Double_val(Field(mlCenter, 1)),
                           Double_val(mlAngle));
+  if (gradient == NULL) {
+    caml_failwith("unable to create the specified conic gradient");
+  }
   mlGradient = Val_gradient(gradient);
   gradient_release(gradient); // Because Val_gradient retains it
   CAMLreturn(mlGradient);
@@ -188,6 +200,220 @@ ml_canvas_gradient_add_color_stop(
   gradient_add_color_stop(Gradient_val(mlGradient),
                           color_of_int(Unsigned_int_val(mlColor)),
                           Double_val(mlStop));
+  CAMLreturn(Val_unit);
+}
+
+
+
+/* Path */
+
+static void
+_ml_canvas_path_destroy_callback(
+  path2d_t *path2d)
+{
+  CAMLparam0();
+  value *mlWeakPointer_ptr = (value *)path2d_get_data(path2d);
+  if (mlWeakPointer_ptr != NULL) {
+    path2d_set_data(path2d, NULL);
+    caml_remove_generational_global_root(mlWeakPointer_ptr);
+    free(mlWeakPointer_ptr);
+  }
+  CAMLreturn0;
+}
+
+CAMLprim value
+ml_canvas_path_create(
+  void)
+{
+  CAMLparam0();
+  CAMLlocal1(mlPath);
+  path2d_t *path2d = path2d_create();
+  if (path2d == NULL) {
+    caml_failwith("unable to create the specified path2d");
+  }
+  mlPath = Val_path2d(path2d);
+  path2d_release(path2d); // Because Val_path2d retains it
+  CAMLreturn(mlPath);
+}
+
+CAMLprim value
+ml_canvas_path_close(
+  value mlPath2d)
+{
+  CAMLparam1(mlPath2d);
+  path2d_close(Path2d_val(mlPath2d));
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
+ml_canvas_path_move_to(
+  value mlPath2d,
+  value mlDest)
+{
+  CAMLparam2(mlPath2d, mlDest);
+  path2d_move_to(Path2d_val(mlPath2d),
+                 Double_val(Field(mlDest, 0)),
+                 Double_val(Field(mlDest, 1)),
+                 NULL);
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
+ml_canvas_path_line_to(
+  value mlPath2d,
+  value mlDest)
+{
+  CAMLparam2(mlPath2d, mlDest);
+  path2d_line_to(Path2d_val(mlPath2d),
+                 Double_val(Field(mlDest, 0)),
+                 Double_val(Field(mlDest, 1)),
+                 NULL);
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
+ml_canvas_path_arc_n(
+  value mlPath2d,
+  value mlP,
+  value mlRadius,
+  value mlTheta1,
+  value mlTheta2,
+  value mlCcw)
+{
+  CAMLparam5(mlPath2d, mlP, mlRadius, mlTheta1, mlTheta2);
+  CAMLxparam1(mlCcw);
+  path2d_arc(Path2d_val(mlPath2d),
+             Double_val(Field(mlP, 0)),
+             Double_val(Field(mlP, 1)),
+             Double_val(mlRadius),
+             Double_val(mlTheta1),
+             Double_val(mlTheta2),
+             Bool_val(mlCcw),
+             NULL);
+  CAMLreturn(Val_unit);
+}
+
+BYTECODE_STUB_6(ml_canvas_path_arc)
+
+CAMLprim value
+ml_canvas_path_arc_to(
+  value mlPath2d,
+  value mlP1,
+  value mlP2,
+  value mlRadius)
+{
+  CAMLparam4(mlPath2d, mlP1, mlP2, mlRadius);
+  path2d_arc_to(Path2d_val(mlPath2d),
+                Double_val(Field(mlP1, 0)),
+                Double_val(Field(mlP1, 1)),
+                Double_val(Field(mlP2, 0)),
+                Double_val(Field(mlP2, 1)),
+                Double_val(mlRadius),
+                NULL);
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
+ml_canvas_path_bezier_curve_to(
+  value mlPath2d,
+  value mlCp1,
+  value mlCp2,
+  value mlP)
+{
+  CAMLparam4(mlPath2d, mlCp1, mlCp2, mlP);
+  path2d_bezier_curve_to(Path2d_val(mlPath2d),
+                         Double_val(Field(mlCp1, 0)),
+                         Double_val(Field(mlCp1, 1)),
+                         Double_val(Field(mlCp2, 0)),
+                         Double_val(Field(mlCp2, 1)),
+                         Double_val(Field(mlP, 0)),
+                         Double_val(Field(mlP, 1)),
+                         NULL);
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
+ml_canvas_path_quadratic_curve_to(
+  value mlPath2d,
+  value mlCp,
+  value mlP)
+{
+  CAMLparam3(mlPath2d, mlCp, mlP);
+  path2d_quadratic_curve_to(Path2d_val(mlPath2d),
+                            Double_val(Field(mlCp, 0)),
+                            Double_val(Field(mlCp, 1)),
+                            Double_val(Field(mlP, 0)),
+                            Double_val(Field(mlP, 1)),
+                            NULL);
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
+ml_canvas_path_rect(
+  value mlPath2d,
+  value mlP,
+  value mlSize)
+{
+  CAMLparam3(mlPath2d, mlP, mlSize);
+  path2d_rect(Path2d_val(mlPath2d),
+              Double_val(Field(mlP, 0)),
+              Double_val(Field(mlP, 1)),
+              Double_val(Field(mlSize, 0)),
+              Double_val(Field(mlSize, 1)),
+              NULL);
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
+ml_canvas_path_ellipse_n(
+  value mlPath2d,
+  value mlP,
+  value mlRadius,
+  value mlRotation,
+  value mlTheta1,
+  value mlTheta2,
+  value mlCcw)
+{
+  CAMLparam5(mlPath2d, mlP, mlRadius, mlRotation, mlTheta1);
+  CAMLxparam2(mlTheta2, mlCcw);
+  path2d_ellipse(Path2d_val(mlPath2d),
+                 Double_val(Field(mlP, 0)),
+                 Double_val(Field(mlP, 1)),
+                 Double_val(Field(mlRadius, 0)),
+                 Double_val(Field(mlRadius, 1)),
+                 Double_val(mlRotation),
+                 Double_val(mlTheta1),
+                 Double_val(mlTheta2),
+                 Bool_val(mlCcw),
+                 NULL);
+  CAMLreturn(Val_unit);
+}
+
+BYTECODE_STUB_7(ml_canvas_path_ellipse)
+
+CAMLprim value
+ml_canvas_path_add(
+  value mlDstPath2d,
+  value mlSrcPath2d)
+{
+  CAMLparam2(mlDstPath2d, mlSrcPath2d);
+  path2d_add(Path2d_val(mlDstPath2d),
+             Path2d_val(mlSrcPath2d),
+             NULL);
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
+ml_canvas_path_add_transformed(
+  value mlDstPath2d,
+  value mlSrcPath2d,
+  value mlTransform)
+{
+  CAMLparam3(mlDstPath2d, mlSrcPath2d, mlTransform);
+  transform_t transform = Transform_val(mlTransform);
+  path2d_add(Path2d_val(mlDstPath2d),
+             Path2d_val(mlSrcPath2d),
+             &transform);
   CAMLreturn(Val_unit);
 }
 
@@ -982,11 +1208,35 @@ ml_canvas_fill(
 }
 
 CAMLprim value
+ml_canvas_fill_path(
+  value mlCanvas,
+  value mlPath2d,
+  value mlNonZero)
+{
+  CAMLparam3(mlCanvas, mlPath2d, mlNonZero);
+  canvas_fill_path(Canvas_val(mlCanvas),
+                   Path2d_val(mlPath2d),
+                   Bool_val(mlNonZero));
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
 ml_canvas_stroke(
   value mlCanvas)
 {
   CAMLparam1(mlCanvas);
   canvas_stroke(Canvas_val(mlCanvas));
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
+ml_canvas_stroke_path(
+  value mlCanvas,
+  value mlPath2d)
+{
+  CAMLparam2(mlCanvas, mlPath2d);
+  canvas_stroke_path(Canvas_val(mlCanvas),
+                     Path2d_val(mlPath2d));
   CAMLreturn(Val_unit);
 }
 
@@ -1249,6 +1499,7 @@ ml_canvas_init(
   if (_ml_canvas_initialized == true) {
     canvas_set_destroy_callback(_ml_canvas_canvas_destroy_callback);
     gradient_set_destroy_callback(_ml_canvas_gradient_destroy_callback);
+    path2d_set_destroy_callback(_ml_canvas_path_destroy_callback);
   }
 
   CAMLreturn(Val_bool(_ml_canvas_initialized));

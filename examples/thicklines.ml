@@ -120,15 +120,14 @@ let () =
   Canvas.setTransform c (1.0,0.0,-1.0,1.0,0.0,0.0);
   Canvas.stroke c;
 
-  Canvas.setTransform c (1.0,0.0,0.0,1.0,0.0,0.0);
-
+  let ex = Path.create () in 
   Canvas.clearPath c;
-  Canvas.moveTo c (300.0, 595.0);
-  Canvas.lineTo c (200.0, 535.0);
-  Canvas.lineTo c (100.0, 595.0);
-  Canvas.closePath c;
-  Canvas.setTransform c (1.0,0.0,1.0,1.0,0.0,0.0);
-  Canvas.stroke c;
+  Path.moveTo ex (300.0, 595.0);
+  Path.lineTo ex (200.0, 535.0);
+  Path.lineTo ex (100.0, 595.0);
+  Path.close ex;
+  Canvas.setTransform c (1.0,0.0,0.1,1.0,0.0,0.0);
+  Canvas.strokePath c ex;
   
 
 

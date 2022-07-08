@@ -212,13 +212,23 @@ polygon_offset(
   double w,
   join_type_t join_type,
   cap_type_t cap_type,
-  const transform_t *lin,
-  const transform_t *inv_lin)
+  const transform_t *transform,
+  bool only_linear)
 {
   assert(p != NULL);
   assert(np != NULL);
-  assert(lin != NULL);
-  assert(inv_lin != NULL);
+  assert(transform != NULL);
+
+  // Apply transformation to all points
+  if (!only_linear) {
+    for (int i = 0; i < p->nb_points; i++) {
+      transform_apply(transform, &(p->points[i]));
+    }
+  }
+
+  transform_t *lin = transform_extract_linear(transform);
+  transform_t *inv_lin = transform_copy(lin);
+  transform_inverse(inv_lin);
 
   point_t p1o, p2o, p1n, p2n;
   double o = w / 2.0;
@@ -419,6 +429,9 @@ polygon_offset(
 
     polygon_end_subpoly(np, true);
   }
+
+  transform_destroy(lin);
+  transform_destroy(inv_lin);
 }
 
 bool
@@ -499,15 +512,14 @@ polygonize_outline(
   rect_t *bbox,
   join_type_t join_type,
   cap_type_t cap_type,
-  const transform_t *lin,
-  const transform_t *inv_lin)
+  const transform_t *transform,
+  bool only_linear)
 {
   assert(path != NULL);
   assert(w > 0.0);
   assert(p != NULL);
   assert(bbox != NULL);
-  assert(lin != NULL);
-  assert(inv_lin != NULL);
+  assert(transform != NULL);
 
   // TODO: initial size according to number of primitive
   polygon_t *tp = polygon_create(1024, 16);
@@ -521,15 +533,29 @@ polygonize_outline(
     return false;
   }
 
-  polygon_offset(tp, p, w, join_type, cap_type, lin, inv_lin);
+  polygon_offset(tp, p, w, join_type, cap_type, transform, only_linear);
 
   polygon_destroy(tp);
 
-  //TODO : Make the 10 correspond to transform
+  if (!only_linear) {
+    point_t pt1 = transform_apply_new(transform, &bbox->p1);
+    point_t pt2 = transform_apply_new(transform, &bbox->p2);
+    point_t bp3 = point(bbox->p2.x, bbox->p1.y);
+    point_t bp4 = point(bbox->p1.x, bbox->p2.y);
+    point_t pt3 = transform_apply_new(transform, &bp3);
+    point_t pt4 = transform_apply_new(transform, &bp4);
+    double xmin = min(pt1.x, min(pt2.x, min(pt3.x, pt4.x)));
+    double ymin = min(pt1.y, min(pt2.y, min(pt3.y, pt4.y)));
+    double xmax = max(pt1.x, max(pt2.x, max(pt3.x, pt4.x)));
+    double ymax = max(pt1.y, max(pt2.y, max(pt3.y, pt4.y)));
+    bbox->p1 = point(xmin, ymin);
+    bbox->p2 = point(xmax, ymax);
+  }
+
   double a, b, c, d;
-  transform_extract_ft(lin, &a, &b, &c, &d);
-  double inf_norm = abs(a) + abs(b) + abs(c) + abs(d);
+  transform_extract_ft(transform, &a, &b, &c, &d);
   //TODO : Improve this (probably) not optimal coefficient
+  double inf_norm = fabs(a) + fabs(b) + fabs(c) + fabs(d);
   bbox->p1.x -= inf_norm * w; bbox->p1.y -= inf_norm * w;
   bbox->p2.x += inf_norm * w; bbox->p2.y += inf_norm * w;
 
