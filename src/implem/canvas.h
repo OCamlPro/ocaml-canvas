@@ -20,6 +20,7 @@
 #include "pixmap.h"
 #include "font_desc.h"
 #include "gradient.h"
+#include "path2d.h"
 #include "fill_style.h"
 #include "polygonize.h"
 #include "color_composition.h"
@@ -308,7 +309,7 @@ canvas_arc(
   double r,
   double di,
   double df,
-  bool cc);
+  bool ccw);
 
 void
 canvas_arc_to(
@@ -355,7 +356,7 @@ canvas_ellipse(
   double r,
   double di,
   double df,
-  bool cc);
+  bool ccw);
 
 
 
@@ -367,8 +368,19 @@ canvas_fill(
   bool non_zero);
 
 void
+canvas_fill_path(
+  canvas_t *c,
+  path2d_t *path,
+  bool non_zero);
+
+void
 canvas_stroke(
   canvas_t *c);
+
+void
+canvas_stroke_path(
+  canvas_t *c,
+  path2d_t *path);
 
 
 

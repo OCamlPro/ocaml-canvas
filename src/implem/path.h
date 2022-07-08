@@ -78,9 +78,13 @@ path_add_bezier_curve_to(
   double x,
   double y);
 
+int32_t
+path_get_nb_prims(
+  const path_t *path);
+
 path_iterator_t *
 path_get_iterator(
-  path_t *p);
+  path_t *path);
 
 void
 path_iterator_destroy(

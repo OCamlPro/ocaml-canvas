@@ -89,6 +89,65 @@ module Font = struct
 
 end
 
+module Transform = struct
+
+  type t = {
+    a : float;
+    b : float;
+    c : float;
+    d : float;
+    e : float;
+    f : float;
+  }
+
+  let id = { a = 1.0; b = 0.0;
+             c = 0.0; d = 1.0;
+             e = 0.0; f = 0.0 }
+
+  let create (a, b, c, d, e, f) =
+    { a; b; c; d; e; f }
+
+  let mul t1 t2 =
+    { a = t1.a *. t2.a +. t1.c *. t2.b;
+      b = t1.b *. t2.a +. t1.d *. t2.b;
+      c = t1.a *. t2.c +. t1.c *. t2.d;
+      d = t1.b *. t2.c +. t1.d *. t2.d;
+      e = t1.e +. t1.a *. t2.e +. t1.c *. t2.f;
+      f = t1.f +. t1.b *. t2.e +. t1.d *. t2.f }
+
+  let translate t (x, y) =
+    { t with
+      e = x *. t.a +. y *. t.c;
+      f = x *. t.b +. y *. t.d }
+
+  let scale t (x,y) =
+    { t with
+      a = t.a *. x; b = t.b *. x;
+      c = t.c *. y; d = t.d *. y }
+
+  let shear t (x, y) =
+    { t with
+      a = t.a +. t.c *. y; b = t.b +. t.d *. y;
+      c = t.c +. t.a *. x; d = t.d +. t.b *. x }
+
+  let rotate t a =
+    let cos_a = cos (-. a) in
+    let sin_a = sin (-. a) in
+    { t with
+      a = t.a *. cos_a -. t.c *. sin_a;
+      b = t.b *. cos_a -. t.d *. sin_a;
+      c = t.c *. cos_a +. t.a *. sin_a;
+      d = t.d *. cos_a +. t.b *. sin_a }
+
+  let inverse t =
+    let invdet = 1.0 /. (t.a *. t.d -. t.b *. t.c) in
+    { a =    t.d *. invdet; b = -. t.b *. invdet;
+      c = -. t.c *. invdet; d =    t.a *. invdet;
+      e = (t.c *. t.f -. t.d *. t.e) *. invdet;
+      f = (t.b *. t.e -. t.a *. t.f) *. invdet }
+
+end
+
 module ImageData = struct
 
   type t =
@@ -111,6 +170,82 @@ module Gradient = struct
 
   external addColorStop : t -> Color.t -> float -> unit
     = "ml_canvas_gradient_add_color_stop"
+
+end
+
+module Path = struct
+
+  type t
+
+  external create : unit -> t
+    = "ml_canvas_path_create"
+
+  external close : t -> unit
+    = "ml_canvas_path_close"
+
+  external moveTo : t -> (float * float) -> unit
+    = "ml_canvas_path_move_to"
+
+  external lineTo : t -> (float * float) -> unit
+    = "ml_canvas_path_line_to"
+
+  external arc :
+    t -> center:(float * float) -> radius:float ->
+    theta1:float -> theta2:float -> ccw:bool -> unit
+    = "ml_canvas_path_arc" "ml_canvas_path_arc_n"
+
+  external arc_ :
+    t -> (float * float) -> float -> float -> float -> bool -> unit
+    = "ml_canvas_path_arc" "ml_canvas_path_arc_n"
+
+  external arcTo :
+    t -> p1:(float * float) -> p2:(float * float) -> radius:float -> unit
+    = "ml_canvas_path_arc_to"
+
+  external arcTo_ :
+    t -> (float * float) -> (float * float) -> float -> unit
+    = "ml_canvas_path_arc_to"
+
+  external quadraticCurveTo :
+    t -> cp:(float * float) -> p:(float * float) -> unit
+    = "ml_canvas_path_quadratic_curve_to"
+
+  external quadraticCurveTo_ :
+    t -> (float * float) -> (float * float) -> unit
+    = "ml_canvas_path_quadratic_curve_to"
+
+  external bezierCurveTo :
+    t -> cp1:(float * float) -> cp2:(float * float) ->
+    p:(float * float) -> unit
+    = "ml_canvas_path_bezier_curve_to"
+
+  external bezierCurveTo_ :
+    t -> (float * float) -> (float * float) -> (float * float) -> unit
+    = "ml_canvas_path_bezier_curve_to"
+
+  external rect :
+    t -> pos:(float * float) -> size:(float * float) -> unit
+    = "ml_canvas_path_rect"
+
+  external rect_ :
+    t -> (float * float) -> (float * float) -> unit
+    = "ml_canvas_path_rect"
+
+  external ellipse :
+    t -> center:(float * float) -> radius:(float * float) ->
+    rotation:float -> theta1:float -> theta2:float -> ccw:bool -> unit
+    = "ml_canvas_path_ellipse" "ml_canvas_path_ellipse_n"
+
+  external ellipse_ :
+    t -> (float * float) -> (float * float) ->
+    float -> float -> float -> bool -> unit
+    = "ml_canvas_path_ellipse" "ml_canvas_path_ellipse_n"
+
+  external add : t -> t -> unit
+    = "ml_canvas_path_add"
+
+  external addTransformed : t -> t -> Transform.t -> unit
+    = "ml_canvas_path_add_transformed"
 
 end
 
@@ -436,8 +571,17 @@ module Canvas = struct
   external fill_ : 'a t -> bool -> unit
     = "ml_canvas_fill"
 
+  external fillPath : 'a t -> Path.t -> nonzero:bool -> unit
+    = "ml_canvas_fill_path"
+
+  external fillPath_ : 'a t -> Path.t -> bool -> unit
+    = "ml_canvas_fill_path"
+
   external stroke : 'a t -> unit
     = "ml_canvas_stroke"
+
+  external strokePath : 'a t -> Path.t -> unit
+    = "ml_canvas_stroke_path"
 
   (* Immediate drawing *)
 

@@ -19,9 +19,11 @@
 #include "../implem/canvas.h"
 #include "../implem/event.h"
 #include "../implem/pixmap.h"
+#include "../implem/transform.h"
 #include "../implem/font_desc.h"
-#include "../implem/fill_style.h"
 #include "../implem/gradient.h"
+#include "../implem/fill_style.h"
+#include "../implem/path2d.h"
 #include "../implem/polygonize.h"
 #include "../implem/color_composition.h"
 
@@ -78,6 +80,10 @@ value
 Val_event(
   event_t *event);
 
+transform_t
+Transform_val(
+  value mlTransform);
+
 value
 Val_canvas(
   canvas_t *canvas);
@@ -93,6 +99,14 @@ Val_gradient(
 gradient_t *
 Gradient_val(
   value mlGradient);
+
+value
+Val_path2d(
+  path2d_t *path2d);
+
+path2d_t *
+Path2d_val(
+  value mlPath2d);
 
 value
 Val_style(

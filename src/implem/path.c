@@ -270,21 +270,30 @@ path_add_bezier_curve_to(
   return true;
 }
 
+int32_t
+path_get_nb_prims(
+  const path_t *path)
+{
+  assert(path != NULL);
+
+  return path->nb_prims;
+}
+
 path_iterator_t *
 path_get_iterator(
-  path_t *p)
+  path_t *path)
 {
-  assert(p != NULL);
-  assert(p->prims != NULL);
-  assert(p->points != NULL);
+  assert(path != NULL);
+  assert(path->prims != NULL);
+  assert(path->points != NULL);
 
   path_iterator_t *i = (path_iterator_t *)calloc(1, sizeof(path_iterator_t));
   if (i == NULL) {
     return NULL;
   }
-  i->path = p;
-  i->prims = p->prims;
-  i->points = p->points;
+  i->path = path;
+  i->prims = path->prims;
+  i->points = path->points;
   return i;
 }
 

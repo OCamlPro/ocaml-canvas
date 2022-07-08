@@ -8,32 +8,21 @@
 /*                                                                        */
 /**************************************************************************/
 
-#ifndef __CANVAS_INTERNAL_H
-#define __CANVAS_INTERNAL_H
-
-#include <stdint.h>
+#ifndef __PATH2D_INTERNAL_H
+#define __PATH2D_INTERNAL_H
 
 #include "object.h"
-#include "list.h"
-#include "window.h"
-#include "surface.h"
-#include "state.h"
-#include "font.h"
-#include "path2d.h"
-#include "canvas.h"
+#include "path.h"
 
-typedef struct canvas_t {
+typedef struct path2d_t {
   INHERITS_OBJECT;
-  window_t *window;
-  surface_t *surface;
-  int32_t width; // update with window size
-  int32_t height; // should be equal to window size
-  state_t *state;
-  font_t *font;
-  list_t *state_stack;
-  path2d_t *path_2d;
-  int32_t id;
-  canvas_type_t type;
-} canvas_t;
+  path_t *path;
+  double first_tx; /* First transformed point */
+  double first_ty; /* First transformed point */
+  double first_x;  /* First untransformed point */
+  double first_y;  /* First untransformed point */
+  double last_x;   /* Last untransformed point */
+  double last_y;   /* Last untransformed point */
+} path2d_t;
 
-#endif /* __CANVAS_INTERNAL_H */
+#endif /* __PATH2D_INTERNAL_H */

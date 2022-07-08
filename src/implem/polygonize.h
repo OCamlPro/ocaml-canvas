@@ -63,8 +63,8 @@ polygonize_outline(
   rect_t *bbox,
   join_type_t join_type,
   cap_type_t cap_type,
-  const transform_t *lin,
-  const transform_t *inv_lin);
+  const transform_t *transform,
+  bool only_linear);
 
 void
 polygon_offset(
@@ -73,7 +73,7 @@ polygon_offset(
   double w,
   join_type_t join_type,
   cap_type_t cap_type,
-  const transform_t *lin,
-  const transform_t *inv_lin);
+  const transform_t *transform,
+  bool only_linear);
 
 #endif /* __POLYGONIZE_H */

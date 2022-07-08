@@ -15,7 +15,18 @@
 
 #include "point.h"
 
-typedef struct transform_t transform_t;
+/*
+  A transformation matrix
+  a, d => scaling/flipping
+  b, c => shearing
+  e, f => translation
+  a, b, c, d => rotation
+*/
+typedef struct transform_t {
+  double a; double b; // 0.0
+  double c; double d; // 0.0
+  double e; double f; // 1.0
+} transform_t;
 
 transform_t *
 transform_create(
@@ -84,6 +95,11 @@ void
 transform_apply(
   const transform_t *t,
   point_t *p);
+
+point_t
+transform_apply_new(
+  const transform_t *t,
+  const point_t *p);
 
 bool
 transform_is_identity(

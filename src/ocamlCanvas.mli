@@ -150,7 +150,8 @@ module Color : sig
   (** [of_rgb r g b] creates a color from its [r], [g] and [b] components *)
 
   val of_argb : int -> int -> int -> int -> t
-  (** [of_argb a r g b] creates a color from its [a], [r], [g], [b] components *)
+  (** [of_argb a r g b] creates a color from its
+      [a], [r], [g], [b] components *)
 
   val to_rgb : t -> int * int * int
   (** [to_rgb c] converts a color to its [r], [g] and [b] components *)
@@ -245,6 +246,49 @@ module Font : sig
 
 end
 
+module Transform : sig
+(** Transform manipulation functions *)
+
+  type t = {
+    a : float;
+    b : float;
+    c : float;
+    d : float;
+    e : float;
+    f : float;
+  }
+  (** A type to represent transformation matrices of the form:
+ {[     a b 0
+        c d 0
+        e f 1 ]} *)
+
+  val id : t
+  (** Identity transformation *)
+
+  val create : (float * float * float * float * float * float) -> t
+  (** [create t] creates a transformation given the
+       matrix [t = (a, b, c, d, e, f)] *)
+
+  val mul : t -> t -> t
+  (** [mul t1 t2] multiplies [t1] by [t2] *)
+
+  val translate : t -> (float * float) -> t
+  (** [translate t v] composes [t] by a translation of vector [v] *)
+
+  val scale : t -> (float * float) -> t
+  (** [scale t v] composes [t] by a scaling of vector [v] *)
+
+  val shear : t -> (float * float) -> t
+  (** [shear t v] composes [t] by a shearing of vector [v] *)
+
+  val rotate : t -> float -> t
+  (** [rotate t a] composes [t] by a rotation of angle [a] around the origin *)
+
+  val inverse : t -> t
+  (** [inverse t] returns the inverse of [t] *)
+
+end
+
 module ImageData : sig
 (** Image data manipulation functions *)
 
@@ -268,6 +312,7 @@ module ImageData : sig
 end
 
 module Gradient : sig
+(** Gradient manipulation functions *)
 
   type t
   (** An abstract type representing a gradient *)
@@ -275,6 +320,99 @@ module Gradient : sig
   val addColorStop : t -> Color.t -> float -> unit
   (** [addColorStop] gradient color stop) adds a new [color]
       color spot in the gradient object at position [stop] *)
+
+end
+
+module Path : sig
+(** Path manipulation functions *)
+
+  type t
+
+  val create : unit -> t
+  (** [create ()] creates an empty path object. *)
+
+  val moveTo: t -> (float * float) -> unit
+  (** [moveTo p pos] moves the path [p]'s brush position to [pos]. *)
+
+  val close: t -> unit
+  (** [close p] closes the path [p]. *)
+
+  val lineTo: t -> (float * float) -> unit
+  (** [lineTo p pos] adds a straight line from the path [p]'s
+      brush position to [pos]. *)
+
+  val arc :
+    t -> center:(float * float) -> radius:float ->
+    theta1:float -> theta2:float -> ccw:bool -> unit
+  (** [arc p ~center ~radius ~theta1 ~theta2 ~ccw] adds an arc of the given
+      [radius], centered at [center], between angle [theta1] to [theta2]
+      to the path [p]. If [ccw] is true, the arc will be drawn
+      counterclockwise. Note that the last point in the subpath
+      (if such point exists) will be connected to the first point
+      of the arc by a straight line. *)
+
+  val arc_ :
+    t -> (float * float) -> float -> float -> float -> bool -> unit
+  (** [arc_ p center radius theta1 theta2 ccw] is a labelless equivalent of
+      [arc p ~center ~radius ~theta1 ~theta2 ~ccw]  *)
+
+  val arcTo :
+    t -> p1:(float * float) -> p2:(float * float) -> radius:float -> unit
+  (** [arcTo p ~p1 ~p2 ~radius] adds an arc of the given [radius]
+      using the control points [p1] and [p2] to the path [p].
+      If the path [p] is empty, this behaves as if
+      [moveTo p ~p:p1] was called. *)
+
+  val arcTo_ : t -> (float * float) -> (float * float) -> float -> unit
+  (** [arcTo_ p p1 p2 radius] is a labelless equivalent of
+      [arcTo p ~p1 ~p2 ~radius]  *)
+
+  val quadraticCurveTo : t -> cp:(float * float) -> p:(float * float) -> unit
+  (** [quadraticCurveTo path ~cp ~p] adds a quadratic curve from
+      [path]'s brush position to [~p] with control point [~cp]. *)
+
+  val quadraticCurveTo_: t -> (float * float) -> (float * float) -> unit
+  (** [quadraticCurveTo_ path cp p] is a labelless equivalent
+      of [quadraticCurveTo path ~cp ~p]. *)
+
+  val bezierCurveTo :
+    t -> cp1:(float * float) -> cp2:(float * float) -> p:(float * float) -> unit
+  (** [bezierCurveTo path ~cp1 ~cp2 ~p] adds a bezier curve from
+      [path]'s brush position to [~p] with control points [~cp1]
+      and [~cp2]. *)
+
+  val bezierCurveTo_ :
+    t -> (float * float) -> (float * float) -> (float * float) -> unit
+  (** [bezierCurveTo_ path cp1 cp2 p] is a labelless equivalent
+      of [bezierCurveTo path ~cp1 ~cp2 ~p]. *)
+
+  val rect : t -> pos:(float * float) -> size:(float * float) -> unit
+  (** [rect p ~pos ~size] adds the rectangle specified by [pos]
+      and [size]) to the path [p] *)
+
+  val rect_ : t -> (float * float) -> (float * float) -> unit
+  (** [rect_ p pos size] is a labelless equivalent of
+      [rect p ~pos ~size]  *)
+
+  val ellipse :
+    t -> center:(float * float) -> radius:(float * float) ->
+    rotation:float -> theta1:float -> theta2:float -> ccw:bool -> unit
+  (** [ellipse p ~center ~radius ~rotation ~theta1 ~theta2] adds an ellipse
+      with the given parameters to the path [p] *)
+
+  val ellipse_ :
+    t -> (float * float) -> (float * float) ->
+    float -> float -> float -> bool -> unit
+  (** [ellipse_ p center radius rotation theta1 theta2]
+      is a labelless equivalent of
+      [ellipse p ~center ~radius ~rotation ~theta1 ~theta2]  *)
+
+  val add : t -> t -> unit
+  (** [add dst src] adds the path [src] into the path [dst] *)
+
+  val addTransformed : t -> t -> Transform.t -> unit
+  (** [addTransformed dst src t] adds the path [src] after
+      applying [t] to each of its points into the path [dst] *)
 
 end
 
@@ -698,9 +836,21 @@ module Canvas : sig
   (** [fill_ c nonzero] is a labelless equivalent of
       [fill c ~nonzero]  *)
 
+  val fillPath : 'a t -> Path.t -> nonzero:bool -> unit
+  (** [fillPath c p ~nonzero] fills the path [p] on canvas [c]
+      using the current fill style and the specified fill rule. *)
+
+  val fillPath_ : 'a t -> Path.t -> bool -> unit
+  (** [fillPath_ c p nonzero] is a labelless equivalent of
+      [fillPath_ c p ~nonzero]. *)
+
   val stroke : 'a t -> unit
   (** [stroke c] draws the outline of the current subpath of
       canvas [c] using the current stroke color and line width *)
+
+  val strokePath : 'a t -> Path.t -> unit
+  (** [strokePath c p] draws the outline of the path [p] on
+      canvas [c] using the current stroke style and line width *)
 
   (** {1 Immediate drawing} *)
 
