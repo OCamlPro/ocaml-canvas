@@ -88,7 +88,7 @@ value
 Val_gradient(
   gradient_t *gradient);
 
-gradient_t*
+gradient_t *
 Gradient_val(
   value mlGradient);
 

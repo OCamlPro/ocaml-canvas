@@ -141,6 +141,14 @@ module Canvas = struct
     'a t -> (float * float) -> float -> (float * float) -> float -> Gradient.t
     = "ml_canvas_create_radial_gradient"
 
+  external createConicGradient :
+    'a t -> center:(float * float) -> angle:float -> Gradient.t
+    = "ml_canvas_create_conic_gradient"
+
+  external createConicGradient_ :
+    'a t -> (float * float) -> float -> Gradient.t
+    = "ml_canvas_create_conic_gradient"
+
   (* Comparison *)
 
   external hash : 'a t -> int
