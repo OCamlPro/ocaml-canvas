@@ -37,6 +37,12 @@ gradient_create_radial(
   double center2_y,
   double rad2);
 
+gradient_t *
+gradient_create_conic(
+  double center_x,
+  double center_y,
+  double angle);
+
 bool
 gradient_add_color_stop(
   gradient_t *gradient,

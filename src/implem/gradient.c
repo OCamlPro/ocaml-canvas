@@ -35,7 +35,7 @@ gradient_create_linear(
     return NULL;
   }
 
-  g->is_linear = true;
+  g->gradient_type = GRADIENT_TYPE_LINEAR;
   g->properties.linear.pos1_x = pos1_x;
   g->properties.linear.pos2_x = pos2_x;
   g->properties.linear.pos1_y = pos1_y;
@@ -62,13 +62,33 @@ gradient_create_radial(
     return NULL;
   }
 
-  g->is_linear = false;
+  g->gradient_type = GRADIENT_TYPE_RADIAL;
   g->properties.radial.pos1_x = center1_x;
   g->properties.radial.pos2_x = center2_x;
   g->properties.radial.pos1_y = center1_y;
   g->properties.radial.pos2_y = center2_y;
   g->properties.radial.r1 = rad1;
   g->properties.radial.r2 = rad2;
+  g->nodes = NULL;
+
+  return g;
+}
+
+gradient_t *
+gradient_create_conic(
+  double center_x,
+  double center_y,
+  double angle)
+{
+  gradient_t *g = gradient_alloc();
+  if (g == NULL) {
+    return NULL;
+  }
+
+  g->gradient_type = GRADIENT_TYPE_CONIC;
+  g->properties.conic.pos_x = center_x;
+  g->properties.conic.pos_y = center_y;
+  g->properties.conic.angle = angle;
   g->nodes = NULL;
 
   return g;
@@ -180,47 +200,67 @@ gradient_evaluate_pos(
   point_t p = point(pos_x, pos_y);
   transform_apply(inverse_transform, &p);
 
-  if (gradient->is_linear) {
-    double dx =
-      (gradient->properties.linear.pos2_x - gradient->properties.linear.pos1_x);
-    double dy =
-      (gradient->properties.linear.pos2_y - gradient->properties.linear.pos1_y);
-    double t =
-      (p.x - gradient->properties.linear.pos1_x) * dx +
-      (p.y - gradient->properties.linear.pos1_y) * dy;
-    t /= (dx * dx + dy * dy);
-    return _gradient_evaluate(gradient, t);
-  } else {
-    double r0 = gradient->properties.radial.r1;
-    double r1 = gradient->properties.radial.r2;
-    double x1 =
-      gradient->properties.radial.pos2_x - gradient->properties.radial.pos1_x;
-    double x = p.x - gradient->properties.radial.pos1_x;
-    double y1 =
-      gradient->properties.radial.pos2_y - gradient->properties.radial.pos1_y;
-    double y = p.y - gradient->properties.radial.pos1_y;
-    double dr = r1 - r0;
-    double a = (x1 * x1 + y1 * y1 - dr * dr);
-    // No need for an if statement, replace a with a small number
-    // since the solution is continuous with respect to a.
-    if (a == 0.0) {
-      a = 0.000001;
+  switch (gradient->gradient_type) {
+    case GRADIENT_TYPE_LINEAR: {
+      double dx =
+        (gradient->properties.linear.pos2_x -
+         gradient->properties.linear.pos1_x);
+      double dy =
+        (gradient->properties.linear.pos2_y -
+         gradient->properties.linear.pos1_y);
+      double t =
+        (p.x - gradient->properties.linear.pos1_x) * dx +
+        (p.y - gradient->properties.linear.pos1_y) * dy;
+      t /= (dx * dx + dy * dy);
+      return _gradient_evaluate(gradient, t);
+      break;
     }
-    double b = (-2.0 * x * x1 - 2.0 * y * y1 - 2.0 * r0 * dr);
-    double c = x * x + y * y - r0 * r0;
-    double delta = b * b - 4.0 * a * c;
-    if (delta < 0.0) {
-      return color(0, 0, 0, 0);
+    case GRADIENT_TYPE_RADIAL: {
+      double r0 = gradient->properties.radial.r1;
+      double r1 = gradient->properties.radial.r2;
+      double x1 =
+        gradient->properties.radial.pos2_x -
+        gradient->properties.radial.pos1_x;
+      double x = p.x - gradient->properties.radial.pos1_x;
+      double y1 =
+        gradient->properties.radial.pos2_y -
+        gradient->properties.radial.pos1_y;
+      double y = p.y - gradient->properties.radial.pos1_y;
+      double dr = r1 - r0;
+      double a = (x1 * x1 + y1 * y1 - dr * dr);
+      // No need for an if statement, replace a with a small number
+      // since the solution is continuous with respect to a.
+      if (a == 0.0) {
+        a = 0.000001;
+      }
+      double b = (-2.0 * x * x1 - 2.0 * y * y1 - 2.0 * r0 * dr);
+      double c = x * x + y * y - r0 * r0;
+      double delta = b * b - 4.0 * a * c;
+      if (delta < 0.0) {
+        return color(0, 0, 0, 0);
+      }
+      double posSqrt = (a > 0.0) ? sqrt(delta) : -sqrt(delta);
+      double t = (posSqrt - b) / (2.0 * a);
+      // TODO : The interpolation seem to be clipped at a certain point in JS.
+      // Test JS to find this number
+      double infinity = 10000000.0;
+      if (t > infinity) {
+        return color(0, 0, 0, 0);
+      }
+      return _gradient_evaluate(gradient, t);
+      break;
     }
-    double posSqrt = (a > 0.0) ? sqrt(delta) : -sqrt(delta);
-    double t = (posSqrt - b) / (2.0 * a);
-    // TODO : The interpolation seem to be clipped at a certain point in JS.
-    // Test JS to find this number
-    double infinity = 10000000.0;
-    if (t > infinity) {
-      return color(0, 0, 0, 0);
+    case GRADIENT_TYPE_CONIC: {
+      double dx = p.x - gradient->properties.conic.pos_x;
+      double dy = p.y - gradient->properties.conic.pos_y;
+      double angle = atan2(dx, - dy) - gradient->properties.conic.angle;
+      angle = angle / (2.0 * M_PI) -  floor(angle / (2.0 * M_PI));
+      return _gradient_evaluate(gradient, angle);
+      break;
     }
-    return _gradient_evaluate(gradient, t);
+    default:
+      return color_transparent_black;
+      break;
   }
 }
 

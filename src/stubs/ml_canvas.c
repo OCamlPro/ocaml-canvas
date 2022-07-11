@@ -156,6 +156,20 @@ ml_canvas_create_radial_gradient(
 }
 
 CAMLprim value
+ml_canvas_create_conic_gradient(
+  value mlCanvas,
+  value mlCenter,
+  value mlAngle)
+{
+  CAMLparam3(mlCanvas, mlCenter, mlAngle);
+  gradient_t *gradient =
+    gradient_create_conic(Double_val(Field(mlCenter, 0)),
+                          Double_val(Field(mlCenter, 1)),
+                          Double_val(mlAngle));
+  CAMLreturn(Val_gradient(gradient));
+}
+
+CAMLprim value
 ml_canvas_gradient_add_color_stop(
   value mlGradient,
   value mlColor,

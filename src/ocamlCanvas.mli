@@ -315,8 +315,18 @@ module Canvas : sig
 
   val createRadialGradient_ :
     'a t -> (float * float) -> float -> (float * float) -> float -> Gradient.t
-  (** [createRadialGradient_ center1 rad1 center2 rad2] is a labelless
+  (** [createRadialGradient_ c center1 rad1 center2 rad2] is a labelless
       equivalent of [createLinearGradient c ~center1 ~rad1 ~center2 ~rad2] *)
+
+  val createConicGradient:
+    'a t -> center:(float * float) -> angle:float -> Gradient.t
+  (** [createConicGradient c ~center ~angle] creates a new conic gradient
+      with center [center] and initial angle [angle] for canvas [c] *)
+
+  val createConicGradient_ :
+    'a t -> (float * float) -> float -> Gradient.t
+  (** [createConicGradient c center angle] is a labelless
+      equivalent of [createConicGradient canvas ~center ~angle] *)
 
   (** {1 Comparison functions} *)
 

@@ -234,6 +234,11 @@ function ml_canvas_create_radial_gradient(canvas,
                                           center2[1], center2[2], rad2);
 }
 
+//Provides: ml_canvas_create_conic_gradient
+function ml_canvas_create_conic_gradient(canvas, center, angle) {
+  return canvas.ctxt.createConicGradient(angle, center[1], center[2]);
+}
+
 //Provides: ml_canvas_gradient_add_color_stop
 //Requires: _color_of_int
 function ml_canvas_gradient_add_color_stop(grad, color, pos) {
