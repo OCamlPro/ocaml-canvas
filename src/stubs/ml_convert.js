@@ -8,19 +8,6 @@
 /*                                                                        */
 /**************************************************************************/
 
-//Provides: Slant_val
-//Requires: SLANT,SLANT_TAG
-
-var tag_to_slant = new joo_global_object.Map([
-  [SLANT_TAG.ROMAN,   SLANT.ROMAN],
-  [SLANT_TAG.ITALIC,  SLANT.ITALIC],
-  [SLANT_TAG.OBLIQUE, SLANT.OBLIQUE],
-]);
-
-function Slant_val(slant) {
-  return tag_to_slant.get(slant);
-}
-
 //Provides: Val_focus_in_out
 //Requires: FOCUS,FOCUS_TAG
 
@@ -369,6 +356,84 @@ function Val_button_state(state) {
   return button_state_to_tag.get(state);
 }
 
+//Provides: Val_repeat
+//Requires: REPEAT_TAG
+
+var repeat_to_tag = new joo_global_object.Map([
+  ["no-repeat", REPEAT_TAG.NO_REPEAT],
+  ["repeat-x",  REPEAT_TAG.REPEAT_X],
+  ["repeat-y",  REPEAT_TAG.REPEAT_Y],
+  ["repeat-xy", REPEAT_TAG.REPEAT_XY],
+]);
+
+function Val_repeat(repeat) {
+  return repeat_to_tag.get(repeat);
+}
+
+//Provides: Repeat_val
+//Requires: REPEAT_TAG
+
+var tag_to_repeat = new joo_global_object.Map([
+  [REPEAT_TAG.NO_REPEAT, "no-repeat"],
+  [REPEAT_TAG.REPEAT_X,  "repeat-x"],
+  [REPEAT_TAG.REPEAT_Y,  "repeat-y"],
+  [REPEAT_TAG.REPEAT_XY, "repeat-xy"],
+]);
+
+function Repeat_val(repeat) {
+  return tag_to_repeat.get(repeat);
+}
+
+//Provides: Val_draw_style
+//Requires: _color_of_int,STYLE_TAG
+function Val_draw_style(style) {
+  var s = 0;
+  switch (style[0]) {
+    case STYLE_TAG.COLOR:
+      s = _color_of_int(style[1]);
+      break;
+    case STYLE_TAG.GRADIENT:
+    case STYLE_TAG.PATTERN:
+      s = style[1];
+      break;
+    default:
+      break;
+  }
+  return s;
+}
+
+//Provides: Draw_style_val
+//Requires: STYLE_TAG
+function Draw_style_val(style) {
+  var s = [];
+  s[1] = style;
+  switch (typeof(style)) {
+    case "string" :
+      s[0] = STYLE_TAG.COLOR;
+      break;
+    case "CanvasGradient" :
+      s[0] = STYLE_TAG.GRADIENT;
+      break;
+    case "CanvasPattern" :
+      s[0] = STYLE_TAG.PATTERN;
+      break;
+  }
+  return s;
+}
+
+//Provides: Slant_val
+//Requires: SLANT,SLANT_TAG
+
+var tag_to_slant = new joo_global_object.Map([
+  [SLANT_TAG.ROMAN,   SLANT.ROMAN],
+  [SLANT_TAG.ITALIC,  SLANT.ITALIC],
+  [SLANT_TAG.OBLIQUE, SLANT.OBLIQUE],
+]);
+
+function Slant_val(slant) {
+  return tag_to_slant.get(slant);
+}
+
 //Provides: Val_join_type
 //Requires: LINE_JOIN_TAG
 
@@ -420,8 +485,6 @@ var tag_to_cap_type = new joo_global_object.Map([
 function Cap_type_val(cap) {
   return tag_to_cap_type.get(cap);
 }
-
-
 
 //Provides: Val_compop
 //Requires: COMPOP_TAG

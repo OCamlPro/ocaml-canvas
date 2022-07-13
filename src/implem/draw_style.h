@@ -8,33 +8,36 @@
 /*                                                                        */
 /**************************************************************************/
 
-#ifndef __POLY_RENDER_H
-#define __POLY_RENDER_H
+#ifndef __DRAW_STYLE_H
+#define __DRAW_STYLE_H
 
-#include <stdint.h>
-#include <stdbool.h>
-
-#include "rect.h"
 #include "color.h"
-#include "transform.h"
-#include "draw_style.h"
-#include "color_composition.h"
-#include "polygon.h"
-#include "surface.h"
+#include "gradient.h"
+#include "pattern.h"
+
+typedef enum draw_style_type_t {
+  DRAW_STYLE_COLOR    = 0,
+  DRAW_STYLE_GRADIENT = 1,
+  DRAW_STYLE_PATTERN  = 2
+} draw_style_type_t;
+
+typedef union draw_style_content_t {
+  color_t_ color;
+  gradient_t *gradient;
+  pattern_t *pattern;
+} draw_style_content_t;
+
+typedef struct draw_style_t {
+  draw_style_type_t type;
+  draw_style_content_t content;
+} draw_style_t;
 
 void
-poly_render_init(
-  void);
+draw_style_destroy(
+  draw_style_t *s);
 
-void
-poly_render(
-  surface_t *s,
-  const polygon_t *p,
-  const rect_t *bbox,
-  draw_style_t draw_style,
-  double global_alpha,
-  composite_operation_t compose_op,
-  bool non_zero,
-  transform_t *transform);
+draw_style_t
+draw_style_copy(
+  const draw_style_t *s);
 
-#endif /* __POLY_RENDER_H */
+#endif /*__DRAW_STYLE_H */

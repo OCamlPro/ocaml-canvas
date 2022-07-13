@@ -334,6 +334,21 @@ module Gradient : sig
 
 end
 
+module Pattern : sig
+(** Pattern manipulation functions *)
+
+  type t
+  (** An abstract type representing a pattern *)
+
+  type repeat =
+    | No_Repeat
+    | Repeat_X
+    | Repeat_Y
+    | Repeat_XY
+    (** Pattern repetition *)
+
+end
+
 module Path : sig
 (** Path manipulation functions *)
 
@@ -434,8 +449,9 @@ module Canvas : sig
   (** An abstract type representing a canvas *)
 
   type style =
-    | ColorStyle of Color.t
-    | GradientStyle of Gradient.t
+    | Color of Color.t
+    | Gradient of Gradient.t
+    | Pattern of Pattern.t
     (** A type to represent stroke and fill styles *)
 
   type line_join =
@@ -505,6 +521,13 @@ module Canvas : sig
   (** [createRadialGradient_ c center1 rad1 center2 rad2] is a labelless
       equivalent of [createLinearGradient c ~center1 ~rad1 ~center2 ~rad2] *)
 
+
+  (** {1 Pattern creation function} *)
+  val createPattern :
+    'a t -> ImageData.t -> Pattern.repeat -> Pattern.t
+  (** [createPattern img rep] creates a pattern of [rep] using [img]
+      as source *)
+
   val createConicGradient:
     'a t -> center:(float * float) -> angle:float -> Gradient.t
   (** [createConicGradient c ~center ~angle] creates a new conic gradient
@@ -514,6 +537,7 @@ module Canvas : sig
     'a t -> (float * float) -> float -> Gradient.t
   (** [createConicGradient c center angle] is a labelless
       equivalent of [createConicGradient canvas ~center ~angle] *)
+
 
   (** {1 Comparison functions} *)
 
@@ -556,6 +580,7 @@ module Canvas : sig
   val (!=) : 'a t -> 'b t -> bool
   (** [c1 != c2] test for physical inequality of canvas [c1] and [c2] *)
 
+
   (** {1 Creation} *)
 
   val createFramed :
@@ -590,6 +615,7 @@ module Canvas : sig
   (** [createOffscreen filename] creates an offscreen canvas
       with the contents of PNG file [filename] *)
 
+
   (** {1 Visibility} *)
 
   val show : [< `Onscreen] t -> unit
@@ -604,6 +630,7 @@ module Canvas : sig
   (** [close c] closes the canvas [c], i.e. it permanently removes it from
       the screen and prevents it to receive events ; however it can still
       be used as an offscreen canvas. *)
+
 
   (** {1 Configuration} *)
 
@@ -623,6 +650,7 @@ module Canvas : sig
   val setPosition : [< `Onscreen] t -> (int * int) -> unit
   (** [setPosition c pos] sets the position of canvas [c] *)
 
+
   (** {1 State} *)
 
   val save : 'a t -> unit
@@ -630,6 +658,7 @@ module Canvas : sig
 
   val restore : 'a t -> unit
   (** [restore c] pops the current state of canvas [c] from the state stack *)
+
 
   (** {1 Transformations} *)
 
@@ -662,6 +691,7 @@ module Canvas : sig
   (** [rotate c theta] apply the given rotation transform
       to the current transformation matrix for canvas [c] *)
 
+
   (** {1 Style} *)
 
   val getLineWidth : 'a t -> float
@@ -689,16 +719,20 @@ module Canvas : sig
   (** [setStrokeColor c col] sets the current stroke color
       for canvas [c] to [col] *)
 
+  val setStrokeGradient : 'a t -> Gradient.t -> unit
+  (** [setStrokeGradient c grad] sets the current stroke style for
+      canvas [c] to the gradient [grad] *)
+
+  val setStrokePattern : 'a t -> Pattern.t -> unit
+  (** [setStrokePattern c pat] sets the current stroke style for
+      canvas [c] to the pattern [pat] *)
+
   val getStrokeStyle : 'a t -> style
   (** [getStrokeStyle c] returns the current stroke style for canvas [c] *)
 
   val setStrokeStyle : 'a t -> style -> unit
   (** [setStrokeStyle c style] sets the current stroke style for
       canvas [c] to style [style]*)
-
-  val setStrokeGradient : 'a t -> Gradient.t -> unit
-  (** [setStrokeGradient c grad] sets the current stroke style for
-      canvas [c] to the gradient [grad] *)
 
   val getFillColor : 'a t -> Color.t
   (** [getFillColor c] returns the current fill color for canvas [c] *)
@@ -707,16 +741,20 @@ module Canvas : sig
   (** [setFillColor c col] sets the current fill color
       for canvas [c] to [col] *)
 
+  val setFillGradient : 'a t -> Gradient.t -> unit
+  (** [setFillGradient c grad] sets the current fill style for
+      canvas [c] to the gradient [grad] *)
+
+  val setFillPattern : 'a t -> Pattern.t -> unit
+  (** [setFillPattern c pat] sets the current fill style for
+      canvas [c] to the pattern [pat] *)
+
   val getFillStyle : 'a t -> style
   (** [getFillStyle c] return the current fill style for canvas [c] *)
 
   val setFillStyle : 'a t -> style -> unit
   (** [setFillStyle c style] sets the current fill style for
       canvas [c] to style [style]*)
-
-  val setFillGradient : 'a t -> Gradient.t -> unit
-  (** [setFillGradient c grad] sets the current fill style for
-      canvas [c] to the gradient [grad] *)
 
   val getGlobalAlpha : 'a t -> float
   (** [getGlobalAlpha c] returns the current global alpha for canvas [c] *)
@@ -744,6 +782,7 @@ module Canvas : sig
     'a t -> string -> Font.size -> Font.slant -> Font.weight -> unit
   (** [setFont_ c family size slant weight] is a labelless equivalent of
       [setFont c family ~size ~slant ~weight]  *)
+
 
   (** {1 Path} *)
 
@@ -837,6 +876,7 @@ module Canvas : sig
       is a labelless equivalent of
       [ellipse c ~center ~radius ~rotation ~theta1 ~theta2]  *)
 
+
   (** {1 Path stroking and filling} *)
 
   val fill : 'a t -> nonzero:bool -> unit
@@ -862,6 +902,7 @@ module Canvas : sig
   val strokePath : 'a t -> Path.t -> unit
   (** [strokePath c p] draws the outline of the path [p] on
       canvas [c] using the current stroke style and line width *)
+
 
   (** {1 Immediate drawing} *)
 
@@ -901,6 +942,7 @@ module Canvas : sig
     'a t -> (int * int) -> 'b t -> (int * int) -> (int * int) -> unit
   (** [blit_ dst dpos src spos size] is a labelless equivalent of
       [blit ~dst ~dpos ~src ~spos ~size]  *)
+
 
   (** {1 Direct pixel access} *)
 

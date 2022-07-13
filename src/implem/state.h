@@ -16,25 +16,23 @@
 #include "color.h"
 #include "transform.h"
 #include "font_desc.h"
-#include "fill_style.h"
+#include "draw_style.h"
 #include "polygonize.h"
 #include "color_composition.h"
 
 typedef struct state_t {
   transform_t *transform;
-  font_desc_t *font_desc;
+  font_desc_t *font_desc; // font, textAlign, textBaseline, direction
   // outline region
   // dash array
-  fill_style_t fill_style;
-  fill_style_t stroke_style;
+  draw_style_t fill_style;
+  draw_style_t stroke_style;
   composite_operation_t global_composite_operation;
   double global_alpha; // 0.0 - 1.0
   double line_width;
-  join_type_t join_type;
-  cap_type_t cap_type;
-  // lineWidth, lineCap, lineJoin, miterLimit, lineDashOffset
+  join_type_t join_type; // lineJoin, miterLimit, lineDashOffset
+  cap_type_t cap_type; // lineCap
   // shadowOffsetXn shadowOffsetY, shadowBlur, shadowColor
-  // font, textAlign, textBaseline, direction
   // imageSmoothingEnabled
 } state_t;
 

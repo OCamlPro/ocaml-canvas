@@ -24,15 +24,16 @@
 #include "../implem/config.h"
 #include "../implem/tuples.h"
 #include "../implem/color.h"
+#include "../implem/gradient.h"
+#include "../implem/pattern.h"
+#include "../implem/transform.h"
+#include "../implem/path.h"
+#include "../implem/path2d.h"
 #include "../implem/pixmap.h"
 #include "../implem/impexp.h"
 #include "../implem/event.h"
 #include "../implem/canvas.h"
 #include "../implem/backend.h"
-#include "../implem/gradient.h"
-#include "../implem/path.h"
-#include "../implem/path2d.h"
-#include "../implem/transform.h"
 
 #include "ml_tags.h"
 #include "ml_convert.h"
@@ -203,7 +204,26 @@ ml_canvas_gradient_add_color_stop(
   CAMLreturn(Val_unit);
 }
 
+/* Patterns */
 
+CAMLprim value
+ml_canvas_create_pattern(
+  value mlCanvas,
+  value mlPixmap,
+  value mlRepeat)
+{
+  CAMLparam3(mlCanvas, mlPixmap, mlRepeat);
+  CAMLlocal1(mlPattern);
+  pixmap_t pixmap = Pixmap_val(mlPixmap);
+  pattern_t *pattern = pattern_create(&pixmap,
+                                      Repeat_val(mlRepeat));
+  if (pattern == NULL) {
+    caml_failwith("unable to create the specified pattern");
+  }
+  mlPattern = Val_pattern(pattern);
+  pattern_release(pattern); // Because Val_pattern retains it
+  CAMLreturn(mlPattern);
+}
 
 /* Path */
 
@@ -876,6 +896,28 @@ ml_canvas_set_stroke_color(
 }
 
 CAMLprim value
+ml_canvas_set_stroke_gradient(
+  value mlCanvas,
+  value mlGradient)
+{
+  CAMLparam2(mlCanvas, mlGradient);
+  canvas_set_stroke_gradient(Canvas_val(mlCanvas),
+                             Gradient_val(mlGradient));
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
+ml_canvas_set_stroke_pattern(
+  value mlCanvas,
+  value mlPattern)
+{
+  CAMLparam2(mlCanvas, mlPattern);
+  canvas_set_stroke_pattern(Canvas_val(mlCanvas),
+                            Pattern_val(mlPattern));
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
 ml_canvas_get_stroke_style(
   value mlCanvas)
 {
@@ -898,21 +940,13 @@ ml_canvas_set_stroke_style(
       canvas_set_stroke_gradient(Canvas_val(mlCanvas),
                                  Gradient_val(Field(mlStyle, 0)));
       break;
+    case TAG_PATTERN:
+      canvas_set_stroke_pattern(Canvas_val(mlCanvas),
+                                Pattern_val(Field(mlStyle, 0)));
     default:
-      assert(!"Unknown style");
+      assert(!"Unknown draw style");
       break;
   }
-  CAMLreturn(Val_unit);
-}
-
-CAMLprim value
-ml_canvas_set_stroke_gradient(
-  value mlCanvas,
-  value mlGradient)
-{
-  CAMLparam2(mlCanvas, mlGradient);
-  canvas_set_stroke_gradient(Canvas_val(mlCanvas),
-                             Gradient_val(mlGradient));
   CAMLreturn(Val_unit);
 }
 
@@ -933,6 +967,28 @@ ml_canvas_set_fill_color(
   CAMLparam2(mlCanvas, mlColor);
   canvas_set_fill_color(Canvas_val(mlCanvas),
                         color_of_int(Int32_val(mlColor)));
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
+ml_canvas_set_fill_gradient(
+  value mlCanvas,
+  value mlGradient)
+{
+  CAMLparam2(mlCanvas, mlGradient);
+  canvas_set_fill_gradient(Canvas_val(mlCanvas),
+                           Gradient_val(mlGradient));
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
+ml_canvas_set_fill_pattern(
+  value mlCanvas,
+  value mlPattern)
+{
+  CAMLparam2(mlCanvas, mlPattern);
+  canvas_set_fill_pattern(Canvas_val(mlCanvas),
+                          Pattern_val(mlPattern));
   CAMLreturn(Val_unit);
 }
 
@@ -959,21 +1015,13 @@ ml_canvas_set_fill_style(
       canvas_set_fill_gradient(Canvas_val(mlCanvas),
                                Gradient_val(Field(mlStyle, 0)));
       break;
+    case TAG_PATTERN:
+      canvas_set_fill_pattern(Canvas_val(mlCanvas),
+                              Pattern_val(Field(mlStyle, 0)));
     default:
       assert(!"Unknown style");
       break;
   }
-  CAMLreturn(Val_unit);
-}
-
-CAMLprim value
-ml_canvas_set_fill_gradient(
-  value mlCanvas,
-  value mlGradient)
-{
-  CAMLparam2(mlCanvas, mlGradient);
-  canvas_set_fill_gradient(Canvas_val(mlCanvas),
-                           Gradient_val(mlGradient));
   CAMLreturn(Val_unit);
 }
 

@@ -21,7 +21,7 @@
 #include "font_desc.h"
 #include "gradient.h"
 #include "path2d.h"
-#include "fill_style.h"
+#include "draw_style.h"
 #include "polygonize.h"
 #include "color_composition.h"
 
@@ -224,7 +224,7 @@ canvas_set_stroke_color(
   canvas_t *c,
   color_t_ color);
 
-fill_style_t
+draw_style_t
 canvas_get_stroke_style(
   const canvas_t *c);
 
@@ -232,6 +232,11 @@ void
 canvas_set_stroke_gradient(
   canvas_t *c,
   gradient_t *gradient);
+
+void
+canvas_set_stroke_pattern(
+  canvas_t *c,
+  pattern_t *pattern);
 
 color_t_
 canvas_get_fill_color(
@@ -242,7 +247,7 @@ canvas_set_fill_color(
   canvas_t *c,
   color_t_ color);
 
-fill_style_t
+draw_style_t
 canvas_get_fill_style(
   const canvas_t *c);
 
@@ -250,6 +255,11 @@ void
 canvas_set_fill_gradient(
   canvas_t *c,
   gradient_t *gradient);
+
+void
+canvas_set_fill_pattern(
+  canvas_t *c,
+  pattern_t *pattern);
 
 double
 canvas_get_global_alpha(

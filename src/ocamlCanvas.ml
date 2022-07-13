@@ -193,6 +193,19 @@ module Gradient = struct
 
 end
 
+
+module Pattern = struct
+
+  type t
+
+  type repeat =
+    | No_Repeat
+    | Repeat_X
+    | Repeat_Y
+    | Repeat_XY
+
+end
+
 module Path = struct
 
   type t
@@ -274,8 +287,9 @@ module Canvas = struct
   type 'a t
 
   type style =
-    | ColorStyle of Color.t
-    | GradientStyle of Gradient.t
+    | Color of Color.t
+    | Gradient of Gradient.t
+    | Pattern of Pattern.t
 
   type composite_op =
     | SourceOver
@@ -341,6 +355,11 @@ module Canvas = struct
   external createConicGradient_ :
     'a t -> (float * float) -> float -> Gradient.t
     = "ml_canvas_create_conic_gradient"
+  (* Patterns *)
+
+  external createPattern :
+    'a t -> ImageData.t -> Pattern.repeat -> Pattern.t
+    = "ml_canvas_create_pattern"
 
   (* Comparison *)
 
@@ -474,14 +493,17 @@ module Canvas = struct
   external setStrokeColor : 'a t -> Color.t -> unit
     = "ml_canvas_set_stroke_color"
 
+  external setStrokeGradient : 'a t -> Gradient.t -> unit
+    = "ml_canvas_set_stroke_gradient"
+
+  external setStrokePattern : 'a t -> Pattern.t -> unit
+    = "ml_canvas_set_stroke_pattern"
+
   external getStrokeStyle : 'a t -> style
     = "ml_canvas_get_stroke_style"
 
   external setStrokeStyle : 'a t -> style -> unit
     = "ml_canvas_set_stroke_style"
-
-  external setStrokeGradient : 'a t -> Gradient.t -> unit
-    = "ml_canvas_set_stroke_gradient"
 
   external getFillColor : 'a t -> Color.t
     = "ml_canvas_get_fill_color"
@@ -489,14 +511,17 @@ module Canvas = struct
   external setFillColor : 'a t -> Color.t -> unit
     = "ml_canvas_set_fill_color"
 
+  external setFillGradient : 'a t -> Gradient.t -> unit
+    = "ml_canvas_set_fill_gradient"
+
+  external setFillPattern : 'a t -> Pattern.t -> unit
+    = "ml_canvas_set_fill_pattern"
+
   external getFillStyle : 'a t -> style
     = "ml_canvas_get_fill_style"
 
   external setFillStyle : 'a t -> style -> unit
     = "ml_canvas_set_fill_style"
-
-  external setFillGradient : 'a t -> Gradient.t -> unit
-    = "ml_canvas_set_fill_gradient"
 
   external getGlobalAlpha : 'a t -> float
     = "ml_canvas_get_global_alpha"

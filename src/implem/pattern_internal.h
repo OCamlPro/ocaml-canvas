@@ -8,29 +8,17 @@
 /*                                                                        */
 /**************************************************************************/
 
-#include "gradient.h"
-#include "fill_style.h"
+#ifndef __PATTERN_INTERNAL_H
+#define __PATTERN_INTERNAL_H
 
-void
-fill_style_destroy(
-  fill_style_t *fs)
-{
-  assert(fs != NULL);
+#include "object.h"
+#include "pixmap.h"
+#include "pattern.h"
 
-  if (fs->fill_type == FILL_TYPE_GRADIENT) {
-    gradient_release(fs->content.gradient);
-  }
-}
+typedef struct pattern_t {
+  INHERITS_OBJECT;
+  pattern_repeat_t repeat;
+  pixmap_t image;
+} pattern_t;
 
-fill_style_t
-fill_style_copy(
-  const fill_style_t *fs)
-{
-  assert(fs != NULL);
-
-  fill_style_t fsc = (fill_style_t)*fs;
-  if (fsc.fill_type == FILL_TYPE_GRADIENT) {
-    gradient_retain(fsc.content.gradient);
-  }
-  return fsc;
-}
+#endif /* __PATTERN_INTERNAL_H */

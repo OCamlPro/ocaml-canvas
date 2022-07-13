@@ -8,13 +8,6 @@
 /*                                                                        */
 /**************************************************************************/
 
-//Provides: SLANT_TAG
-var SLANT_TAG = {
-  ROMAN   : 0,
-  ITALIC  : 1,
-  OBLIQUE : 2
-};
-
 //Provides: FOCUS_TAG
 var FOCUS_TAG = {
   OUT : 0,
@@ -200,7 +193,23 @@ var EVENT_TAG = {
 //Provides: STYLE_TAG
 var STYLE_TAG = {
   COLOR    : 0,
-  GRADIENT : 1
+  GRADIENT : 1,
+  PATTERN  : 2
+};
+
+//Provides: REPEAT_TAG
+var REPEAT_TAG = {
+  NO_REPEAT : 0,
+  REPEAT_X  : 1,
+  REPEAT_Y  : 2,
+  REPEAT_XY : 3
+};
+
+//Provides: SLANT_TAG
+var SLANT_TAG = {
+  ROMAN   : 0,
+  ITALIC  : 1,
+  OBLIQUE : 2
 };
 
 //Provides: LINE_JOIN_TAG

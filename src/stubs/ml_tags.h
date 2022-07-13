@@ -11,12 +11,6 @@
 #ifndef __ML_TAGS_H
 #define __ML_TAGS_H
 
-typedef enum slant_tag_t {
-  TAG_ROMAN   = 0,
-  TAG_ITALIC  = 1,
-  TAG_OBLIQUE = 2
-} slant_tag_t;
-
 typedef enum focus_tag_t {
   TAG_FOCUS_OUT = 0,
   TAG_FOCUS_IN  = 1
@@ -195,8 +189,22 @@ typedef enum event_tag_t {
 
 typedef enum style_tag_t {
   TAG_COLOR    = 0,
-  TAG_GRADIENT = 1
+  TAG_GRADIENT = 1,
+  TAG_PATTERN  = 2
 } style_tag_t;
+
+typedef enum repeat_tag_t {
+  TAG_NO_REPEAT = 0,
+  TAG_REPEAT_X  = 1,
+  TAG_REPEAT_Y  = 2,
+  TAG_REPEAT_XY = 3
+} repeat_tag_t;
+
+typedef enum slant_tag_t {
+  TAG_ROMAN   = 0,
+  TAG_ITALIC  = 1,
+  TAG_OBLIQUE = 2
+} slant_tag_t;
 
 typedef enum line_join_tag_t {
   TAG_ROUND = 0,

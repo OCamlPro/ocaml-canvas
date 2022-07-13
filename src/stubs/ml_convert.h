@@ -16,16 +16,18 @@
 #define CAML_NAME_SPACE
 #include "caml/mlvalues.h"
 
-#include "../implem/canvas.h"
-#include "../implem/event.h"
-#include "../implem/pixmap.h"
-#include "../implem/transform.h"
-#include "../implem/font_desc.h"
+#include "../implem/color.h"
 #include "../implem/gradient.h"
-#include "../implem/fill_style.h"
+#include "../implem/pattern.h"
+#include "../implem/draw_style.h"
+#include "../implem/font_desc.h"
+#include "../implem/transform.h"
 #include "../implem/path2d.h"
 #include "../implem/polygonize.h"
 #include "../implem/color_composition.h"
+#include "../implem/pixmap.h"
+#include "../implem/event.h"
+#include "../implem/canvas.h"
 
 #if OCAML_VERSION < 41200
 
@@ -42,10 +44,6 @@ Val_int32_clip(
 int32_t
 Int32_val_clip(
   value mlValue);
-
-font_slant_t
-Slant_val(
-  value mlSlant);
 
 value
 Val_focus_in_out(
@@ -80,10 +78,6 @@ value
 Val_event(
   event_t *event);
 
-transform_t
-Transform_val(
-  value mlTransform);
-
 value
 Val_canvas(
   canvas_t *canvas);
@@ -91,14 +85,6 @@ Val_canvas(
 canvas_t *
 Canvas_val(
   value mlCanvas);
-
-value
-Val_gradient(
-  gradient_t *gradient);
-
-gradient_t *
-Gradient_val(
-  value mlGradient);
 
 value
 Val_path2d(
@@ -109,12 +95,44 @@ Path2d_val(
   value mlPath2d);
 
 value
-Val_style(
-  fill_style_t style);
+Val_gradient(
+  gradient_t *gradient);
 
-fill_style_t
+gradient_t *
+Gradient_val(
+  value mlGradient);
+
+value
+Val_pattern(
+  pattern_t *pattern);
+
+pattern_t *
+Pattern_val(
+  value mlPattern);
+
+value
+Val_repeat(
+  pattern_repeat_t repeat);
+
+pattern_repeat_t
+Repeat_val(
+  value mlRepeat);
+
+value
+Val_style(
+  draw_style_t style);
+
+draw_style_t
 Style_val(
   value mlStyle);
+
+transform_t
+Transform_val(
+  value mlTransform);
+
+font_slant_t
+Slant_val(
+  value mlSlant);
 
 value
 Val_join_type(
