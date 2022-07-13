@@ -18,6 +18,7 @@
 #include "caml/memory.h"
 #include "caml/alloc.h"
 #include "caml/custom.h"
+#include "caml/weak.h"
 #include "caml/fail.h"
 #include "caml/callback.h"
 
@@ -633,9 +634,26 @@ Val_event(
 int ml_canvas_compare_raw(value mlCanvas1, value mlCanvas2);
 intnat ml_canvas_hash_raw(value mlCanvas);
 
+static void
+_ml_canvas_finalize(
+  value mlCanvas)
+{
+  canvas_t *canvas = *((canvas_t **)Data_custom_val(mlCanvas));
+  if (canvas != NULL) {
+    value *mlWeakPointer_ptr = (value *)canvas_get_data(canvas);
+    if (mlWeakPointer_ptr != NULL) {
+      caml_remove_generational_global_root(mlWeakPointer_ptr);
+      free(mlWeakPointer_ptr);
+      canvas_set_data(canvas, NULL);
+    };
+    if (canvas_get_type(canvas) == CANVAS_OFFSCREEN) {
+      canvas_destroy(canvas);
+    }
+  }
+}
 static struct custom_operations _ml_canvas_ops = {
   "com.ocamlpro.ocaml-canvas",
-  custom_finalize_default,
+  _ml_canvas_finalize,
   ml_canvas_compare_raw,
   ml_canvas_hash_raw,
   custom_serialize_default,
@@ -651,18 +669,26 @@ Val_canvas(
   canvas_t *canvas)
 {
   CAMLparam0();
-  CAMLlocal1(mlCanvas);
-  value *mlCanvas_ptr = (value *)canvas_get_user_data(canvas);
-  if (mlCanvas_ptr != NULL) {
-    mlCanvas = *mlCanvas_ptr;
+  CAMLlocal2(mlCanvas,mlWeakPointer);
+
+  value *mlWeakPointer_ptr = (value *)canvas_get_data(canvas);
+
+  if (mlWeakPointer_ptr != NULL) {
+    mlWeakPointer = *mlWeakPointer_ptr;
   } else {
+    mlWeakPointer = caml_weak_array_create(1);
+    mlWeakPointer_ptr = (value *)calloc(1, sizeof(value));
+    *mlWeakPointer_ptr = mlWeakPointer;
+    caml_register_generational_global_root(mlWeakPointer_ptr);
+    canvas_set_data(canvas, (void *)mlWeakPointer_ptr);
+  }
+
+  if (caml_weak_array_get(mlWeakPointer, 0, &mlCanvas) == 0) {
     mlCanvas = caml_alloc_custom(&_ml_canvas_ops, sizeof(canvas_t *), 0, 1);
     *((canvas_t **)Data_custom_val(mlCanvas)) = canvas;
-    mlCanvas_ptr = (value *)calloc(1, sizeof(value));
-    *mlCanvas_ptr = mlCanvas;
-    canvas_set_user_data(canvas, (void *)mlCanvas_ptr);
-    caml_register_generational_global_root(mlCanvas_ptr);
+    caml_weak_array_set(mlWeakPointer, 0, mlCanvas);
   }
+
   CAMLreturn(mlCanvas);
 }
 
@@ -686,22 +712,53 @@ Nullify_val(
   *((void **)Data_custom_val(mlValue)) = NULL;
   CAMLreturn0;
 }
-#include <stdio.h>
+
 static void
 _ml_canvas_gradient_finalize(
   value mlGradient)
 {
   gradient_t *gradient = *((gradient_t **)Data_custom_val(mlGradient));
   if (gradient != NULL) {
-printf("Release\n"); fflush(stdout);
+/*
+    value *mlWeakPointer_ptr = (value *)gradient_get_data(gradient);
+    if (mlWeakPointer_ptr != NULL) {
+      caml_remove_generational_global_root(mlWeakPointer_ptr);
+      free(mlWeakPointer_ptr);
+      gradient_set_data(gradient, NULL);
+    };
+*/
     gradient_release(gradient);
+  }
+}
+
+int
+_ml_canvas_gradient_compare(
+  value mlGradient1,
+  value mlGradient2)
+{
+  gradient_t *g1 = *((gradient_t **)Data_custom_val(mlGradient1));
+  if (g1 == NULL) {
+    caml_raise_constant(*caml_named_value("gradient_destroyed"));
+  }
+  gradient_t *g2 = *((gradient_t **)Data_custom_val(mlGradient2));
+  if (g2 == NULL) {
+    caml_raise_constant(*caml_named_value("gradient_destroyed"));
+  }
+  if (g1 < g2) {
+    return -1;
+  }
+  else if (g1 > g2) {
+    return 1;
+  }
+  else {
+    return 0;
   }
 }
 
 static struct custom_operations _ml_gradient_ops = {
   "com.ocamlpro.ocaml-canvas.gradient",
   _ml_canvas_gradient_finalize,
-  custom_compare_default,
+  _ml_canvas_gradient_compare,
   custom_hash_default,
   custom_serialize_default,
   custom_deserialize_default,
@@ -716,19 +773,27 @@ Val_gradient(
   gradient_t *gradient)
 {
   CAMLparam0();
-  CAMLlocal1(mlGradient);
-  value *mlGradient_ptr = (value *)gradient_get_data(gradient);
-  if (mlGradient_ptr != NULL) {
-    mlGradient = *mlGradient_ptr;
+  CAMLlocal2(mlGradient,mlWeakPointer);
+
+  value *mlWeakPointer_ptr = (value *)gradient_get_data(gradient);
+
+  if (mlWeakPointer_ptr != NULL) {
+    mlWeakPointer = *mlWeakPointer_ptr;
   } else {
+    mlWeakPointer = caml_weak_array_create(1);
+    mlWeakPointer_ptr = (value *)calloc(1, sizeof(value));
+    *mlWeakPointer_ptr = mlWeakPointer;
+    caml_register_generational_global_root(mlWeakPointer_ptr);
+    gradient_set_data(gradient, (void *)mlWeakPointer_ptr);
+  }
+
+  if (caml_weak_array_get(mlWeakPointer, 0, &mlGradient) == 0) {
     mlGradient =
       caml_alloc_custom(&_ml_gradient_ops, sizeof(gradient_t *), 0, 1);
-    *((gradient_t **)Data_custom_val(mlGradient)) = gradient_retain(gradient);
-    mlGradient_ptr = (value *)calloc(1, sizeof(value));
-    *mlGradient_ptr = mlGradient;
-    gradient_set_data(gradient, (void*)mlGradient_ptr);
-    caml_register_generational_global_root(mlGradient_ptr);
+    *((gradient_t **)Data_custom_val(mlGradient)) = gradient;
+    caml_weak_array_set(mlWeakPointer, 0, mlGradient);
   }
+
   CAMLreturn(mlGradient);
 }
 
@@ -758,7 +823,7 @@ Val_style(
     break;
   case FILL_TYPE_GRADIENT:
     mlStyle = caml_alloc(1,TAG_GRADIENT);
-    Store_field(mlStyle,0,Val_gradient(style.content.gradient));
+    Store_field(mlStyle,0,Val_gradient(gradient_retain(style.content.gradient)));
   default:
     break;
   }

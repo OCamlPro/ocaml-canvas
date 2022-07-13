@@ -19,6 +19,7 @@
 #include "state.h"
 #include "font.h"
 #include "path.h"
+#include "canvas.h"
 
 typedef struct canvas_t {
   window_t *window;
@@ -35,6 +36,7 @@ typedef struct canvas_t {
   double last_y;
   void *data; /* user data */
   int32_t id;
+  canvas_type_t type;
 } canvas_t;
 
 #endif /* __CANVAS_INTERNAL_H */

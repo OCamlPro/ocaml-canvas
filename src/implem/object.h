@@ -46,6 +46,7 @@ static type * prefix##_alloc(void)                                            \
 type * prefix##_retain(type *o)                                               \
 {                                                                             \
   assert(o != NULL);                                                          \
+  assert((((object_t *)o)->count) > 0);                                       \
                                                                               \
   ++((object_t *)o)->count;                                                   \
   return o;                                                                   \
@@ -56,6 +57,7 @@ static void destroy(type *o);                                                 \
 void prefix##_release(type *o)                                                \
 {                                                                             \
   assert(o != NULL);                                                          \
+  assert((((object_t *)o)->count) > 0);                                       \
                                                                               \
   if (--(((object_t *)o)->count) == 0) {                                      \
     destroy(o);                                                               \

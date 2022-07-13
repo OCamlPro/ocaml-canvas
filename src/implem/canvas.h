@@ -23,6 +23,12 @@
 
 typedef struct canvas_t canvas_t;
 
+typedef enum canvas_type_t {
+  CANVAS_OFFSCREEN = 0,
+  CANVAS_FRAMED    = 1,
+  CANVAS_FRAMELESS = 2
+} canvas_type_t;
+
 canvas_t *
 canvas_create_framed(
   const char *title,
@@ -73,16 +79,20 @@ canvas_hide(
 
 /* Configuration */
 
+canvas_type_t
+canvas_get_type(
+  const canvas_t *canvas);
+
 int32_t
 canvas_get_id(
   const canvas_t *canvas);
 
 void *
-canvas_get_user_data(
+canvas_get_data(
   canvas_t *canvas);
 
 void
-canvas_set_user_data(
+canvas_set_data(
   canvas_t *canvas,
   void *data);
 

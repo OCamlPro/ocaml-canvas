@@ -63,6 +63,11 @@ font_destroy(
 {
   assert(f != NULL);
 
+  if (f->font_desc != NULL) {
+    font_desc_destroy(f->font_desc);
+    f->font_desc = NULL;
+  }
+
   switch_IMPL() {
     case_GDI(gdi_font_destroy((gdi_font_t *)f));
     case_QUARTZ(qtz_font_destroy((qtz_font_t *)f));
