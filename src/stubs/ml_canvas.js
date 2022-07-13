@@ -312,6 +312,15 @@ function ml_canvas_gradient_add_color_stop(grad, color, pos) {
 }
 
 
+/* Patterns */
+
+//Provides: ml_canvas_create_pattern
+//Requires : Repeat_val, _ml_canvas_surface_of_ba
+function ml_canvas_create_pattern(canvas, image, repeat) {
+  var img_canv = _ml_canvas_surface_of_ba(image);
+  return canvas.ctxt.createPattern(img_canv, Repeat_val(repeat));
+}
+
 
 /* Canvas */
 
@@ -736,10 +745,11 @@ function ml_canvas_set_line_join(canvas, join) {
 //Provides: ml_canvas_get_stroke_color
 //Requires: _int_of_color
 function ml_canvas_get_stroke_color(canvas) {
-  if (typeof(canvas.ctxt.strokeStyle) == "string")
+  if (typeof(canvas.ctxt.strokeStyle) == "string") {
     return _int_of_color(canvas.ctxt.strokeStyle);
-  else
+  } else {
     return 0;
+  }
 }
 
 //Provides: ml_canvas_set_stroke_color
@@ -753,47 +763,31 @@ function ml_canvas_set_stroke_gradient(canvas, grad) {
   canvas.ctxt.strokeStyle = grad;
 }
 
+//Provides: ml_canvas_set_stroke_pattern
+function ml_canvas_set_stroke_pattern(canvas, pattern) {
+  canvas.ctxt.strokeStyle = pattern;
+}
+
 //Provides: ml_canvas_set_stroke_style
-//Requires: _color_of_int,STYLE_TAG
+//Requires: Val_draw_style
 function ml_canvas_set_stroke_style(canvas, style) {
-  switch(style[0])
-  {
-    case STYLE_TAG.COLOR:
-      canvas.ctxt.strokeStyle = _color_of_int(style[1]);
-      break;
-    case STYLE_TAG.GRADIENT:
-      canvas.ctxt.strokeStyle = style[1];
-      break;
-    default:
-      break;
-  }
+  canvas.ctxt.strokeStyle = Val_draw_style(style);
 }
 
 //Provides: ml_canvas_get_stroke_style
-//Requires: STYLE_TAG
-function ml_canvas_get_stroke_style(canvas)
-{
-  var st = canvas.ctxt.strokeStyle;
-  var a = [];
-  if (typeof(st) == "string") {
-    a[0] = STYLE_TAG.COLOR;
-    a[1] = st;
-    return a;
-  } else {
-    a[0] = STYLE_TAG.GRADIENT;
-    a[1] = st;
-    return a;
-  }
+//Requires: Draw_style_val
+function ml_canvas_get_stroke_style(canvas) {
+  return Draw_style_val(canvas.ctxt.strokeStyle);
 }
-
 
 //Provides: ml_canvas_get_fill_color
 //Requires: _int_of_color
 function ml_canvas_get_fill_color(canvas) {
-  if (typeof(canvas.ctxt.fillStyle) == "string")
+  if (typeof(canvas.ctxt.fillStyle) == "string") {
     return _int_of_color(canvas.ctxt.fillStyle);
-  else
+  } else {
     return 0;
+  }
 }
 
 //Provides: ml_canvas_set_fill_color
@@ -817,35 +811,21 @@ function ml_canvas_set_fill_gradient(canvas, grad) {
   canvas.ctxt.fillStyle = grad;
 }
 
+//Provides: ml_canvas_set_fill_pattern
+function ml_canvas_set_fill_pattern(canvas, pattern) {
+  canvas.ctxt.fillStyle = pattern;
+}
+
 //Provides: ml_canvas_set_fill_style
-//Requires: _color_of_int,STYLE_TAG
+//Requires: Val_draw_style
 function ml_canvas_set_fill_style(canvas, style) {
-  switch (style[0]) {
-    case STYLE_TAG.COLOR:
-      canvas.ctxt.fillStyle = _color_of_int(style[1]);
-      break;
-    case STYLE_TAG.GRADIENT:
-      canvas.ctxt.fillStyle = style[1];
-      break;
-    default:
-      break;
-  }
+  canvas.ctxt.fillStyle = Val_draw_style(style);
 }
 
 //Provides: ml_canvas_get_fill_style
-function ml_canvas_get_fill_style(canvas)
-{
-  var st =  canvas.ctxt.fillStyle;
-  var a = [];
-  if (typeof(st) == "string") {
-    a[0] = 0;
-    a[1] = st;
-    return a;
-  } else {
-    a[0] = 1;
-    a[1] = st;
-    return a;
-  }
+//Requires: Draw_style_val
+function ml_canvas_get_fill_style(canvas) {
+  return Draw_style_val(canvas.ctxt.fillStyle);
 }
 
 //Provides: ml_canvas_get_global_composite_operation

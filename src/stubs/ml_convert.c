@@ -22,18 +22,19 @@
 #include "caml/fail.h"
 #include "caml/callback.h"
 
-#include "../implem/canvas.h"
-#include "../implem/window.h"
-#include "../implem/event.h"
 #include "../implem/color.h"
-#include "../implem/pixmap.h"
-#include "../implem/transform.h"
-#include "../implem/font_desc.h"
 #include "../implem/gradient.h"
-#include "../implem/fill_style.h"
+#include "../implem/pattern.h"
+#include "../implem/draw_style.h"
+#include "../implem/font_desc.h"
+#include "../implem/transform.h"
 #include "../implem/path2d.h"
 #include "../implem/polygonize.h"
 #include "../implem/color_composition.h"
+#include "../implem/pixmap.h"
+#include "../implem/event.h"
+#include "../implem/window.h"
+#include "../implem/canvas.h"
 
 #include "ml_tags.h"
 #include "ml_convert.h"
@@ -79,19 +80,6 @@ Int32_val_clip(
     i = INT32_MAX;
   }
   CAMLreturnT(int32_t, i);
-}
-
-font_slant_t
-Slant_val(
-  value mlSlant)
-{
-  CAMLparam1(mlSlant);
-  static const font_slant_t map[3] = {
-    [TAG_ROMAN]   = SLANT_ROMAN,
-    [TAG_ITALIC]  = SLANT_ITALIC,
-    [TAG_OBLIQUE] = SLANT_OBLIQUE
-  };
-  CAMLreturnT(font_slant_t, map[Int_val(mlSlant)]);
 }
 
 value
@@ -636,22 +624,6 @@ Val_event(
   CAMLreturn(mlEvent);
 }
 
-transform_t
-Transform_val(
-  value mlTransform)
-{
-  CAMLparam1(mlTransform);
-  transform_t transform = { 0 };
-  transform_set(&transform,
-                Double_field(mlTransform, 0),
-                Double_field(mlTransform, 1),
-                Double_field(mlTransform, 2),
-                Double_field(mlTransform, 3),
-                Double_field(mlTransform, 4),
-                Double_field(mlTransform, 5));
-  CAMLreturnT(transform_t, transform);
-}
-
 int ml_canvas_compare_raw(value mlCanvas1, value mlCanvas2);
 intnat ml_canvas_hash_raw(value mlCanvas);
 
@@ -716,6 +688,93 @@ Canvas_val(
     caml_failwith("invalid canvas object");
   }
   CAMLreturnT(canvas_t *, canvas);
+}
+
+void
+_ml_canvas_path2d_finalize(
+  value mlPath2d)
+{
+  path2d_t *path2d = *((path2d_t **)Data_custom_val(mlPath2d));
+  if (path2d != NULL) {
+    path2d_release(path2d);
+  }
+}
+
+int
+_ml_canvas_path2d_compare(
+  value mlPath2d1,
+  value mlPath2d2)
+{
+  path2d_t *p1 = *((path2d_t **)Data_custom_val(mlPath2d1));
+  if (p1 == NULL) {
+    caml_failwith("invalid path2d object");
+  }
+  path2d_t *p2 = *((path2d_t **)Data_custom_val(mlPath2d2));
+  if (p2 == NULL) {
+    caml_failwith("invalid path2d object");
+  }
+  if (p1 < p2) {
+    return -1;
+  }
+  else if (p1 > p2) {
+    return 1;
+  }
+  else {
+    return 0;
+  }
+}
+
+static struct custom_operations _ml_path2d_ops = {
+  "com.ocamlpro.ocaml-canvas.path2d",
+  _ml_canvas_path2d_finalize,
+  _ml_canvas_path2d_compare,
+  custom_hash_default,
+  custom_serialize_default,
+  custom_deserialize_default,
+  custom_compare_ext_default,
+#if OCAML_VERSION >= 40800
+  custom_fixed_length_default
+#endif
+};
+
+value
+Val_path2d(
+  path2d_t *path2d)
+{
+  CAMLparam0();
+  CAMLlocal2(mlPath2d, mlWeakPointer);
+
+  value *mlWeakPointer_ptr = (value *)path2d_get_data(path2d);
+
+  if (mlWeakPointer_ptr != NULL) {
+    mlWeakPointer = *mlWeakPointer_ptr;
+  } else {
+    mlWeakPointer = caml_weak_array_create(1);
+    mlWeakPointer_ptr = (value *)calloc(1, sizeof(value));
+    *mlWeakPointer_ptr = mlWeakPointer;
+    caml_register_generational_global_root(mlWeakPointer_ptr);
+    path2d_set_data(path2d, (void *)mlWeakPointer_ptr);
+  }
+
+  if (caml_weak_array_get(mlWeakPointer, 0, &mlPath2d) == 0) {
+    mlPath2d = caml_alloc_custom(&_ml_path2d_ops, sizeof(path2d_t *), 0, 1);
+    *((path2d_t **)Data_custom_val(mlPath2d)) = path2d_retain(path2d);
+    caml_weak_array_set(mlWeakPointer, 0, mlPath2d);
+  }
+
+  CAMLreturn(mlPath2d);
+}
+
+path2d_t *
+Path2d_val(
+  value mlPath2d)
+{
+  CAMLparam1(mlPath2d);
+  path2d_t *path2d = *((path2d_t **)Data_custom_val(mlPath2d));
+  if (path2d == NULL) {
+    caml_failwith("invalid path2d object");
+  }
+  CAMLreturnT(path2d_t *, path2d);
 }
 
 static void
@@ -806,28 +865,28 @@ Gradient_val(
   CAMLreturnT(gradient_t *, gradient);
 }
 
-void
-_ml_canvas_path2d_finalize(
-  value mlPath2d)
+static void
+_ml_canvas_pattern_finalize(
+  value mlPattern)
 {
-  path2d_t *path2d = *((path2d_t **)Data_custom_val(mlPath2d));
-  if (path2d != NULL) {
-    path2d_release(path2d);
+  pattern_t *pattern = *((pattern_t **)Data_custom_val(mlPattern));
+  if (pattern != NULL) {
+    pattern_release(pattern);
   }
 }
 
 int
-_ml_canvas_path2d_compare(
-  value mlPath2d1,
-  value mlPath2d2)
+_ml_canvas_pattern_compare(
+  value mlPattern1,
+  value mlPattern2)
 {
-  path2d_t *p1 = *((path2d_t **)Data_custom_val(mlPath2d1));
+  pattern_t *p1 = *((pattern_t **)Data_custom_val(mlPattern1));
   if (p1 == NULL) {
-    caml_failwith("invalid path2d object");
+    caml_failwith("invalid pattern object");
   }
-  path2d_t *p2 = *((path2d_t **)Data_custom_val(mlPath2d2));
+  pattern_t *p2 = *((pattern_t **)Data_custom_val(mlPattern2));
   if (p2 == NULL) {
-    caml_failwith("invalid path2d object");
+    caml_failwith("invalid pattern object");
   }
   if (p1 < p2) {
     return -1;
@@ -840,10 +899,10 @@ _ml_canvas_path2d_compare(
   }
 }
 
-static struct custom_operations _ml_path2d_ops = {
-  "com.ocamlpro.ocaml-canvas.path2d",
-  _ml_canvas_path2d_finalize,
-  _ml_canvas_path2d_compare,
+static struct custom_operations _ml_pattern_ops = {
+  "com.ocamlpro.ocaml-canvas.pattern",
+  _ml_canvas_pattern_finalize,
+  _ml_canvas_pattern_compare,
   custom_hash_default,
   custom_serialize_default,
   custom_deserialize_default,
@@ -854,13 +913,13 @@ static struct custom_operations _ml_path2d_ops = {
 };
 
 value
-Val_path2d(
-  path2d_t *path2d)
+Val_pattern(
+  pattern_t *pattern)
 {
   CAMLparam0();
-  CAMLlocal2(mlPath2d, mlWeakPointer);
+  CAMLlocal2(mlPattern, mlWeakPointer);
 
-  value *mlWeakPointer_ptr = (value *)path2d_get_data(path2d);
+  value *mlWeakPointer_ptr = (value *)pattern_get_data(pattern);
 
   if (mlWeakPointer_ptr != NULL) {
     mlWeakPointer = *mlWeakPointer_ptr;
@@ -869,72 +928,140 @@ Val_path2d(
     mlWeakPointer_ptr = (value *)calloc(1, sizeof(value));
     *mlWeakPointer_ptr = mlWeakPointer;
     caml_register_generational_global_root(mlWeakPointer_ptr);
-    path2d_set_data(path2d, (void *)mlWeakPointer_ptr);
+    pattern_set_data(pattern, (void *)mlWeakPointer_ptr);
   }
 
-  if (caml_weak_array_get(mlWeakPointer, 0, &mlPath2d) == 0) {
-    mlPath2d = caml_alloc_custom(&_ml_path2d_ops, sizeof(path2d_t *), 0, 1);
-    *((path2d_t **)Data_custom_val(mlPath2d)) = path2d_retain(path2d);
-    caml_weak_array_set(mlWeakPointer, 0, mlPath2d);
+  if (caml_weak_array_get(mlWeakPointer, 0, &mlPattern) == 0) {
+    mlPattern =
+      caml_alloc_custom(&_ml_pattern_ops, sizeof(pattern_t *), 0, 1);
+    *((pattern_t **)Data_custom_val(mlPattern)) = pattern_retain(pattern);
+    caml_weak_array_set(mlWeakPointer, 0, mlPattern);
   }
 
-  CAMLreturn(mlPath2d);
+  CAMLreturn(mlPattern);
 }
 
-path2d_t *
-Path2d_val(
-  value mlPath2d)
+pattern_t *
+Pattern_val(
+  value mlPattern)
 {
-  CAMLparam1(mlPath2d);
-  path2d_t *path2d = *((path2d_t **)Data_custom_val(mlPath2d));
-  if (path2d == NULL) {
-    caml_failwith("invalid path2d object");
+  CAMLparam1(mlPattern);
+  pattern_t *pattern = *((pattern_t **)Data_custom_val(mlPattern));
+  if (pattern == NULL) {
+    caml_failwith("invalid pattern object");
   }
-  CAMLreturnT(path2d_t *, path2d);
+  CAMLreturnT(pattern_t *, pattern);
+}
+
+value
+Val_repeat(
+  pattern_repeat_t repeat)
+{
+  CAMLparam0();
+  static const pattern_repeat_t map[4] = {
+    [PATTERN_NO_REPEAT] = TAG_NO_REPEAT,
+    [PATTERN_REPEAT_X]  = TAG_REPEAT_X,
+    [PATTERN_REPEAT_Y]  = TAG_REPEAT_Y,
+    [PATTERN_REPEAT_XY] = TAG_REPEAT_XY
+  };
+  CAMLreturn(Val_int(map[repeat]));
+}
+
+pattern_repeat_t
+Repeat_val(
+  value mlRepeat)
+{
+  CAMLparam1(mlRepeat);
+  static const pattern_repeat_t map[4] = {
+    [TAG_NO_REPEAT]  = PATTERN_NO_REPEAT,
+    [TAG_REPEAT_X]   = PATTERN_REPEAT_X,
+    [TAG_REPEAT_Y]   = PATTERN_REPEAT_Y,
+    [TAG_REPEAT_XY]  = PATTERN_REPEAT_XY
+  };
+  CAMLreturnT(pattern_repeat_t, map[Int_val(mlRepeat)]);
 }
 
 value
 Val_style(
-  fill_style_t style)
+  draw_style_t style)
 {
   CAMLparam0();
   CAMLlocal1(mlStyle);
-  switch (style.fill_type) {
-    case FILL_TYPE_COLOR:
+  switch (style.type) {
+    case DRAW_STYLE_COLOR:
       mlStyle = caml_alloc(1, TAG_COLOR);
-      Store_field(mlStyle, 0, Val_int(color_to_int(style.content.color)));
+      Store_field(mlStyle, 0,
+                  Val_int(color_to_int(style.content.color)));
       break;
-    case FILL_TYPE_GRADIENT:
+    case DRAW_STYLE_GRADIENT:
       mlStyle = caml_alloc(1, TAG_GRADIENT);
-      Store_field(mlStyle, 0, Val_gradient(style.content.gradient));
+      Store_field(mlStyle, 0,
+                  Val_gradient(gradient_retain(style.content.gradient)));
+      break;
+    case DRAW_STYLE_PATTERN:
+      mlStyle = caml_alloc(1, TAG_PATTERN);
+      Store_field(mlStyle, 0,
+                  Val_pattern(pattern_retain(style.content.pattern)));
     default:
-      assert(!"Unknown style");
+      assert(!"Unknown draw style");
       break;
   }
   CAMLreturn(mlStyle);
 }
 
-fill_style_t
+draw_style_t
 Style_val(
   value mlStyle)
 {
   CAMLparam1(mlStyle);
-  fill_style_t style = { 0 };
+  draw_style_t style = { 0 };
   switch (Tag_val(mlStyle)) {
     case TAG_COLOR:
-      style.fill_type = FILL_TYPE_COLOR;
-      style.content.color =
-        color_of_int(Unsigned_int_val(Field(mlStyle, 0)) | 0xFF000000);
+      style.type = DRAW_STYLE_COLOR;
+      style.content.color = color_of_int(Int32_val(Field(mlStyle, 0)));
       break;
     case TAG_GRADIENT:
-      style.fill_type = FILL_TYPE_GRADIENT;
+      style.type = DRAW_STYLE_GRADIENT;
       style.content.gradient = gradient_retain(Gradient_val(Field(mlStyle, 0)));
       break;
+    case TAG_PATTERN:
+      style.type = DRAW_STYLE_PATTERN;
+      style.content.pattern = pattern_retain(Pattern_val(Field(mlStyle, 0)));
+      break;
     default:
-      assert(!"Unknown style");
+      assert(!"Unknown draw style");
       break;
   }
-  CAMLreturnT(fill_style_t, style);
+  CAMLreturnT(draw_style_t, style);
+}
+
+transform_t
+Transform_val(
+  value mlTransform)
+{
+  CAMLparam1(mlTransform);
+  transform_t transform = { 0 };
+  transform_set(&transform,
+                Double_field(mlTransform, 0),
+                Double_field(mlTransform, 1),
+                Double_field(mlTransform, 2),
+                Double_field(mlTransform, 3),
+                Double_field(mlTransform, 4),
+                Double_field(mlTransform, 5));
+  CAMLreturnT(transform_t, transform);
+}
+
+font_slant_t
+Slant_val(
+  value mlSlant)
+{
+  CAMLparam1(mlSlant);
+  static const font_slant_t map[3] = {
+    [TAG_ROMAN]   = SLANT_ROMAN,
+    [TAG_ITALIC]  = SLANT_ITALIC,
+    [TAG_OBLIQUE] = SLANT_OBLIQUE
+  };
+  CAMLreturnT(font_slant_t, map[Int_val(mlSlant)]);
 }
 
 value

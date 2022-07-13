@@ -19,10 +19,11 @@
 #include "rect.h"
 #include "color.h"
 #include "transform.h"
-#include "fill_style.h"
 #include "color_composition.h"
 #include "gradient.h"
 #include "gradient_internal.h"
+#include "pattern.h"
+#include "draw_style.h"
 #include "polygon.h"
 #include "polygon_internal.h"
 #include "surface.h"
@@ -370,7 +371,7 @@ poly_render(
   surface_t *s,
   const polygon_t *p,
   const rect_t *bbox,
-  fill_style_t fill_style,
+  draw_style_t draw_style,
   composite_operation_t composite_operation,
   double global_alpha,
   bool non_zero,
@@ -380,8 +381,10 @@ poly_render(
   assert(s->data != NULL);
   assert(p != NULL);
   assert(bbox != NULL);
-  assert((fill_style.fill_type != FILL_TYPE_GRADIENT) ||
-         (fill_style.content.gradient != NULL));
+  assert((draw_style.type != DRAW_STYLE_GRADIENT) ||
+         (draw_style.content.gradient != NULL));
+  assert((draw_style.type != DRAW_STYLE_PATTERN) ||
+         (draw_style.content.pattern != NULL));
 
   int alpha = 0;
 
@@ -452,18 +455,21 @@ poly_render(
         // only if this pixel is simple
         calculate = is_complex;
       }
-
       color_t_ color = color_transparent_black;
-      switch (fill_style.fill_type) {
-        case FILL_TYPE_COLOR:
-          color = fill_style.content.color;
+      switch (draw_style.type) {
+        case DRAW_STYLE_COLOR:
+          color = draw_style.content.color;
           break;
-        case FILL_TYPE_GRADIENT:
-          color = gradient_evaluate_pos(fill_style.content.gradient,
-                                        j, i, inverse);
+        case DRAW_STYLE_GRADIENT:
+          color =
+            gradient_evaluate_pos(draw_style.content.gradient, j, i, inverse);
+          break;
+        case DRAW_STYLE_PATTERN:
+          color =
+            pattern_evaluate_pos(draw_style.content.pattern, j, i, inverse);
           break;
         default:
-          assert(!"Invalid fill type specified");
+          assert(!"Invalid draw style");
           break;
       }
 
@@ -472,7 +478,7 @@ poly_render(
 
       // Apply the coverage to the pixel
       // Only do this logic if there's something to apply
-      _setpixel(s, i, j, comp_compose(color, s->data[j + i*s->width],
+      _setpixel(s, i, j, comp_compose(color, s->data[j + i * s->width],
                                       draw_alpha, composite_operation));
     }
     free(complex);

@@ -8,33 +8,38 @@
 /*                                                                        */
 /**************************************************************************/
 
-#ifndef __FILL_STYLE_H
-#define __FILL_STYLE_H
+#ifndef __PATTERN_H
+#define __PATTERN_H
 
-#include "color.h"
-#include "gradient.h"
+#include "object.h"
+#include "pixmap.h"
+#include "transform.h"
 
-typedef enum fill_type_t {
-  FILL_TYPE_COLOR    = 0,
-  FILL_TYPE_GRADIENT = 1
-} fill_type_t;
+typedef struct pattern_t pattern_t;
 
-typedef union fill_content_t {
-  color_t_ color;
-  gradient_t *gradient;
-} fill_content_t;
+typedef enum pattern_repeat_t {
+  PATTERN_NO_REPEAT = 0,
+  PATTERN_REPEAT_X  = 1,
+  PATTERN_REPEAT_Y  = 2,
+  PATTERN_REPEAT_XY = 3
+} pattern_repeat_t;
 
-typedef struct fill_style_t {
-  fill_type_t fill_type;
-  fill_content_t content;
-} fill_style_t;
+DECLARE_OBJECT_METHODS(pattern_t, pattern)
+
+pattern_t *
+pattern_create(
+  const pixmap_t *image,
+  pattern_repeat_t repeat);
+
+color_t_
+pattern_evaluate_pos(
+  const pattern_t *pattern,
+  double pos_x,
+  double pos_y,
+  const transform_t *inverse);
 
 void
-fill_style_destroy(
-  fill_style_t *fs);
+pattern_set_destroy_callback(
+  void (*callback)(pattern_t *));
 
-fill_style_t
-fill_style_copy(
-  const fill_style_t *fs);
-
-#endif /*__FILL_STYLE_H */
+#endif /* __PATTERN_H */

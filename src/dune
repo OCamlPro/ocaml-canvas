@@ -20,7 +20,7 @@
          font_desc gdi_font qtz_font unx_font font
          gdi_impexp qtz_impexp unx_impexp impexp
          path arc path2d polygon polygonize
-         gradient fill_style color_composition poly_render
+         gradient pattern draw_style color_composition poly_render
          state canvas backend
          ml_convert ml_canvas)
   (flags (:standard) (:include ccopt.sexp)))

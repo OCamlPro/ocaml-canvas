@@ -30,7 +30,7 @@
 #include "state.h"
 #include "font_desc.h"
 #include "font.h"
-#include "fill_style.h"
+#include "draw_style.h"
 #include "gradient.h"
 #include "transform.h"
 #include "path2d.h"
@@ -626,7 +626,7 @@ canvas_get_stroke_color(
   assert(canvas != NULL);
   assert(canvas->state != NULL);
 
-  if (canvas->state->stroke_style.fill_type == FILL_TYPE_COLOR) {
+  if (canvas->state->stroke_style.type == DRAW_STYLE_COLOR) {
     return canvas->state->stroke_style.content.color;
   } else {
     return color_transparent_black;
@@ -641,21 +641,9 @@ canvas_set_stroke_color(
   assert(canvas != NULL);
   assert(canvas->state != NULL);
 
-  fill_style_destroy(&canvas->state->stroke_style);
-  fill_style_t style;
-  style.fill_type = FILL_TYPE_COLOR;
-  style.content.color = color;
-  canvas->state->stroke_style = style;
-}
-
-fill_style_t
-canvas_get_stroke_style(
-  const canvas_t *canvas)
-{
-  assert(canvas != NULL);
-  assert(canvas->state != NULL);
-
-  return canvas->state->stroke_style;
+  draw_style_destroy(&canvas->state->stroke_style);
+  canvas->state->stroke_style.type = DRAW_STYLE_COLOR;
+  canvas->state->stroke_style.content.color = color;
 }
 
 void
@@ -667,11 +655,33 @@ canvas_set_stroke_gradient(
   assert(canvas->state != NULL);
   assert(gradient != NULL);
 
-  fill_style_destroy(&canvas->state->stroke_style);
-  fill_style_t style;
-  style.fill_type = FILL_TYPE_GRADIENT;
-  style.content.gradient = gradient_retain(gradient);
-  canvas->state->stroke_style = style;
+  draw_style_destroy(&canvas->state->stroke_style);
+  canvas->state->stroke_style.type = DRAW_STYLE_GRADIENT;
+  canvas->state->stroke_style.content.gradient = gradient_retain(gradient);
+}
+
+void
+canvas_set_stroke_pattern(
+  canvas_t *canvas,
+  pattern_t *pattern)
+{
+  assert(canvas != NULL);
+  assert(canvas->state != NULL);
+  assert(pattern != NULL);
+
+  draw_style_destroy(&canvas->state->stroke_style);
+  canvas->state->stroke_style.type = DRAW_STYLE_PATTERN;
+  canvas->state->stroke_style.content.pattern = pattern_retain(pattern);
+}
+
+draw_style_t
+canvas_get_stroke_style(
+  const canvas_t *canvas)
+{
+  assert(canvas != NULL);
+  assert(canvas->state != NULL);
+
+  return canvas->state->stroke_style;
 }
 
 color_t_
@@ -681,7 +691,7 @@ canvas_get_fill_color(
   assert(canvas != NULL);
   assert(canvas->state != NULL);
 
-  if (canvas->state->fill_style.fill_type == FILL_TYPE_COLOR) {
+  if (canvas->state->fill_style.type == DRAW_STYLE_COLOR) {
     return canvas->state->fill_style.content.color;
   } else {
     return color_transparent_black;
@@ -696,21 +706,9 @@ canvas_set_fill_color(
   assert(canvas != NULL);
   assert(canvas->state != NULL);
 
-  fill_style_destroy(&canvas->state->fill_style);
-  fill_style_t style;
-  style.fill_type = FILL_TYPE_COLOR;
-  style.content.color = color;
-  canvas->state->fill_style = style;
-}
-
-fill_style_t
-canvas_get_fill_style(
-  const canvas_t *canvas)
-{
-  assert(canvas != NULL);
-  assert(canvas->state != NULL);
-
-  return canvas->state->fill_style;
+  draw_style_destroy(&canvas->state->fill_style);
+  canvas->state->fill_style.type = DRAW_STYLE_COLOR;
+  canvas->state->fill_style.content.color = color;
 }
 
 void
@@ -722,11 +720,33 @@ canvas_set_fill_gradient(
   assert(canvas->state != NULL);
   assert(gradient != NULL);
 
-  fill_style_destroy(&canvas->state->fill_style);
-  fill_style_t style;
-  style.fill_type = FILL_TYPE_GRADIENT;
-  style.content.gradient = gradient_retain(gradient);
-  canvas->state->fill_style = style;
+  draw_style_destroy(&canvas->state->fill_style);
+  canvas->state->fill_style.type = DRAW_STYLE_GRADIENT;
+  canvas->state->fill_style.content.gradient = gradient_retain(gradient);
+}
+
+void
+canvas_set_fill_pattern(
+  canvas_t *canvas,
+  pattern_t *pattern)
+{
+  assert(canvas != NULL);
+  assert(canvas->state != NULL);
+  assert(pattern != NULL);
+
+  draw_style_destroy(&canvas->state->fill_style);
+  canvas->state->fill_style.type = DRAW_STYLE_PATTERN;
+  canvas->state->fill_style.content.pattern = pattern_retain(pattern);
+}
+
+draw_style_t
+canvas_get_fill_style(
+  const canvas_t *canvas)
+{
+  assert(canvas != NULL);
+  assert(canvas->state != NULL);
+
+  return canvas->state->fill_style;
 }
 
 double
@@ -1243,7 +1263,8 @@ canvas_fill_text(
     if (font_char_as_poly(c->font, c->state->transform,
                           chr, &pen, p, &bbox) == true) {
       poly_render(c->surface, p, &bbox, c->state->fill_style,
-                  c->state->global_alpha, c->state->global_composite_operation, true, c->state->transform);
+                  c->state->global_alpha, c->state->global_composite_operation,
+                  true, c->state->transform);
     }
   }
 
