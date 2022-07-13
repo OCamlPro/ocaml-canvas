@@ -41,12 +41,6 @@
 #include "backend.h"
 #include "canvas_internal.h"
 
-typedef enum canvas_type_t {
-  CANVAS_OFFSCREEN = 0,
-  CANVAS_FRAMED    = 1,
-  CANVAS_FRAMELESS = 2
-} canvas_type_t;
-
 static canvas_t *
 _canvas_create_internal(
   canvas_type_t type,
@@ -64,6 +58,8 @@ _canvas_create_internal(
   if (canvas == NULL) {
     return NULL;
   }
+
+  canvas->type = type;
 
   canvas->id = backend_next_id();
   if (canvas->id == 0) {
@@ -109,7 +105,7 @@ _canvas_create_internal(
       goto error_window;
     }
 
-    window_set_user_data(canvas->window, (void *)canvas);
+    window_set_data(canvas->window, (void *)canvas);
 
     target_t *target = window_get_target(canvas->window);
     if (target == NULL) {
@@ -275,6 +271,15 @@ canvas_hide(
 
 /* Configuration */
 
+canvas_type_t
+canvas_get_type(
+  const canvas_t *canvas)
+{
+  assert(canvas != NULL);
+
+  return canvas->type;
+}
+
 int32_t
 canvas_get_id(
   const canvas_t *canvas)
@@ -285,7 +290,7 @@ canvas_get_id(
 }
 
 void *
-canvas_get_user_data(
+canvas_get_data(
   canvas_t *canvas)
 {
   assert(canvas != NULL);
@@ -294,7 +299,7 @@ canvas_get_user_data(
 }
 
 void
-canvas_set_user_data(
+canvas_set_data(
   canvas_t *canvas,
   void *data)
 {
@@ -591,7 +596,7 @@ canvas_get_stroke_style(
   assert(canvas != NULL);
   assert(canvas->state != NULL);
 
-  return fill_style_copy(&canvas->state->stroke_style);
+  return canvas->state->stroke_style;
 }
 
 void
@@ -606,7 +611,7 @@ canvas_set_stroke_gradient(
   fill_style_destroy(&canvas->state->stroke_style);
   fill_style_t style;
   style.fill_type = FILL_TYPE_GRADIENT;
-  style.content.gradient = gradient;
+  style.content.gradient = gradient_retain(gradient);
   canvas->state->stroke_style = style;
 }
 
@@ -646,7 +651,7 @@ canvas_get_fill_style(
   assert(canvas != NULL);
   assert(canvas->state != NULL);
 
-  return fill_style_copy(&canvas->state->fill_style);
+  return canvas->state->fill_style;
 }
 
 void
@@ -661,7 +666,7 @@ canvas_set_fill_gradient(
   fill_style_destroy(&canvas->state->fill_style);
   fill_style_t style;
   style.fill_type = FILL_TYPE_GRADIENT;
-  style.content.gradient = gradient;
+  style.content.gradient = gradient_retain(gradient);
   canvas->state->fill_style = style;
 }
 

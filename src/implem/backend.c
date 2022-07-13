@@ -49,7 +49,7 @@ _backend_process_event(
   bool result = false;
 
   window_t *window = (window_t *)event->target;
-  canvas_t *canvas = (canvas_t *)window_get_user_data(window);
+  canvas_t *canvas = (canvas_t *)window_get_data(window);
 
   /* Safeguard against early events (i.e. events generated during
      window creation, before the canvas is fully created) or late

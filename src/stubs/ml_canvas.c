@@ -112,13 +112,12 @@ _ml_canvas_gradient_destroy_callback(
   gradient_t *gradient)
 {
   CAMLparam0();
-  value *mlGradient_ptr = gradient_get_data(gradient);
-  if (mlGradient_ptr != NULL) {
-    caml_remove_generational_global_root(mlGradient_ptr);
+  value *mlWeakPointer_ptr = (value *)gradient_get_data(gradient);
+  if (mlWeakPointer_ptr != NULL) {
     gradient_set_data(gradient, NULL);
-    free(mlGradient_ptr);
+    caml_remove_generational_global_root(mlWeakPointer_ptr);
+    free(mlWeakPointer_ptr);
   }
-//  Nullify_val(mlGradient);
   CAMLreturn0;
 }
 
@@ -326,11 +325,11 @@ ml_canvas_destroy(
 {
   CAMLparam1(mlCanvas);
   canvas_t *canvas = Canvas_val(mlCanvas);
-  value *mlCanvas_ptr = canvas_get_user_data(canvas);
-  if (mlCanvas_ptr != NULL) {
-    caml_remove_generational_global_root(mlCanvas_ptr);
-    canvas_set_user_data(canvas, NULL);
-    free(mlCanvas_ptr);
+  value *mlWeakPointer_ptr = (value *)canvas_get_data(canvas);
+  if (mlWeakPointer_ptr != NULL) {
+    canvas_set_data(canvas, NULL);
+    caml_remove_generational_global_root(mlWeakPointer_ptr);
+    free(mlWeakPointer_ptr);
   }
   canvas_destroy(canvas);
   Nullify_val(mlCanvas);
@@ -1185,9 +1184,9 @@ _ml_canvas_process_event(
   /* Special handling of close event */
   if (event->type == EVENT_CLOSE) {
     canvas_t *canvas = (canvas_t *)event->target;
-    value *mlCanvas_ptr = canvas_get_user_data(canvas);
+    value *mlCanvas_ptr = canvas_get_data(canvas);
     if (mlCanvas_ptr != NULL) {
-      canvas_set_user_data(canvas, NULL);
+      canvas_set_data(canvas, NULL);
       caml_remove_generational_global_root(mlCanvas_ptr);
       Nullify_val(*mlCanvas_ptr);
       free(mlCanvas_ptr);

@@ -33,11 +33,11 @@ window_destroy(
   window_t *window);
 
 void *
-window_get_user_data(
+window_get_data(
   window_t *window);
 
 void
-window_set_user_data(
+window_set_data(
   window_t *window,
   void *data);
 
