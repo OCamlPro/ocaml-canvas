@@ -16,7 +16,7 @@
          qtz_keyboard qtz_backend qtz_target qtz_window qtz_surface
          x11_keysym x11_keyboard x11_backend x11_target x11_window x11_surface
          wl_backend wl_target wl_window wl_surface xdg-shell-protocol
-         window surface pixmap
+         window surface pixmap color_composition
          gradient fill_style path arc polygon polygonize poly_render
          font_desc gdi_font qtz_font ft_font font
          impexp gdi_impexp qtz_impexp unx_impexp

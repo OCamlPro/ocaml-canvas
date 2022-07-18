@@ -122,6 +122,34 @@ module Canvas = struct
     | ColorStyle of Color.t
     | GradientStyle of Gradient.t
 
+  type composite_op =
+    | SourceOver
+    | SourceIn
+    | SourceOut
+    | SourceAtop
+    | DestinationOver
+    | DestinationIn
+    | DestinationOut
+    | DestinationAtop
+    | Lighter
+    | Copy
+    | XOR
+    | Multiply
+    | Screen
+    | Overlay
+    | Darken
+    | Lighten
+    | ColorDodge
+    | ColorBurn
+    | HardLight
+    | SoftLight
+    | Difference
+    | Exclusion
+    | Hue
+    | Saturation
+    | Color
+    | Luminosity
+
   type line_join =
     | Round
     | Miter
@@ -320,6 +348,12 @@ module Canvas = struct
 
   external setGlobalAlpha : 'a t -> float -> unit
     = "ml_canvas_set_global_alpha"
+
+  external getGlobalCompositeOperation : 'a t -> composite_op
+    = "ml_canvas_get_global_composite_operation"
+
+  external setGlobalCompositeOperation : 'a t -> composite_op -> unit
+    = "ml_canvas_set_global_composite_operation"
 
   external setFont :
     'a t -> string -> size:Font.size -> slant:Font.slant ->

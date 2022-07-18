@@ -759,6 +759,27 @@ canvas_set_global_alpha(
   }
 }
 
+composite_operation_t
+canvas_get_comp_operation(
+  canvas_t *canvas)
+{
+  assert(canvas != NULL);
+  assert(canvas->state != NULL);
+
+  return canvas->state->global_composite_operation;
+}
+
+void
+canvas_set_comp_operation(
+  canvas_t *canvas,
+  composite_operation_t op)
+{
+  assert(canvas != NULL);
+  assert(canvas->state != NULL);
+
+  canvas->state->global_composite_operation = op;
+}
+
 void
 canvas_set_font(
   canvas_t *c,
@@ -1085,7 +1106,7 @@ canvas_fill(
 
   if (polygonize(c->path, p, &bbox) == true) {
     poly_render(c->surface, p, &bbox, c->state->fill_style,
-                c->state->global_alpha, non_zero, c->state->transform);
+                c->state->global_alpha, c->state->global_composite_operation, non_zero, c->state->transform);
   }
 
   polygon_destroy(p);
@@ -1112,7 +1133,7 @@ canvas_stroke(
   transform_inverse(inv_lin);
   if (polygonize_outline(c->path, c->state->line_width, p, &bbox, c->state->join_type, c->state->cap_type, lin, inv_lin) == true) {
     poly_render(c->surface, p, &bbox, c->state->stroke_style,
-                c->state->global_alpha, true, c->state->transform);
+                c->state->global_alpha, c->state->global_composite_operation, true, c->state->transform);
   }
   transform_destroy(lin);
   transform_destroy(inv_lin);
@@ -1164,7 +1185,7 @@ canvas_fill_rect(
                            max4(p1.y, p2.y, p3.y, p4.y)));
 
   poly_render(c->surface, p, &bbox, c->state->fill_style,
-              c->state->global_alpha, false, c->state->transform);
+              c->state->global_alpha, c->state->global_composite_operation, false, c->state->transform);
 
   polygon_destroy(p);
 }
@@ -1216,7 +1237,7 @@ canvas_stroke_rect(
   transform_t *inv_lin = transform_copy(lin);
   polygon_offset(p, tp, c->state->line_width, JOIN_ROUND, CAP_BUTT, lin, inv_lin);
   poly_render(c->surface, tp, &bbox, c->state->stroke_style,
-              c->state->global_alpha, true, c->state->transform);
+              c->state->global_alpha, c->state->global_composite_operation, true, c->state->transform);
   transform_destroy(lin);
   transform_destroy(inv_lin);
   polygon_destroy(tp);
@@ -1282,7 +1303,7 @@ canvas_fill_text(
     if (font_char_as_poly(c->font, c->state->transform,
                           chr, &pen, p, &bbox) == true) {
       poly_render(c->surface, p, &bbox, c->state->fill_style,
-                  c->state->global_alpha, true, c->state->transform);
+                  c->state->global_alpha, c->state->global_composite_operation, true, c->state->transform);
     }
   }
 
@@ -1321,7 +1342,7 @@ canvas_stroke_text(
                                   chr, c->state->line_width,
                                   &pen, p, &bbox) == true) {
       poly_render(c->surface, p, &bbox, c->state->stroke_style,
-                  c->state->global_alpha, true, c->state->transform);
+                  c->state->global_alpha, c->state->global_composite_operation, true, c->state->transform);
     }
   }
 
@@ -1347,7 +1368,10 @@ canvas_blit(
   pixmap_t dp = surface_get_raw_pixmap(dc->surface);
   const pixmap_t sp = surface_get_raw_pixmap((surface_t *)sc->surface);
 
-  if (transform_is_pure_translation(dc->state->transform) == true) {
+  //TODO : Rework this optimization to account for transparency.
+  // It is disabled for now.
+  if (transform_is_pure_translation(dc->state->transform) == true
+      && false) {
     double tx = 0.0, ty = 0.0;
     transform_extract_translation(dc->state->transform, &tx, &ty);
     pixmap_blit(&dp, dx + tx, dy + ty, &sp, sx, sy, width, height);
@@ -1428,8 +1452,10 @@ canvas_blit(
           col11.a * w11 + col12.a * w12 +
           col21.a * w21 + col22.a * w22;
         color_t_ fill_color = color(a, r, g, b);
-        color_t_ final_color = alpha_blend(a, pixmap_at(dp, y, x), fill_color);
-        pixmap_at(dp, y, x) = final_color;
+        color_t_ compose_result =
+          comp_compose(fill_color, pixmap_at(dp, y, x), a,
+                       dc->state->global_composite_operation);
+        pixmap_at(dp, y, x) = compose_result;
       }
     }
 

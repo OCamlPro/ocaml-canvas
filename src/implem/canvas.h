@@ -22,6 +22,7 @@
 #include "gradient.h"
 #include "fill_style.h"
 #include "polygonize.h"
+#include "color_composition.h"
 
 typedef struct canvas_t canvas_t;
 
@@ -257,6 +258,15 @@ void
 canvas_set_global_alpha(
   canvas_t *c,
   double global_alpha);
+
+composite_operation_t
+canvas_get_comp_operation(
+  canvas_t *c);
+
+void
+canvas_set_comp_operation(
+  canvas_t *c,
+  composite_operation_t op);
 
 void
 canvas_set_font(

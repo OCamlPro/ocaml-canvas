@@ -86,6 +86,7 @@ state_reset(
   s->line_width = 1.0;
   s->join_type = JOIN_ROUND;
   s->cap_type = CAP_BUTT;
+  s->global_composite_operation = SOURCE_OVER;
 }
 
 state_t *
@@ -119,5 +120,7 @@ state_copy(
   sc->line_width = s->line_width;
   sc->join_type = s->join_type;
   sc->cap_type = s->cap_type;
+  sc->global_composite_operation = s->global_composite_operation;
+
   return sc;
 }

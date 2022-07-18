@@ -771,6 +771,25 @@ ml_canvas_set_global_alpha(
 }
 
 CAMLprim value
+ml_canvas_get_global_composite_operation(
+  value mlCanvas)
+{
+  CAMLparam1(mlCanvas);
+  CAMLreturn(Val_compop(canvas_get_comp_operation(Canvas_val(mlCanvas))));
+}
+
+CAMLprim value
+ml_canvas_set_global_composite_operation(
+  value mlCanvas,
+  value mlCompositeOperation)
+{
+  CAMLparam2(mlCanvas, mlCompositeOperation);
+  canvas_set_comp_operation(Canvas_val(mlCanvas),
+                            Compop_val(mlCompositeOperation));
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
 ml_canvas_set_font(
   value mlCanvas,
   value mlFamily,
