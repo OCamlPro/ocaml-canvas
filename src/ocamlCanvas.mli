@@ -301,6 +301,36 @@ module Canvas : sig
     | RoundCap
     (** An enum type for representing line cap types *)
 
+  type composite_op =
+    | SourceOver
+    | SourceIn
+    | SourceOut
+    | SourceAtop
+    | DestinationOver
+    | DestinationIn
+    | DestinationOut
+    | DestinationAtop
+    | Lighter
+    | Copy
+    | XOR
+    | Multiply
+    | Screen
+    | Overlay
+    | Darken
+    | Lighten
+    | ColorDodge
+    | ColorBurn
+    | HardLight
+    | SoftLight
+    | Difference
+    | Exclusion
+    | Hue
+    | Saturation
+    | Color
+    | Luminosity
+    (** A type to represent blending and compositing operations *)
+
+
   (** {1 Gradient creation functions} *)
 
   val createLinearGradient :
@@ -545,6 +575,14 @@ module Canvas : sig
   val setGlobalAlpha : 'a t -> float -> unit
   (** [setGlobalAlpha c a] sets the global alpha value for
       canvas[c] to [a] *)
+
+  val getGlobalCompositeOperation : 'a t -> composite_op
+  (** [getGlobalCompositeOperation c] returns the global composite or blending
+      operation for canvas[c] *)
+
+  val setGlobalCompositeOperation : 'a t -> composite_op -> unit
+  (** [setGlobalCompositeOperation c o] sets the global composite or blending
+      operation for canvas[c] to [o] *)
 
   val setFont :
     'a t -> string -> size:Font.size ->

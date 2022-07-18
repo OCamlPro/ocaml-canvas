@@ -23,6 +23,7 @@
 #include "../implem/fill_style.h"
 #include "../implem/gradient.h"
 #include "../implem/polygonize.h"
+#include "../implem/color_composition.h"
 
 #if OCAML_VERSION < 41200
 
@@ -117,9 +118,13 @@ cap_type_t
 Cap_type_val(
   value mlLineCap);
 
-void
-Nullify_val(
-  value mlValue);
+value
+Val_compop(
+  composite_operation_t compop);
+
+composite_operation_t
+Compop_val(
+  value mlCompOp);
 
 value
 Val_pixmap(

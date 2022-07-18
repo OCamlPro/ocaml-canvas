@@ -210,6 +210,35 @@ typedef enum line_cap_tag_t {
   TAG_CAP_ROUND  = 2
 } line_cap_tag_t;
 
+typedef enum comp_op_tag_t {
+  TAG_OP_SOURCE_OVER      = 0,
+  TAG_OP_SOURCE_IN        = 1,
+  TAG_OP_SOURCE_OUT       = 2,
+  TAG_OP_SOURCE_ATOP      = 3,
+  TAG_OP_DESTINATION_OVER = 4,
+  TAG_OP_DESTINATION_IN   = 5,
+  TAG_OP_DESTINATION_OUT  = 6,
+  TAG_OP_DESTINATION_ATOP = 7,
+  TAG_OP_LIGHTER          = 8,
+  TAG_OP_COPY             = 9,
+  TAG_OP_XOR              = 10,
+  TAG_OP_MULTIPLY         = 11,
+  TAG_OP_SCREEN           = 12,
+  TAG_OP_OVERLAY          = 13,
+  TAG_OP_DARKEN           = 14,
+  TAG_OP_LIGHTEN          = 15,
+  TAG_OP_COLOR_DODGE      = 16,
+  TAG_OP_COLOR_BURN       = 17,
+  TAG_OP_HARD_LIGHT       = 18,
+  TAG_OP_SOFT_LIGHT       = 19,
+  TAG_OP_DIFFERENCE       = 20,
+  TAG_OP_EXCLUSION        = 21,
+  TAG_OP_HUE              = 22,
+  TAG_OP_SATURATION       = 23,
+  TAG_OP_COLOR            = 24,
+  TAG_OP_LUMINOSITY       = 25
+} comp_op_tag_t;
+
 typedef enum backend_tag_t {
   TAG_CANVAS  = 0,
   TAG_GDI     = 1,

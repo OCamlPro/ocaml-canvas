@@ -707,16 +707,13 @@ function ml_canvas_set_stroke_style(canvas, style) {
 //Requires: STYLE_TAG
 function ml_canvas_get_stroke_style(canvas)
 {
-  var st =  canvas.ctxt.strokeStyle;
+  var st = canvas.ctxt.strokeStyle;
   var a = [];
-  if (typeof(st) == "string")
-  {
+  if (typeof(st) == "string") {
     a[0] = STYLE_TAG.COLOR;
     a[1] = st;
     return a;
-  }
-  else
-  {
+  } else {
     a[0] = STYLE_TAG.GRADIENT;
     a[1] = st;
     return a;
@@ -757,8 +754,7 @@ function ml_canvas_set_fill_gradient(canvas, grad) {
 //Provides: ml_canvas_set_fill_style
 //Requires: _color_of_int,STYLE_TAG
 function ml_canvas_set_fill_style(canvas, style) {
-  switch(style[0])
-  {
+  switch (style[0]) {
     case STYLE_TAG.COLOR:
       canvas.ctxt.fillStyle = _color_of_int(style[1]);
       break;
@@ -775,18 +771,27 @@ function ml_canvas_get_fill_style(canvas)
 {
   var st =  canvas.ctxt.fillStyle;
   var a = [];
-  if (typeof(st) == "string")
-  {
+  if (typeof(st) == "string") {
     a[0] = 0;
     a[1] = st;
     return a;
-  }
-  else
-  {
+  } else {
     a[0] = 1;
     a[1] = st;
     return a;
   }
+}
+
+//Provides: ml_canvas_get_global_composite_operation
+//Requires: Val_compop
+function ml_canvas_get_global_composite_operation(canvas) {
+  return Val_compop(canvas.ctxt.globalCompositeOperation);
+}
+
+//Provides: ml_canvas_set_global_composite_operation
+//Requires: Compop_val
+function ml_canvas_set_global_composite_operation(canvas, op) {
+  canvas.ctxt.globalCompositeOperation = Compop_val([op]);
 }
 
 //Provides: ml_canvas_set_font

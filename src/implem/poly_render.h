@@ -18,6 +18,7 @@
 #include "color.h"
 #include "transform.h"
 #include "fill_style.h"
+#include "color_composition.h"
 #include "polygon.h"
 #include "surface.h"
 
@@ -32,6 +33,7 @@ poly_render(
   const rect_t *bbox,
   fill_style_t fill_style,
   double global_alpha,
+  composite_operation_t compose_op,
   bool non_zero,
   transform_t *transform);
 

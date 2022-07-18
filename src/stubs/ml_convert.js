@@ -420,3 +420,77 @@ var tag_to_cap_type = new joo_global_object.Map([
 function Cap_type_val(cap) {
   return tag_to_cap_type.get(cap);
 }
+
+
+
+//Provides: Val_compop
+//Requires: COMPOP_TAG
+
+var compop_to_tag = new joo_global_object.Map([
+  ["source-over",      COMPOP_TAG.SOURCE_OVER],
+  ["source-in",        COMPOP_TAG.SOURCE_IN],
+  ["source-out",       COMPOP_TAG.SOURCE_OUT],
+  ["source-atop",      COMPOP_TAG.SOURCE_ATOP],
+  ["destination-over", COMPOP_TAG.DESTINATION_OVER],
+  ["destination-in",   COMPOP_TAG.DESTINATION_IN],
+  ["destination-out",  COMPOP_TAG.DESTINATION_OUT],
+  ["destination-atop", COMPOP_TAG.DESTINATION_ATOP],
+  ["lighter",          COMPOP_TAG.LIGHTER],
+  ["copy",             COMPOP_TAG.COPY],
+  ["xor",              COMPOP_TAG.XOR],
+  ["multiply",         COMPOP_TAG.MULTIPLY],
+  ["screen",           COMPOP_TAG.SCREEN],
+  ["overlay",          COMPOP_TAG.OVERLAY],
+  ["darken",           COMPOP_TAG.DARKEN],
+  ["lighten",          COMPOP_TAG.LIGHTEN],
+  ["color-dodge",      COMPOP_TAG.COLOR_DODGE],
+  ["color-burn",       COMPOP_TAG.COLOR_BURN],
+  ["hard-light",       COMPOP_TAG.HARD_LIGHT],
+  ["soft-light",       COMPOP_TAG.SOFT_LIGHT],
+  ["difference",       COMPOP_TAG.DIFFERENCE],
+  ["exclusion",        COMPOP_TAG.EXCLUSION],
+  ["hue",              COMPOP_TAG.HUE],
+  ["saturation",       COMPOP_TAG.SATURATION],
+  ["color",            COMPOP_TAG.COLOR],
+  ["luminosity",       COMPOP_TAG.LUMINOSITY],
+]);
+
+function Val_compop(compop) {
+  return compop_to_tag.get(compop);
+}
+
+//Provides: Compop_val
+//Requires: COMPOP_TAG
+
+var tag_to_compop = new joo_global_object.Map([
+  [COMPOP_TAG.SOURCE_OVER,      "source-over"],
+  [COMPOP_TAG.SOURCE_IN,        "source-in"],
+  [COMPOP_TAG.SOURCE_OUT,       "source-out"],
+  [COMPOP_TAG.SOURCE_ATOP,      "source-atop"],
+  [COMPOP_TAG.DESTINATION_OVER, "destination-over"],
+  [COMPOP_TAG.DESTINATION_IN,   "destination-in"],
+  [COMPOP_TAG.DESTINATION_OUT,  "destination-out"],
+  [COMPOP_TAG.DESTINATION_ATOP, "destination-atop"],
+  [COMPOP_TAG.LIGHTER,          "lighter"],
+  [COMPOP_TAG.COPY,             "copy"],
+  [COMPOP_TAG.XOR,              "xor"],
+  [COMPOP_TAG.MULTIPLY,         "multiply"],
+  [COMPOP_TAG.SCREEN,           "screen"],
+  [COMPOP_TAG.OVERLAY,          "overlay"],
+  [COMPOP_TAG.DARKEN,           "darken"],
+  [COMPOP_TAG.LIGHTEN,          "lighten"],
+  [COMPOP_TAG.COLOR_DODGE,      "color-dodge"],
+  [COMPOP_TAG.COLOR_BURN,       "color-burn"],
+  [COMPOP_TAG.HARD_LIGHT,       "hard-light"],
+  [COMPOP_TAG.SOFT_LIGHT,       "soft-light"],
+  [COMPOP_TAG.DIFFERENCE,       "difference"],
+  [COMPOP_TAG.EXCLUSION,        "exclusion"],
+  [COMPOP_TAG.HUE,              "hue"],
+  [COMPOP_TAG.SATURATION,       "saturation"],
+  [COMPOP_TAG.COLOR,            "color"],
+  [COMPOP_TAG.LUMINOSITY,       "luminosity"],
+]);
+
+function Compop_val(cap) {
+  return tag_to_compop.get(cap);
+}

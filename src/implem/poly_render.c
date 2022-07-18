@@ -20,6 +20,7 @@
 #include "color.h"
 #include "transform.h"
 #include "fill_style.h"
+#include "color_composition.h"
 #include "gradient.h"
 #include "gradient_internal.h"
 #include "polygon.h"
@@ -364,41 +365,13 @@ _setpixel(
   s->data[i * s->width + j] = color;
 }
 
-static void
-_setpixel_alpha(
-  surface_t *s,
-  int i,
-  int j,
-  int alpha,
-  color_t_ fg_color)
-{
-  assert(s != NULL);
-  assert(s->data != NULL);
-  assert((i >= 0) && (i < s->height));
-  assert((j >= 0) && (j < s->width));
-
-/*
-  uint32_t bg_color = s->data[i * s->width + j];
-  int bg_r, bg_g, bg_b;
-  int fg_r, fg_g, fg_b;
-  unpack_rgb(bg_r, bg_g, bg_b, bg_color);
-  unpack_rgb(fg_r, fg_g, fg_b, fg_color);
-  int r = alpha_blend(alpha, bg_r, fg_r);
-  int g = alpha_blend(alpha, bg_g, fg_g);
-  int b = alpha_blend(alpha, bg_b, fg_b);
-  s->data[i * s->width + j] = 0xFF000000 | pack_rgb(r,g,b);
-*/
-
-  color_t_ bg_color = s->data[i * s->width + j];
-  s->data[i * s->width + j] = alpha_blend(alpha, bg_color, fg_color);
-}
-
 void
 poly_render(
   surface_t *s,
   const polygon_t *p,
   const rect_t *bbox,
   fill_style_t fill_style,
+  composite_operation_t composite_operation,
   double global_alpha,
   bool non_zero,
   transform_t *transform)
@@ -416,14 +389,32 @@ poly_render(
   polygon_t *pixel_poly = polygon_create(1024, 16);
   polygon_t *tmp_poly = polygon_create(1024, 16);
 
-  transform_t *inverse;
-  if (fill_style.fill_type == FILL_TYPE_GRADIENT) {
-    inverse = transform_copy(transform);
-    transform_inverse(inverse);
+  transform_t *inverse = transform_copy(transform);
+  transform_inverse(inverse);
+
+  int lower_bound_i = 0;
+  int upper_bound_i = s->height;
+  int lower_bound_j = 0;
+  int upper_bound_j = s->width;
+
+  if (comp_is_full_screen(composite_operation) == false) {
+    lower_bound_i = max((int)bbox->p1.y, 0);
+    upper_bound_i = min((int)(bbox->p2.y + 1.0), s->height);
+    lower_bound_j = max((int)bbox->p1.x, 0);
+    upper_bound_j = min((int)(bbox->p2.x + 1.0), s->width);
   }
 
-  for (int i = max((int)bbox->p1.y, 0);
-       i < min((int)(bbox->p2.y + 1.0), s->height); ++i) {
+  for (int i = lower_bound_i; i < upper_bound_i; ++i) {
+
+    // If not in the bounding box, take src color as transparent black
+    if (i < bbox->p1.y || i > bbox->p2.y) {
+      for (int j = 0; j < s->width; ++j) {
+        _setpixel(s, i, j, comp_compose(color_transparent_black,
+                                        s->data[j + i*s->width], 0,
+                                        composite_operation));
+      }
+      continue;
+    }
 
     _clip_horizontal((float)i, -1.0, p, tmp_poly);
     _clip_horizontal((float)(i + 1), 1.0, tmp_poly, line_poly);
@@ -432,8 +423,14 @@ poly_render(
     bool calculate = true;
 
     // Calculate scanline, bounded by the bounding box
-    for (int j = max((int)bbox->p1.x, 0);
-         j < min((int)(bbox->p2.x + 1.0), s->width); ++j) {
+    for (int j = lower_bound_j; j < upper_bound_j; ++j) {
+
+      if (j < bbox->p1.x || j > bbox->p2.x) {
+        _setpixel(s, i, j, comp_compose(color_transparent_black,
+                                        s->data[j + i*s->width], 0,
+                                        composite_operation));
+        continue;
+      }
 
       bool is_complex = complex[j];
 
@@ -455,30 +452,33 @@ poly_render(
         // only if this pixel is simple
         calculate = is_complex;
       }
-      color_t_ color = color_black;
-      if (fill_style.fill_type == FILL_TYPE_COLOR) {
-        color = fill_style.content.color;
+
+      color_t_ color = color_transparent_black;
+      switch (fill_style.fill_type) {
+        case FILL_TYPE_COLOR:
+          color = fill_style.content.color;
+          break;
+        case FILL_TYPE_GRADIENT:
+          color = gradient_evaluate_pos(fill_style.content.gradient,
+                                        j, i, inverse);
+          break;
+        default:
+          assert(!"Invalid fill type specified");
+          break;
       }
-      else if (fill_style.fill_type == FILL_TYPE_GRADIENT) {
-        color =
-          gradient_evaluate_pos(fill_style.content.gradient, j, i, inverse);
-      }
+
       int draw_alpha =
         (alpha * fastround(global_alpha * 256.0) * color.a) / (256 * 255);
+
       // Apply the coverage to the pixel
       // Only do this logic if there's something to apply
-      if (draw_alpha == 255) {
-        _setpixel(s, i, j, color);
-      } else if (draw_alpha != 0) {
-        _setpixel_alpha(s, i, j, draw_alpha, color);
-      }
+      _setpixel(s, i, j, comp_compose(color, s->data[j + i*s->width],
+                                      draw_alpha, composite_operation));
     }
     free(complex);
   }
 
-  if (fill_style.fill_type == FILL_TYPE_GRADIENT) {
-    transform_destroy(inverse);
-  }
+  transform_destroy(inverse);
 
   polygon_destroy(tmp_poly);
   polygon_destroy(pixel_poly);

@@ -216,3 +216,33 @@ var LINE_CAP_TAG = {
   SQUARE : 1,
   ROUND  : 2
 };
+
+//Provides : COMPOP_TAG
+var COMPOP_TAG = {
+  SOURCE_OVER      : 0,
+  SOURCE_IN        : 1,
+  SOURCE_OUT       : 2,
+  SOURCE_ATOP      : 3,
+  DESTINATION_OVER : 4,
+  DESTINATION_IN   : 5,
+  DESTINATION_OUT  : 6,
+  DESTINATION_ATOP : 7,
+  LIGHTER          : 8,
+  COPY             : 9,
+  XOR              : 10,
+  MULTIPLY         : 11,
+  SCREEN           : 12,
+  OVERLAY          : 13,
+  DARKEN           : 14,
+  LIGHTEN          : 15,
+  COLOR_DODGE      : 16,
+  COLOR_BURN       : 17,
+  HARD_LIGHT       : 18,
+  SOFT_LIGHT       : 19,
+  DIFFERENCE       : 20,
+  EXCLUSION        : 21,
+  HUE              : 22,
+  SATURATION       : 23,
+  COLOR            : 24,
+  LUMINOSITY       : 25
+}

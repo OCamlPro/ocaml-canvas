@@ -52,3 +52,11 @@
  (modules thicklines)
  (libraries ocaml-canvas)
 )
+
+(executable
+ (name compositions)
+ (public_name ocaml-canvas-compositions)
+ (modes byte_complete native js)
+ (modules compositions)
+ (libraries ocaml-canvas)
+)

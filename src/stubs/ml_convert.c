@@ -31,6 +31,7 @@
 #include "../implem/fill_style.h"
 #include "../implem/gradient.h"
 #include "../implem/polygonize.h"
+#include "../implem/color_composition.h"
 
 #include "ml_tags.h"
 #include "ml_convert.h"
@@ -881,6 +882,78 @@ Cap_type_val(
     [TAG_CAP_SQUARE] = CAP_SQUARE
   };
   CAMLreturnT(cap_type_t, map[Int_val(mlLineCap)]);
+}
+
+value
+Val_compop(
+  composite_operation_t compop)
+{
+  CAMLparam0();
+  static const intnat map[26] = {
+    [SOURCE_OVER]      = TAG_OP_SOURCE_OVER,
+    [SOURCE_IN]        = TAG_OP_SOURCE_IN,
+    [SOURCE_OUT]       = TAG_OP_SOURCE_OUT,
+    [SOURCE_ATOP]      = TAG_OP_SOURCE_ATOP,
+    [DESTINATION_OVER] = TAG_OP_DESTINATION_OVER,
+    [DESTINATION_IN]   = TAG_OP_DESTINATION_IN,
+    [DESTINATION_OUT]  = TAG_OP_DESTINATION_OUT ,
+    [DESTINATION_ATOP] = TAG_OP_DESTINATION_ATOP,
+    [LIGHTER]          = TAG_OP_LIGHTER,
+    [COPY]             = TAG_OP_COPY,
+    [XOR]              = TAG_OP_XOR,
+    [MULTIPLY]         = TAG_OP_MULTIPLY,
+    [SCREEN]           = TAG_OP_SCREEN,
+    [OVERLAY]          = TAG_OP_OVERLAY,
+    [DARKEN]           = TAG_OP_DARKEN,
+    [LIGHTEN]          = TAG_OP_LIGHTEN,
+    [COLOR_DODGE]      = TAG_OP_COLOR_DODGE,
+    [COLOR_BURN]       = TAG_OP_COLOR_BURN,
+    [HARD_LIGHT]       = TAG_OP_HARD_LIGHT,
+    [SOFT_LIGHT]       = TAG_OP_SOFT_LIGHT,
+    [DIFFERENCE]       = TAG_OP_DIFFERENCE,
+    [EXCLUSION]        = TAG_OP_EXCLUSION,
+    [HUE]              = TAG_OP_HUE,
+    [SATURATION]       = TAG_OP_SATURATION,
+    [COLOR]            = TAG_OP_COLOR,
+    [LUMINOSITY]       = TAG_OP_LUMINOSITY
+  };
+  CAMLreturn(Val_int(map[compop]));
+}
+
+composite_operation_t
+Compop_val(
+  value mlCompOp)
+{
+  CAMLparam1(mlCompOp);
+  static const composite_operation_t map[26] = {
+    [TAG_OP_SOURCE_OVER]      = SOURCE_OVER,
+    [TAG_OP_SOURCE_IN]        = SOURCE_IN,
+    [TAG_OP_SOURCE_OUT]       = SOURCE_OUT,
+    [TAG_OP_SOURCE_ATOP]      = SOURCE_ATOP,
+    [TAG_OP_DESTINATION_OVER] = DESTINATION_OVER,
+    [TAG_OP_DESTINATION_IN]   = DESTINATION_IN,
+    [TAG_OP_DESTINATION_OUT]  = DESTINATION_OUT ,
+    [TAG_OP_DESTINATION_ATOP] = DESTINATION_ATOP,
+    [TAG_OP_LIGHTER]          = LIGHTER,
+    [TAG_OP_COPY]             = COPY,
+    [TAG_OP_XOR]              = XOR,
+    [TAG_OP_MULTIPLY]         = MULTIPLY,
+    [TAG_OP_SCREEN]           = SCREEN,
+    [TAG_OP_OVERLAY]          = OVERLAY,
+    [TAG_OP_DARKEN]           = DARKEN,
+    [TAG_OP_LIGHTEN]          = LIGHTEN,
+    [TAG_OP_COLOR_DODGE]      = COLOR_DODGE,
+    [TAG_OP_COLOR_BURN]       = COLOR_BURN,
+    [TAG_OP_HARD_LIGHT]       = HARD_LIGHT,
+    [TAG_OP_SOFT_LIGHT]       = SOFT_LIGHT,
+    [TAG_OP_DIFFERENCE]       = DIFFERENCE,
+    [TAG_OP_EXCLUSION]        = EXCLUSION,
+    [TAG_OP_HUE]              = HUE,
+    [TAG_OP_SATURATION]       = SATURATION,
+    [TAG_OP_COLOR]            = COLOR,
+    [TAG_OP_LUMINOSITY]       = LUMINOSITY
+  };
+  CAMLreturnT(composite_operation_t, map[Int_val(mlCompOp)]);
 }
 
 value
