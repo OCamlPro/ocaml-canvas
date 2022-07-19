@@ -13,6 +13,7 @@
 
 #include <stdint.h>
 
+#include "object.h"
 #include "list.h"
 #include "window.h"
 #include "surface.h"
@@ -22,6 +23,7 @@
 #include "canvas.h"
 
 typedef struct canvas_t {
+  INHERITS_OBJECT;
   window_t *window;
   surface_t *surface;
   int32_t width; // update with window size

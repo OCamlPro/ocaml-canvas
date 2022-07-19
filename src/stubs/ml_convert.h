@@ -96,10 +96,6 @@ value
 Val_style(
   fill_style_t style);
 
-void
-Nullify_val(
-  value mlValue);
-
 value
 Val_pixmap(
   pixmap_t *pixmap);

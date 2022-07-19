@@ -128,12 +128,15 @@ ml_canvas_create_linear_gradient(
   value mlPos2)
 {
   CAMLparam3(mlCanvas, mlPos1, mlPos2);
+  CAMLlocal1(mlGradient);
   gradient_t *gradient =
     gradient_create_linear(Double_val(Field(mlPos1, 0)),
                            Double_val(Field(mlPos1, 1)),
                            Double_val(Field(mlPos2, 0)),
                            Double_val(Field(mlPos2, 1)));
-  CAMLreturn(Val_gradient(gradient));
+  mlGradient = Val_gradient(gradient);
+  gradient_release(gradient); // Because Val_gradient retains it
+  CAMLreturn(mlGradient);
 }
 
 CAMLprim value
@@ -145,6 +148,7 @@ ml_canvas_create_radial_gradient(
   value mlRadius2)
 {
   CAMLparam5(mlCanvas, mlCenter1, mlRadius1, mlCenter2, mlRadius2);
+  CAMLlocal1(mlGradient);
   gradient_t *gradient =
     gradient_create_radial(Double_val(Field(mlCenter1, 0)),
                            Double_val(Field(mlCenter1, 1)),
@@ -152,7 +156,9 @@ ml_canvas_create_radial_gradient(
                            Double_val(Field(mlCenter2, 0)),
                            Double_val(Field(mlCenter2, 1)),
                            Double_val(mlRadius2));
-  CAMLreturn(Val_gradient(gradient));
+  mlGradient = Val_gradient(gradient);
+  gradient_release(gradient); // Because Val_gradient retains it
+  CAMLreturn(mlGradient);
 }
 
 CAMLprim value
@@ -162,11 +168,14 @@ ml_canvas_create_conic_gradient(
   value mlAngle)
 {
   CAMLparam3(mlCanvas, mlCenter, mlAngle);
+  CAMLlocal1(mlGradient);
   gradient_t *gradient =
     gradient_create_conic(Double_val(Field(mlCenter, 0)),
                           Double_val(Field(mlCenter, 1)),
                           Double_val(mlAngle));
-  CAMLreturn(Val_gradient(gradient));
+  mlGradient = Val_gradient(gradient);
+  gradient_release(gradient); // Because Val_gradient retains it
+  CAMLreturn(mlGradient);
 }
 
 CAMLprim value
@@ -244,7 +253,21 @@ ml_canvas_compare(
 
 
 
-/* Creation / destruction */
+/* Creation */
+
+static void
+_ml_canvas_canvas_destroy_callback(
+  canvas_t *canvas)
+{
+  CAMLparam0();
+  value *mlWeakPointer_ptr = (value *)canvas_get_data(canvas);
+  if (mlWeakPointer_ptr != NULL) {
+    canvas_set_data(canvas, NULL);
+    caml_remove_generational_global_root(mlWeakPointer_ptr);
+    free(mlWeakPointer_ptr);
+  }
+  CAMLreturn0;
+}
 
 CAMLprim value
 ml_canvas_create_framed(
@@ -253,6 +276,7 @@ ml_canvas_create_framed(
   value mlSize)
 {
   CAMLparam3(mlTitle, mlPos, mlSize);
+  CAMLlocal1(mlCanvas);
   const char *title = String_val(mlTitle);
   canvas_t *canvas =
     canvas_create_framed(title,
@@ -263,7 +287,9 @@ ml_canvas_create_framed(
   if (canvas == NULL) {
     caml_failwith("unable to create the specified framed canvas");
   }
-  CAMLreturn(Val_canvas(canvas));
+  mlCanvas = Val_canvas(canvas);
+  canvas_release(canvas); // Because Val_canvas retains it
+  CAMLreturn(mlCanvas);
 }
 
 CAMLprim value
@@ -272,6 +298,7 @@ ml_canvas_create_frameless(
   value mlSize)
 {
   CAMLparam2(mlPos, mlSize);
+  CAMLlocal1(mlCanvas);
   canvas_t *canvas =
     canvas_create_frameless(Int32_val_clip(Field(mlPos, 0)),
                             Int32_val_clip(Field(mlPos, 1)),
@@ -280,7 +307,9 @@ ml_canvas_create_frameless(
   if (canvas == NULL) {
     caml_failwith("unable to create the specified frameless canvas");
   }
-  CAMLreturn(Val_canvas(canvas));
+  mlCanvas = Val_canvas(canvas);
+  canvas_release(canvas); // Because Val_canvas retains it
+  CAMLreturn(mlCanvas);
 }
 
 CAMLprim value
@@ -288,13 +317,16 @@ ml_canvas_create_offscreen(
   value mlSize)
 {
   CAMLparam1(mlSize);
+  CAMLlocal1(mlCanvas);
   canvas_t *canvas =
     canvas_create_offscreen(Int32_val_clip(Field(mlSize, 0)),
                             Int32_val_clip(Field(mlSize, 1)));
   if (canvas == NULL) {
     caml_failwith("unable to create the specified offscreen canvas");
   }
-  CAMLreturn(Val_canvas(canvas));
+  mlCanvas = Val_canvas(canvas);
+  canvas_release(canvas); // Because Val_canvas retains it
+  CAMLreturn(mlCanvas);
 }
 
 CAMLprim value
@@ -318,7 +350,9 @@ ml_canvas_create_offscreen_from_image_data(
   // as pixmap deletion checks if the data pointer is NULL (which
   // is the case if canvas creation succeeds)
   pixmap_destroy(pixmap);
-  CAMLreturn(Val_canvas(canvas));
+  mlCanvas = Val_canvas(canvas);
+  canvas_release(canvas); // Because Val_canvas retains it
+  CAMLreturn(mlCanvas);
 }
 
 CAMLprim value
@@ -326,28 +360,14 @@ ml_canvas_create_offscreen_from_png(
   value mlFilename)
 {
   CAMLparam1(mlFilename);
+  CAMLlocal1(mlCanvas);
   canvas_t *canvas = canvas_create_offscreen_from_png(String_val(mlFilename));
   if (canvas == NULL) {
     caml_failwith("unable to create a canvas from the given PNG");
   }
-  CAMLreturn(Val_canvas(canvas));
-}
-
-CAMLprim value
-ml_canvas_destroy(
-  value mlCanvas)
-{
-  CAMLparam1(mlCanvas);
-  canvas_t *canvas = Canvas_val(mlCanvas);
-  value *mlWeakPointer_ptr = (value *)canvas_get_data(canvas);
-  if (mlWeakPointer_ptr != NULL) {
-    canvas_set_data(canvas, NULL);
-    caml_remove_generational_global_root(mlWeakPointer_ptr);
-    free(mlWeakPointer_ptr);
-  }
-  canvas_destroy(canvas);
-  Nullify_val(mlCanvas);
-  CAMLreturn(Val_unit);
+  mlCanvas = Val_canvas(canvas);
+  canvas_release(canvas); // Because Val_canvas retains it
+  CAMLreturn(mlCanvas);
 }
 
 
@@ -369,6 +389,15 @@ ml_canvas_hide(
 {
   CAMLparam1(mlCanvas);
   canvas_hide(Canvas_val(mlCanvas));
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
+ml_canvas_close(
+  value mlCanvas)
+{
+  CAMLparam1(mlCanvas);
+  canvas_close(Canvas_val(mlCanvas));
   CAMLreturn(Val_unit);
 }
 
@@ -1161,6 +1190,7 @@ ml_canvas_init(
   }
 
   if (_ml_canvas_initialized == true) {
+    canvas_set_destroy_callback(_ml_canvas_canvas_destroy_callback);
     gradient_set_destroy_callback(_ml_canvas_gradient_destroy_callback);
   }
 
@@ -1196,6 +1226,7 @@ _ml_canvas_process_event(
   }
 
   /* Special handling of close event */
+/*
   if (event->type == EVENT_CLOSE) {
     canvas_t *canvas = (canvas_t *)event->target;
     value *mlCanvas_ptr = canvas_get_data(canvas);
@@ -1206,6 +1237,7 @@ _ml_canvas_process_event(
       free(mlCanvas_ptr);
     }
   }
+*/
 
   CAMLreturnT(bool, Bool_val(mlResult));
 }

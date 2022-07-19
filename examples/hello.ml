@@ -61,13 +61,17 @@ let () =
           Backend.stop ();
         true
 
-    | Event.ButtonAction { canvas = _; timestamp = _;
+    | Event.ButtonAction { canvas = c; timestamp = _;
                            position = (x, y); button = _; state = Down } ->
         Canvas.setFillColor c Color.red;
         Canvas.clearPath c;
         Canvas.arc c ~center:(float_of_int x, float_of_int y)
           ~radius:5.0 ~theta1:0.0 ~theta2:(pi *. 2.0) ~ccw:false;
         Canvas.fill c ~nonzero:false;
+        true
+
+    | Event.CanvasClosed { canvas = _; timestamp = _ } ->
+        Backend.stop ();
         true
 
     | Event.Frame { canvas = _; timestamp = _ } ->

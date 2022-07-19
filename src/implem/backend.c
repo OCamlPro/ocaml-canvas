@@ -58,6 +58,7 @@ _backend_process_event(
     return false;
   }
 
+  canvas_retain(canvas);
   event->target = (void *)canvas;
 
   switch (event->type) {
@@ -74,7 +75,7 @@ _backend_process_event(
       break;
     case EVENT_CLOSE:
       event_notify(next_listener, event);
-      canvas_destroy(canvas);
+      canvas_close(canvas);
       result = false; // true to prevent close ?
       break;
     default:
@@ -82,6 +83,7 @@ _backend_process_event(
       break;
   }
 
+  canvas_release(canvas);
   event->target = (void *)window;
 
   return result;
@@ -246,6 +248,9 @@ backend_add_canvas(
   assert(canvas != NULL);
   assert(canvas->id != 0);
 
+  /* Note: we do not retain the canvas here ; the canvas destruction
+     function actually removes the canvas from this list (i.e. this
+     is a weak pointer) */
   ht_add(_backend_id_to_canvas, (void *)&(canvas->id), (void *)canvas);
 }
 
@@ -256,6 +261,7 @@ backend_remove_canvas(
   assert(canvas != NULL);
   assert(canvas->id != 0);
 
+  /* Note: we do not release the canvas here, for the reason explained above */
   ht_remove(_backend_id_to_canvas, (void *)&(canvas->id));
 }
 

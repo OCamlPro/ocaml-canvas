@@ -14,6 +14,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "object.h"
 #include "tuples.h"
 #include "color.h"
 #include "pixmap.h"
@@ -28,6 +29,8 @@ typedef enum canvas_type_t {
   CANVAS_FRAMED    = 1,
   CANVAS_FRAMELESS = 2
 } canvas_type_t;
+
+DECLARE_OBJECT_METHODS(canvas_t, canvas);
 
 canvas_t *
 canvas_create_framed(
@@ -60,8 +63,8 @@ canvas_create_offscreen_from_png(
   const char *filename);
 
 void
-canvas_destroy(
-  canvas_t *canvas);
+canvas_set_destroy_callback(
+  void (*callback)(canvas_t *));
 
 
 
@@ -75,6 +78,12 @@ void
 canvas_hide(
   canvas_t *canvas);
 
+void canvas_close(
+  canvas_t *canvas);
+
+bool canvas_is_closed(
+  const canvas_t *canvas);
+
 
 
 /* Configuration */
@@ -86,15 +95,6 @@ canvas_get_type(
 int32_t
 canvas_get_id(
   const canvas_t *canvas);
-
-void *
-canvas_get_data(
-  canvas_t *canvas);
-
-void
-canvas_set_data(
-  canvas_t *canvas,
-  void *data);
 
 pair_t(int32_t)
 canvas_get_size(

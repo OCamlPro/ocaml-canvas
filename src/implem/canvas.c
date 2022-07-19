@@ -41,6 +41,8 @@
 #include "backend.h"
 #include "canvas_internal.h"
 
+IMPLEMENT_OBJECT_METHODS(canvas_t, canvas, _canvas_destroy)
+
 static canvas_t *
 _canvas_create_internal(
   canvas_type_t type,
@@ -54,7 +56,7 @@ _canvas_create_internal(
   width = max(1, width);
   height = max(1, height);
 
-  canvas_t *canvas = (canvas_t *)calloc(1, sizeof(canvas_t));
+  canvas_t *canvas = canvas_alloc();
   if (canvas == NULL) {
     return NULL;
   }
@@ -105,6 +107,9 @@ _canvas_create_internal(
       goto error_window;
     }
 
+    // Retain the pointer on behalf of the window, so that
+    // the canvas remains alive while the window exists
+    canvas_retain(canvas);
     window_set_data(canvas->window, (void *)canvas);
 
     target_t *target = window_get_target(canvas->window);
@@ -210,8 +215,17 @@ canvas_create_offscreen_from_png(
                                  0, 0, pixmap.width, pixmap.height, &pixmap);
 }
 
+static void (*_canvas_destroy_callback)(canvas_t *) = NULL;
+
 void
-canvas_destroy(
+canvas_set_destroy_callback(
+  void (*callback)(canvas_t *))
+{
+  _canvas_destroy_callback = callback;
+}
+
+static void
+_canvas_destroy(
   canvas_t *canvas)
 {
   assert(canvas != NULL);
@@ -220,11 +234,15 @@ canvas_destroy(
   assert(canvas->state_stack != NULL);
   assert(canvas->path != NULL);
 
+  if (_canvas_destroy_callback != NULL) {
+    _canvas_destroy_callback(canvas);
+  }
+
   backend_remove_canvas(canvas);
 
   surface_destroy(canvas->surface);
 
-  /* Offscreen canvas do not have windows */
+  /* Offscreen and closed canvas do not have windows */
   if (canvas->window != NULL) {
     window_destroy(canvas->window);
   }
@@ -267,6 +285,29 @@ canvas_hide(
   }
 }
 
+void canvas_close(
+  canvas_t *canvas)
+{
+  assert(canvas != NULL);
+
+  if (canvas->window != NULL) {
+    assert(canvas == (canvas_t *)window_get_data(canvas->window));
+    window_destroy(canvas->window);
+    canvas->window = NULL;
+    // Release the pointer that was in window data, so that the canvas
+    // can be freed if not referenced by any other pointer
+    canvas_release(canvas);
+  }
+}
+
+bool canvas_is_closed(
+  const canvas_t *canvas)
+{
+  assert(canvas != NULL);
+
+  return (canvas->window == NULL);
+}
+
 
 
 /* Configuration */
@@ -287,25 +328,6 @@ canvas_get_id(
   assert(canvas != NULL);
 
   return canvas->id;
-}
-
-void *
-canvas_get_data(
-  canvas_t *canvas)
-{
-  assert(canvas != NULL);
-
-  return canvas->data;
-}
-
-void
-canvas_set_data(
-  canvas_t *canvas,
-  void *data)
-{
-  assert(canvas != NULL);
-
-  canvas->data = data;
 }
 
 pair_t(int32_t)
@@ -1361,6 +1383,8 @@ canvas_blit(
         pixmap_at(dp, y, x) = final_color;
       }
     }
+
+    transform_destroy(inv_transform);
   }
 }
 
