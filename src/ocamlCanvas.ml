@@ -169,7 +169,7 @@ module Canvas = struct
   external (==) : 'a t -> 'b t -> bool = "%eq"
   external (!=) : 'a t -> 'b t -> bool = "%noteq"
 
-  (* Creation / destruction *)
+  (* Creation *)
 
   external createFramed :
     string -> pos:(int * int) -> size:(int * int) -> [> `Onscreen] t
@@ -198,9 +198,6 @@ module Canvas = struct
   external createOffscreenFromPNG : string -> [> `Offscreen] t
     = "ml_canvas_create_offscreen_from_png"
 
-  external destroy : 'a t -> unit
-    = "ml_canvas_destroy"
-
   (* Visibility *)
 
   external show : [< `Onscreen] t -> unit
@@ -208,6 +205,9 @@ module Canvas = struct
 
   external hide : [< `Onscreen] t -> unit
     = "ml_canvas_hide"
+
+  external close : [> `Onscreen] t -> unit
+    = "ml_canvas_close"
 
   (* Configuration *)
 

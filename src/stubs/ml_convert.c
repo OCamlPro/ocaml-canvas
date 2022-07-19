@@ -640,17 +640,10 @@ _ml_canvas_finalize(
 {
   canvas_t *canvas = *((canvas_t **)Data_custom_val(mlCanvas));
   if (canvas != NULL) {
-    value *mlWeakPointer_ptr = (value *)canvas_get_data(canvas);
-    if (mlWeakPointer_ptr != NULL) {
-      caml_remove_generational_global_root(mlWeakPointer_ptr);
-      free(mlWeakPointer_ptr);
-      canvas_set_data(canvas, NULL);
-    };
-    if (canvas_get_type(canvas) == CANVAS_OFFSCREEN) {
-      canvas_destroy(canvas);
-    }
+    canvas_release(canvas);
   }
 }
+
 static struct custom_operations _ml_canvas_ops = {
   "com.ocamlpro.ocaml-canvas",
   _ml_canvas_finalize,
@@ -685,7 +678,7 @@ Val_canvas(
 
   if (caml_weak_array_get(mlWeakPointer, 0, &mlCanvas) == 0) {
     mlCanvas = caml_alloc_custom(&_ml_canvas_ops, sizeof(canvas_t *), 0, 1);
-    *((canvas_t **)Data_custom_val(mlCanvas)) = canvas;
+    *((canvas_t **)Data_custom_val(mlCanvas)) = canvas_retain(canvas);
     caml_weak_array_set(mlWeakPointer, 0, mlCanvas);
   }
 
@@ -699,18 +692,9 @@ Canvas_val(
   CAMLparam1(mlCanvas);
   canvas_t *canvas = *((canvas_t **)Data_custom_val(mlCanvas));
   if (canvas == NULL) {
-    caml_raise_constant(*caml_named_value("canvas_destroyed"));
+    caml_failwith("invalid canvas object");
   }
   CAMLreturnT(canvas_t *, canvas);
-}
-
-void
-Nullify_val(
-  value mlValue)
-{
-  CAMLparam1(mlValue);
-  *((void **)Data_custom_val(mlValue)) = NULL;
-  CAMLreturn0;
 }
 
 static void
@@ -719,14 +703,6 @@ _ml_canvas_gradient_finalize(
 {
   gradient_t *gradient = *((gradient_t **)Data_custom_val(mlGradient));
   if (gradient != NULL) {
-/*
-    value *mlWeakPointer_ptr = (value *)gradient_get_data(gradient);
-    if (mlWeakPointer_ptr != NULL) {
-      caml_remove_generational_global_root(mlWeakPointer_ptr);
-      free(mlWeakPointer_ptr);
-      gradient_set_data(gradient, NULL);
-    };
-*/
     gradient_release(gradient);
   }
 }
@@ -738,11 +714,11 @@ _ml_canvas_gradient_compare(
 {
   gradient_t *g1 = *((gradient_t **)Data_custom_val(mlGradient1));
   if (g1 == NULL) {
-    caml_raise_constant(*caml_named_value("gradient_destroyed"));
+    caml_failwith("invalid gradient object");
   }
   gradient_t *g2 = *((gradient_t **)Data_custom_val(mlGradient2));
   if (g2 == NULL) {
-    caml_raise_constant(*caml_named_value("gradient_destroyed"));
+    caml_failwith("invalid gradient object");
   }
   if (g1 < g2) {
     return -1;
@@ -790,7 +766,7 @@ Val_gradient(
   if (caml_weak_array_get(mlWeakPointer, 0, &mlGradient) == 0) {
     mlGradient =
       caml_alloc_custom(&_ml_gradient_ops, sizeof(gradient_t *), 0, 1);
-    *((gradient_t **)Data_custom_val(mlGradient)) = gradient;
+    *((gradient_t **)Data_custom_val(mlGradient)) = gradient_retain(gradient);
     caml_weak_array_set(mlWeakPointer, 0, mlGradient);
   }
 
@@ -804,7 +780,7 @@ Gradient_val(
   CAMLparam1(mlGradient);
   gradient_t *gradient = *((gradient_t **)Data_custom_val(mlGradient));
   if (gradient == NULL) {
-    caml_raise_constant(*caml_named_value("gradient_destroyed"));
+    caml_failwith("invalid gradient object");
   }
   CAMLreturnT(gradient_t *, gradient);
 }
@@ -823,7 +799,7 @@ Val_style(
     break;
   case FILL_TYPE_GRADIENT:
     mlStyle = caml_alloc(1,TAG_GRADIENT);
-    Store_field(mlStyle,0,Val_gradient(gradient_retain(style.content.gradient)));
+    Store_field(mlStyle,0,Val_gradient(style.content.gradient));
   default:
     break;
   }

@@ -140,9 +140,6 @@
 ]}
  *)
 
-exception CanvasDestroyed
-(** Occurs when attempting to use a canvas after calling {!Canvas.destroy} *)
-
 module Color : sig
 (** Color description and manipulation functions *)
 
@@ -332,8 +329,7 @@ module Canvas : sig
 
   (** In order to ease identification of canvas or building collections
       of canvas, the usual comparison functions are provided.
-      These functions simply operate on the canvas' unique ids.
-      Keep in mind that destroyed canvas have an id of 0. *)
+      These functions simply operate on the canvas' unique ids. *)
 
   val hash : 'a t -> int
   (** [hash c] returns a unique integer value for canvas [c],
@@ -370,7 +366,7 @@ module Canvas : sig
   val (!=) : 'a t -> 'b t -> bool
   (** [c1 != c2] test for physical inequality of canvas [c1] and [c2] *)
 
-  (** {1 Creation and destruction} *)
+  (** {1 Creation} *)
 
   val createFramed :
     string -> pos:(int * int) -> size:(int * int) -> [> `Onscreen] t
@@ -404,15 +400,6 @@ module Canvas : sig
   (** [createOffscreen filename] creates an offscreen canvas
       with the contents of PNG file [filename] *)
 
-  val destroy : 'a t -> unit
-  (** [destroy c] destroys the canvas [c], i.e. it destroys any underlying
-      object and frees any used memory. Any attempt to use [c] after
-      calling [destroy] will yield a [CanvasDestroyed] exception
-      (with a few documented exceptions - no pun intented).
-      Be extra cautious to remove canvas objects from any collection
-      before destroying them, as destroying a canvas actually changes
-      its id and hash (think about map and hashtable keys). *)
-
   (** {1 Visibility} *)
 
   val show : [< `Onscreen] t -> unit
@@ -422,6 +409,11 @@ module Canvas : sig
   val hide : [< `Onscreen] t -> unit
   (** [hide c] makes the canvas [c] invisible.
       Does not apply to offscreen canvas. *)
+
+  val close : [> `Onscreen] t -> unit
+  (** [close c] closes the canvas [c], i.e. it permanently removes it from
+      the screen and prevents it to receive events ; however it can still
+      be used as an offscreen canvas. *)
 
   (** {1 Configuration} *)
 
