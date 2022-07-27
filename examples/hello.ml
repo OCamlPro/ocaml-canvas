@@ -51,7 +51,16 @@ let () =
   Canvas.save c;
   Canvas.rotate c 0.3;
   Canvas.scale c (5.0, 5.0);
-  Canvas.blit ~dst:c ~dpos:(20, 0) ~src:c2 ~spos:(0, 0) ~size:(20, 20);
+  Canvas.blit ~dst:c ~dpos:(10, 0) ~src:c2 ~spos:(0, 0) ~size:(15, 15);
+  Canvas.restore c;
+
+  let c3 = Canvas.createOffscreenFromPNG "frog.png" in
+  let size = Canvas.getSize c3 in
+  Canvas.save c;
+  Canvas.setTransform c (1.0, 0.0, 0.0, 1.0, 0.0, 0.0);
+  Canvas.scale c (0.25, 0.25);
+  Canvas.blit ~dst:c ~dpos:(750, 400) ~src:c3 ~spos:(0, 0) ~size;
+  Canvas.restore c;
 
   Backend.run (function
 

@@ -5,6 +5,12 @@
  (modes byte_complete native js)
  (modules hello)
  (libraries ocaml-canvas)
+ (js_of_ocaml (javascript_files hello-extfs.js))
+)
+
+(rule
+  (target hello-extfs.js)
+  (action (run js_of_ocaml build-fs -o hello-extfs.js -I ../ frog.png))
 )
 
 (executable
