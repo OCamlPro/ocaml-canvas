@@ -271,7 +271,9 @@ error:
   if (png != NULL) {
     png_destroy_read_struct(&png, (info == NULL) ? NULL : &info, NULL);
   }
-  fclose(fp);
+  if (fp != NULL) {
+    fclose(fp);
+  }
   return res;
 }
 

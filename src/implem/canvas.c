@@ -90,9 +90,11 @@ _canvas_create_internal(
     if (pixmap == NULL) {
       canvas->surface = surface_create(width, height);
     } else {
-      canvas->surface = surface_create_from_pixmap(pixmap);
+      // Record the width and height first, as surface_create_from_pixmap
+      // steals the image data and resets the dimensions
       width = pixmap->width;
       height = pixmap->height;
+      canvas->surface = surface_create_from_pixmap(pixmap);
     }
     if (canvas->surface == NULL) {
       goto error_offscreen_surface;
