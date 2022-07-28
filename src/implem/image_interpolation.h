@@ -8,38 +8,22 @@
 /*                                                                        */
 /**************************************************************************/
 
-#ifndef __DRAW_STYLE_H
-#define __DRAW_STYLE_H
+#ifndef __IMAGE_INTERPOLATION_H
+#define __IMAGE_INTERPOLATION_H
 
 #include "color.h"
-#include "gradient.h"
-#include "pattern.h"
+#include "pixmap.h"
 
-typedef enum draw_style_type_t {
-  DRAW_STYLE_COLOR    = 0,
-  DRAW_STYLE_GRADIENT = 1,
-  DRAW_STYLE_PATTERN  = 2,
-  DRAW_STYLE_PIXMAP   = 100 // For internal use only
-} draw_style_type_t;
+color_t_
+interpolation_bilinear(
+  const pixmap_t *image,
+  double uvx,
+  double uvy);
 
-typedef union draw_style_content_t {
-  color_t_ color;
-  gradient_t *gradient;
-  pattern_t *pattern;
-  const pixmap_t *pixmap;
-} draw_style_content_t;
+color_t_
+interpolation_cubic(
+  const pixmap_t *image,
+  double uvx,
+  double uvy);
 
-typedef struct draw_style_t {
-  draw_style_type_t type;
-  draw_style_content_t content;
-} draw_style_t;
-
-void
-draw_style_destroy(
-  draw_style_t *s);
-
-draw_style_t
-draw_style_copy(
-  const draw_style_t *s);
-
-#endif /*__DRAW_STYLE_H */
+#endif /* __IMAGE_INTERPOLATION_H */

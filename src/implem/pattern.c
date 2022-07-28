@@ -13,6 +13,7 @@
 #include <assert.h>
 
 #include "pixmap.h"
+#include "image_interpolation.h"
 #include "pattern.h"
 #include "pattern_internal.h"
 
@@ -38,16 +39,6 @@ pattern_create(
   }
 
   return p;
-}
-
-static color_t_ _pattern_evaluate_pixel(
-  const pattern_t *pattern,
-  int32_t x,
-  int32_t y)
-{
-  assert(pattern != NULL);
-
-  return pixmap_at(pattern->image, y, x);
 }
 
 color_t_
@@ -84,50 +75,7 @@ pattern_evaluate_pos(
       break;
   }
 
-  //Bilinear interpolation :
-  double uvx = p.x;
-  double uvy = p.y;
-  int32_t width = pattern->image.width;
-  int32_t height = pattern->image.height;
-  int32_t pt_x = (int32_t)uvx;
-  int32_t pt_y = (int32_t)uvy;
-  double dec_x = uvx - (double)pt_x;
-  double dec_y = uvy - (double)pt_y;
-
-  color_t_ col11 =
-    _pattern_evaluate_pixel(pattern, pt_x, pt_y);
-  color_t_ col21 =
-    (pt_x + 1 < width) ?
-    _pattern_evaluate_pixel(pattern, pt_x + 1, pt_y) :
-    col11;
-  color_t_ col12 =
-    (pt_y + 1 < height) ?
-    _pattern_evaluate_pixel(pattern, pt_x, pt_y + 1) :
-    col11;
-  color_t_ col22 =
-    ((pt_x + 1 < width) && (pt_y + 1 < height)) ?
-    _pattern_evaluate_pixel(pattern, pt_x + 1, pt_y + 1) :
-    col11;
-
-  double w11 = (1.0 - dec_x) * (1.0 - dec_y);
-  double w12 = (1.0 - dec_x) - w11;
-  double w21 = dec_x * (1.0 - dec_y);
-  double w22 = dec_x - w21;
-
-  uint8_t r =
-    col11.r * w11 + col12.r * w12 +
-    col21.r * w21 + col22.r * w22;
-  uint8_t g =
-    col11.g * w11 + col12.g * w12 +
-    col21.g * w21 + col22.g * w22;
-  uint8_t b =
-    col11.b * w11 + col12.b * w12 +
-    col21.b * w21 + col22.b * w22;
-  uint8_t a =
-    col11.a * w11 + col12.a * w12 +
-    col21.a * w21 + col22.a * w22;
-
-  return color(a, r, g, b);
+  return interpolation_cubic(&pattern->image, p.x, p.y);
 }
 
 static void (*_pattern_destroy_callback)(pattern_t *) = NULL;

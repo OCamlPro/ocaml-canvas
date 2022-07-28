@@ -20,6 +20,7 @@
 #include "color.h"
 #include "transform.h"
 #include "color_composition.h"
+#include "image_interpolation.h"
 #include "gradient.h"
 #include "gradient_internal.h"
 #include "pattern.h"
@@ -385,6 +386,14 @@ _determine_base_color(
     case DRAW_STYLE_PATTERN:
       color = pattern_evaluate_pos(draw_style->content.pattern, x, y, inv);
       break;
+    case DRAW_STYLE_PIXMAP: {
+        point_t p = point(x, y);
+        transform_apply(inv, &p);
+        p.x = max(0, min(draw_style->content.pixmap->width - 1, p.x));
+        p.y = max(0, min(draw_style->content.pixmap->height - 1, p.y));
+        color = interpolation_cubic(draw_style->content.pixmap, p.x, p.y);
+        break;
+      }
     default:
       assert(!"Invalid draw style");
       break;

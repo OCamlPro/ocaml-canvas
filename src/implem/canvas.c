@@ -40,6 +40,7 @@
 #include "polygonize.h"
 #include "poly_render.h"
 #include "draw_instr.h"
+#include "image_interpolation.h"
 #include "filters.h"
 #include "backend.h"
 #include "canvas_internal.h"
@@ -1637,7 +1638,6 @@ canvas_stroke_text(
   polygon_destroy(p);
 }
 
-//TODO : This is equivalent to rendering with a rectangle with a pattern. We might as well reuse the code for shadows
 void
 canvas_blit(
   canvas_t *dc,
@@ -1654,38 +1654,60 @@ canvas_blit(
   assert(sc != NULL);
   assert(sc->surface != NULL);
 
-  pixmap_t dp = surface_get_raw_pixmap(dc->surface);
-  const pixmap_t sp = surface_get_raw_pixmap((surface_t *)sc->surface);
+  bool draw_shadows =
+    (dc->state->shadow_blur > 0.0 ||
+     dc->state->shadow_offset_x != 0.0 ||
+     dc->state->shadow_offset_y != 0.0) &&
+    dc->state->global_composite_operation != COPY &&
+    dc->state->shadow_color.a != 0;
 
-  if (transform_is_pure_translation(dc->state->transform) == true) {
+  const pixmap_t sp = surface_get_raw_pixmap((surface_t *)sc->surface);
+  pixmap_t dp = surface_get_raw_pixmap(dc->surface);
+
+  if ((transform_is_pure_translation(dc->state->transform) == true) &&
+      (draw_shadows == false)) {
+
     double tx = 0.0, ty = 0.0;
     transform_extract_translation(dc->state->transform, &tx, &ty);
+
     int32_t lo_x = max(dx + (int32_t)tx, 0);
     int32_t hi_x = min(dx + (int32_t)tx + width, dc->width);
     int32_t lo_y = max(dy + (int32_t)ty, 0);
     int32_t hi_y = min(dy + (int32_t)ty + height, dc->height);
+
     for (int32_t i = lo_x; i < hi_x; i++) {
       for (int32_t j = lo_y; j < hi_y; j++) {
+
         int32_t uvx = i + sx - dx - (int32_t)tx;
         int32_t uvy = j + sy - dy - (int32_t)ty;
         if (uvx < 0 || uvx >= sc->width ||
             uvy < 0 || uvy >= sc->height) {
-              continue;
+          continue;
         }
+
         color_t_ fill_color = pixmap_at(sp, uvy, uvx);
         int draw_alpha = fill_color.a;
         if (pixmap_valid(dc->clip_region) == true) {
           draw_alpha *= 255 - pixmap_at(dc->clip_region, j, i).a;
           draw_alpha /= 255;
         }
-        color_t_ compose_result =
+
+        pixmap_at(dp, j, i) =
           comp_compose(fill_color, pixmap_at(dp, j, i), draw_alpha,
                        dc->state->global_composite_operation);
-        pixmap_at(dp, j, i) = compose_result;
       }
     }
+
   } else {
-    // Calculate output mesh
+
+    draw_style_t draw_style = (draw_style_t){ .type = DRAW_STYLE_PIXMAP,
+                                              .content.pixmap = &sp };
+
+    polygon_t *p = polygon_create(8, 1);
+    if (p == NULL) {
+      return;
+    }
+
     point_t p1 = point((double)dx, (double)dy);
     point_t p2 = point((double)(dx + width), (double)dy);
     point_t p3 = point((double)(dx + width), (double)(dy + height));
@@ -1696,82 +1718,30 @@ canvas_blit(
     transform_apply(dc->state->transform, &p3);
     transform_apply(dc->state->transform, &p4);
 
-    // Prepare transform
-    transform_t *inv_transform = transform_copy(dc->state->transform);
-    transform_inverse(inv_transform);
+    polygon_add_point(p, p1);
+    polygon_add_point(p, p2);
+    polygon_add_point(p, p3);
+    polygon_add_point(p, p4);
+    polygon_end_subpoly(p, true);
 
-    // Calculate AABB
-    int32_t aabb_min_x = min4(p1.x, p2.x, p3.x, p4.x);
-    int32_t aabb_min_y = min4(p1.y, p2.y, p3.y, p4.y);
-    int32_t aabb_max_x = max4(p1.x, p2.x, p3.x, p4.x);
-    int32_t aabb_max_y = max4(p1.y, p2.y, p3.y, p4.y);
+    rect_t bbox = rect(point(min4(p1.x, p2.x, p3.x, p4.x),
+                             min4(p1.y, p2.y, p3.y, p4.y)),
+                       point(max4(p1.x, p2.x, p3.x, p4.x),
+                             max4(p1.y, p2.y, p3.y, p4.y)));
 
-    // Correct AABBs
-    aabb_min_x = max(0, min(dc->width - 1, aabb_min_x));
-    aabb_max_x = max(0, min(dc->width - 1, aabb_max_x));
-    aabb_min_y = max(0, min(dc->height - 1, aabb_min_y));
-    aabb_max_y = max(0, min(dc->height - 1, aabb_max_y));
+    transform_t *temp_transform = transform_copy(dc->state->transform);
+    transform_translate(temp_transform, dx - sx, dy - sy);
 
-    // Run through
-    for (int32_t x = aabb_min_x; x <= aabb_max_x; x++) {
-      for (int32_t y = aabb_min_y; y <= aabb_max_y; y++) {
-        point_t p = point((double)x, (double)y);
-        transform_apply(inv_transform, &p);
-        // Get coords
-        double uvx = p.x + sx - dx;
-        double uvy = p.y + sy - dy;
-        if ((uvx <= -1.0) || (uvx >= (double)width) ||
-            (uvy <= -1.0) || (uvy >= (double)height)) {
-          continue;
-        }
-        int32_t pt_x = (int32_t)uvx;
-        int32_t pt_y = (int32_t)uvy;
-        double dec_x = uvx - (double)pt_x;
-        double dec_y = uvy - (double)pt_y;
-        color_t_ col11 =
-          pixmap_at(sp, pt_y, pt_x);
-        color_t_ col21 =
-          (pt_x + 1 < width) ?
-          pixmap_at(sp, pt_y, pt_x + 1) :
-          color_transparent_black;
-        color_t_ col12 =
-          (pt_y + 1 < height) ?
-          pixmap_at(sp, pt_y + 1, pt_x) :
-          color_transparent_black;
-        color_t_ col22 =
-          ((pt_x + 1 < width) && (pt_y + 1 < height)) ?
-          pixmap_at(sp, pt_y + 1, pt_x + 1) :
-          color_transparent_black;
-        double w11 = (1.0 - dec_x) * (1.0 - dec_y);
-        double w12 = (1.0 - dec_x) - w11;
-        double w21 = dec_x * (1.0 - dec_y);
-        double w22 = dec_x - w21;
-        uint8_t r =
-          col11.r * w11 + col12.r * w12 +
-          col21.r * w21 + col22.r * w22;
-        uint8_t g =
-          col11.g * w11 + col12.g * w12 +
-          col21.g * w21 + col22.g * w22;
-        uint8_t b =
-          col11.b * w11 + col12.b * w12 +
-          col21.b * w21 + col22.b * w22;
-        uint8_t a =
-          col11.a * w11 + col12.a * w12 +
-          col21.a * w21 + col22.a * w22;
-        color_t_ fill_color = color(a, r, g, b);
-        int draw_alpha = fill_color.a;
-        if (pixmap_valid(dc->clip_region) == true) {
-          draw_alpha *= 255 - pixmap_at(dc->clip_region, y, x).a;
-          draw_alpha /= 255;
-        }
-        color_t_ compose_result =
-          comp_compose(fill_color, pixmap_at(dp, y, x), draw_alpha,
-                       dc->state->global_composite_operation);
-        pixmap_at(dp, y, x) = compose_result;
-      }
-    }
+    pixmap_t pm = surface_get_raw_pixmap((surface_t *)dc->surface);
+    poly_render(&pm, p, &bbox,
+                draw_style, dc->state->global_alpha,
+                dc->state->shadow_color, dc->state->shadow_blur,
+                dc->state->shadow_offset_x, dc->state->shadow_offset_y,
+                dc->state->global_composite_operation,
+                &(dc->clip_region), false, temp_transform);
 
-    transform_destroy(inv_transform);
+    polygon_destroy(p);
+    transform_destroy(temp_transform);
   }
 }
 

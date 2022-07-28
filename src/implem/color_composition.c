@@ -8,8 +8,8 @@
 /*                                                                        */
 /**************************************************************************/
 
-#include <stdbool.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <math.h>
 #include <assert.h>
 
@@ -17,7 +17,8 @@
 #include "color.h"
 #include "color_composition.h"
 
-color_t_ comp_source_over(
+color_t_
+comp_source_over(
   color_t_ src,
   color_t_ dst,
   int draw_alpha)
@@ -31,7 +32,8 @@ color_t_ comp_source_over(
   return output;
 }
 
-color_t_ comp_source_in(
+color_t_
+comp_source_in(
   color_t_ src,
   color_t_ dst,
   int draw_alpha)
@@ -47,7 +49,8 @@ color_t_ comp_source_in(
   return output;
 }
 
-color_t_ comp_source_out(
+color_t_
+comp_source_out(
   color_t_ src,
   color_t_ dst,
   int draw_alpha)
@@ -63,7 +66,8 @@ color_t_ comp_source_out(
   return output;
 }
 
-color_t_ comp_source_atop(
+color_t_
+comp_source_atop(
   color_t_ src,
   color_t_ dst,
   int draw_alpha)
@@ -77,7 +81,8 @@ color_t_ comp_source_atop(
                (dest_alpha * dst.b + src_alpha * src.b) / 255);
 }
 
-color_t_ comp_destination_over(
+color_t_
+comp_destination_over(
   color_t_ src,
   color_t_ dst,
   int draw_alpha)
@@ -86,7 +91,8 @@ color_t_ comp_destination_over(
   return comp_source_over(src, dst, draw_alpha);
 }
 
-color_t_ comp_destination_in(
+color_t_
+comp_destination_in(
   color_t_ src,
   color_t_ dst,
   int draw_alpha)
@@ -102,7 +108,8 @@ color_t_ comp_destination_in(
   return output;
 }
 
-color_t_ comp_destination_out(
+color_t_
+comp_destination_out(
   color_t_ src,
   color_t_ dst,
   int draw_alpha)
@@ -118,7 +125,8 @@ color_t_ comp_destination_out(
   return output;
 }
 
-color_t_ comp_destination_atop(
+color_t_
+comp_destination_atop(
   color_t_ src,
   color_t_ dst,
   int draw_alpha)
@@ -132,7 +140,8 @@ color_t_ comp_destination_atop(
                (dest_alpha * dst.b + src_alpha * src.b) / 255);
 }
 
-color_t_ comp_lighter(
+color_t_
+comp_lighter(
   color_t_ src,
   color_t_ dst,
   int draw_alpha)
@@ -143,7 +152,8 @@ color_t_ comp_lighter(
                min(255, src.b + dst.b));
 }
 
-color_t_ comp_copy(
+color_t_
+comp_copy(
   color_t_ src,
   color_t_ dst,
   int draw_alpha)
@@ -154,7 +164,8 @@ color_t_ comp_copy(
   return src;
 }
 
-color_t_ comp_xor(
+color_t_
+comp_xor(
   color_t_ src,
   color_t_ dst,
   int draw_alpha)
@@ -168,7 +179,8 @@ color_t_ comp_xor(
                (dest_alpha * dst.b + src_alpha * src.b) / 255);
 }
 
-color_t_ comp_multiply(
+color_t_
+comp_multiply(
   color_t_ src,
   color_t_ dst,
   int draw_alpha)
@@ -180,7 +192,8 @@ color_t_ comp_multiply(
   return comp_source_over(blendedColor, dst, draw_alpha);
 }
 
-color_t_ comp_screen(
+color_t_
+comp_screen(
   color_t_ src,
   color_t_ dst,
   int draw_alpha)
@@ -192,7 +205,8 @@ color_t_ comp_screen(
   return comp_source_over(blendedColor, dst, draw_alpha);
 }
 
-static int _comp_overlay_component(
+static int
+_comp_overlay_component(
   int bottom,
   int top)
 {
@@ -202,7 +216,8 @@ static int _comp_overlay_component(
   return 255 - 2 * (255 - top) * (255 - bottom) / 255;
 }
 
-color_t_ comp_overlay(
+color_t_
+comp_overlay(
   color_t_ src,
   color_t_ dst,
   int draw_alpha)
@@ -214,7 +229,8 @@ color_t_ comp_overlay(
   return comp_source_over(blendedColor, dst, draw_alpha);
 }
 
-color_t_ comp_darken(
+color_t_
+comp_darken(
   color_t_ src,
   color_t_ dst,
   int draw_alpha)
@@ -226,7 +242,8 @@ color_t_ comp_darken(
   return comp_source_over(blendedColor, dst, draw_alpha);
 }
 
-color_t_ comp_lighten(
+color_t_
+comp_lighten(
   color_t_ src,
   color_t_ dst,
   int draw_alpha)
@@ -238,7 +255,8 @@ color_t_ comp_lighten(
   return comp_source_over(blendedColor, dst, draw_alpha);
 }
 
-static int _comp_dodge_component(
+static int
+_comp_dodge_component(
   int top,
   int bottom)
 {
@@ -251,7 +269,8 @@ static int _comp_dodge_component(
   return min(255, ((bottom * 255) / (255 - top)));
 }
 
-color_t_ comp_color_dodge(
+color_t_
+comp_color_dodge(
   color_t_ src,
   color_t_ dst,
   int draw_alpha)
@@ -263,7 +282,8 @@ color_t_ comp_color_dodge(
   return comp_source_over(blendedColor, dst, draw_alpha);
 }
 
-static int _comp_burn_component(
+static int
+_comp_burn_component(
   int top,
   int bottom)
 {
@@ -276,7 +296,8 @@ static int _comp_burn_component(
   return 255 - min(255, ((255 - bottom) * 255) / top);
 }
 
-color_t_ comp_color_burn(
+color_t_
+comp_color_burn(
   color_t_ src,
   color_t_ dst,
   int draw_alpha)
@@ -288,7 +309,8 @@ color_t_ comp_color_burn(
   return comp_source_over(blendedColor, dst, draw_alpha);
 }
 
-color_t_ comp_hard_light(
+color_t_
+comp_hard_light(
   color_t_ src,
   color_t_ dst,
   int draw_alpha)
@@ -300,7 +322,10 @@ color_t_ comp_hard_light(
   return comp_source_over(blendedColor, dst, draw_alpha);
 }
 
-static int _comp_soft_light_component(int bottom, int top)
+static int
+_comp_soft_light_component(
+  int bottom,
+  int top)
 {
   if (top < 128) {
     return bottom - ((255 - 2 * top) * bottom * (255 - bottom)) / (255 * 255);
@@ -316,7 +341,8 @@ static int _comp_soft_light_component(int bottom, int top)
   }
 }
 
-color_t_ comp_soft_light(
+color_t_
+comp_soft_light(
   color_t_ src,
   color_t_ dst,
   int draw_alpha)
@@ -328,7 +354,8 @@ color_t_ comp_soft_light(
   return comp_source_over(blendedColor, dst, draw_alpha);
 }
 
-static int _comp_difference_component(
+static int
+_comp_difference_component(
   int a,
   int b)
 {
@@ -340,7 +367,8 @@ static int _comp_difference_component(
   }
 }
 
-color_t_ comp_difference(
+color_t_
+comp_difference(
   color_t_ src,
   color_t_ dst,
   int draw_alpha)
@@ -352,7 +380,8 @@ color_t_ comp_difference(
   return comp_source_over(blendedColor, dst, draw_alpha);
 }
 
-static int _comp_exclusion_component(
+static int
+_comp_exclusion_component(
   int a,
   int b)
 {
@@ -360,7 +389,8 @@ static int _comp_exclusion_component(
 }
 
 
-color_t_ comp_exclusion(
+color_t_
+comp_exclusion(
   color_t_ src,
   color_t_ dst,
   int draw_alpha)
@@ -372,7 +402,8 @@ color_t_ comp_exclusion(
   return comp_source_over(blendedColor, dst, draw_alpha);
 }
 
-static double _comp_lum(
+static double
+_comp_lum(
   color_t_ col)
 {
   return
@@ -381,7 +412,8 @@ static double _comp_lum(
     0.11 * col.b / 255.0;
 }
 
-static color_t_ _comp_set_lum(
+static color_t_
+_comp_set_lum(
   color_t_ col,
   double lum)
 {
@@ -394,11 +426,13 @@ static color_t_ _comp_set_lum(
   int n = min(min(target_r, target_g), target_b);
   int x = max(max(target_r, target_g), target_b);
   int int_lum = fastround(lum * 255.0);
+
   if (n < 0) {
     target_r = int_lum + ((target_r - int_lum) * int_lum) / (int_lum - n);
     target_g = int_lum + ((target_g - int_lum) * int_lum) / (int_lum - n);
     target_b = int_lum + ((target_b - int_lum) * int_lum) / (int_lum - n);
   }
+
   if (x > 255) {
     target_r =
       int_lum + ((target_r - int_lum) * (255 - int_lum)) / (x - int_lum);
@@ -407,10 +441,12 @@ static color_t_ _comp_set_lum(
     target_b =
       int_lum + ((target_b - int_lum) * (255 - int_lum)) / (x - int_lum);
   }
+
   return color(col.a, target_r, target_g, target_b);
 }
 
-static int _comp_sat(
+static int
+_comp_sat(
   color_t_ col)
 {
   int n = min(min(col.r, col.g), col.b);
@@ -418,11 +454,13 @@ static int _comp_sat(
   return x - n;
 }
 
-static color_t_ _comp_set_sat(
+static color_t_
+_comp_set_sat(
   color_t_ col,
   int sat)
 {
   uint8_t *c_min, *c_mid, *c_max;
+
   if (col.r >= col.g) {
     c_max = &col.r;
     c_mid = &col.g;
@@ -430,6 +468,7 @@ static color_t_ _comp_set_sat(
     c_max = &col.g;
     c_mid = &col.r;
   }
+
   if (col.b >= *c_max) {
     c_min = c_mid;
     c_mid = c_max;
@@ -448,13 +487,16 @@ static color_t_ _comp_set_sat(
     *c_mid = 0;
     *c_max = 0;
   }
+
   *c_min = 0;
+
   return col;
 
 }
 
 
-color_t_ comp_hue(
+color_t_
+comp_hue(
   color_t_ src,
   color_t_ dst,
   int draw_alpha)
@@ -465,7 +507,8 @@ color_t_ comp_hue(
   return comp_source_over(blended_color, dst, draw_alpha);
 }
 
-color_t_ comp_saturation(
+color_t_
+comp_saturation(
   color_t_ src,
   color_t_ dst,
   int draw_alpha)
@@ -476,7 +519,8 @@ color_t_ comp_saturation(
   return comp_source_over(blended_color, dst, draw_alpha);
 }
 
-color_t_ comp_color(
+color_t_
+comp_color(
   color_t_ src,
   color_t_ dst,
   int draw_alpha)
@@ -486,7 +530,8 @@ color_t_ comp_color(
   return comp_source_over(blended_color, dst, draw_alpha);
 }
 
-color_t_ comp_luminosity(
+color_t_
+comp_luminosity(
   color_t_ src,
   color_t_ dst,
   int draw_alpha)
@@ -496,7 +541,8 @@ color_t_ comp_luminosity(
   return comp_source_over(blended_color, dst, draw_alpha);
 }
 
-color_t_ comp_one_minus_src(
+color_t_
+comp_one_minus_src(
   color_t_ src,
   color_t_ dst,
   int draw_alpha)
@@ -504,7 +550,8 @@ color_t_ comp_one_minus_src(
   return alpha_blend(draw_alpha, color_white, dst);
 }
 
-color_t_ comp_compose(
+color_t_
+comp_compose(
   color_t_ src,
   color_t_ dst,
   int draw_alpha,
@@ -544,7 +591,8 @@ color_t_ comp_compose(
   }
 }
 
-bool comp_is_full_screen(
+bool
+comp_is_full_screen(
   composite_operation_t composite_operation)
 {
   switch (composite_operation) {
