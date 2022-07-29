@@ -41,7 +41,8 @@ typedef enum composite_operation_t {
   HUE = 22,
   SATURATION = 23,
   COLOR = 24,
-  LUMINOSITY = 25
+  LUMINOSITY = 25,
+  ONE_MINUS_SRC = 100, //for internal use only
 } composite_operation_t;
 
 color_t_ comp_source_over(
@@ -170,6 +171,11 @@ color_t_ comp_color(
   int draw_alpha);
 
 color_t_ comp_luminosity(
+  color_t_ src,
+  color_t_ dst,
+  int draw_alpha);
+
+color_t_ comp_one_minus_src(
   color_t_ src,
   color_t_ dst,
   int draw_alpha);

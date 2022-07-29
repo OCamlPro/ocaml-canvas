@@ -496,6 +496,14 @@ color_t_ comp_luminosity(
   return comp_source_over(blended_color, dst, draw_alpha);
 }
 
+color_t_ comp_one_minus_src(
+  color_t_ src,
+  color_t_ dst,
+  int draw_alpha)
+{
+  return alpha_blend(draw_alpha, color_white, dst);
+}
+
 color_t_ comp_compose(
   color_t_ src,
   color_t_ dst,
@@ -529,6 +537,7 @@ color_t_ comp_compose(
     case SATURATION:       return comp_saturation(src, dst, draw_alpha);
     case LUMINOSITY:       return comp_luminosity(src, dst, draw_alpha);
     case COLOR:            return comp_color(src, dst, draw_alpha);
+    case ONE_MINUS_SRC:    return comp_one_minus_src(src, dst, draw_alpha);
     default:
       assert(!"Invalid operation specified");
       return color_transparent_black;
@@ -565,6 +574,7 @@ bool comp_is_full_screen(
   case COLOR:            return false;
   case LUMINOSITY:       return false;
   case SATURATION:       return false;
+  case ONE_MINUS_SRC:    return true;
   default:
     assert(!"Invalid operation specified");
     return true;

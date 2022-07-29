@@ -13,16 +13,21 @@
 
 #include <stdint.h>
 
+#include "list.h"
 #include "color.h"
 #include "transform.h"
 #include "font_desc.h"
 #include "draw_style.h"
 #include "polygonize.h"
+#include "surface.h"
+#include "path2d.h"
 #include "color_composition.h"
+#include "draw_instr.h"
 
 typedef struct state_t {
   transform_t *transform;
   font_desc_t *font_desc; // font, textAlign, textBaseline, direction
+  list_t *clip_path;
   double *line_dash;
   size_t line_dash_len;
   double line_dash_offset;
@@ -34,7 +39,6 @@ typedef struct state_t {
   composite_operation_t global_composite_operation;
   join_type_t join_type; // lineJoin, miterLimit, lineDashOffset
   cap_type_t cap_type; // lineCap
-  // shadowOffsetXn shadowOffsetY, shadowBlur, shadowColor
   // imageSmoothingEnabled
 } state_t;
 

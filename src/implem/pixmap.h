@@ -22,6 +22,9 @@ typedef struct pixmap_t {
   int32_t height;
 } pixmap_t;
 
+#define pixmap_null() \
+  ((pixmap_t){ .width = 0, .height = 0, .data = NULL })
+
 #define pixmap(w,h,d) \
   ((pixmap_t){ .width = (w), .height = (h), \
                .data = ((d) != NULL) ? (d) : \
@@ -38,6 +41,8 @@ typedef struct pixmap_t {
       free((p).data); \
       (p).data = NULL; \
     } \
+    (p).width = 0; \
+    (p).height = 0; \
   } while (0)
 
 #define pixmap_valid(p) \

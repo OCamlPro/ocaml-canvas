@@ -914,6 +914,22 @@ module Canvas : sig
   val strokePath : 'a t -> Path.t -> unit
   (** [strokePath c p] draws the outline of the path [p] on
       canvas [c] using the current stroke style and line width *)
+  
+  val clip : 'a t -> nonzero:bool -> unit
+  (** [clipPath c p ~nonzero] intersects the current subpath of [c]  
+      on canvas [c]'s clip region using the specified fill rule *)
+
+  val clip_ : 'a t -> bool -> unit
+  (** [clip_ c nonzero] is a labelless equivalent of
+      [clip c ~nonzero]  *)
+
+  val clipPath : 'a t -> Path.t -> nonzero:bool -> unit
+  (** [clipPath c p ~nonzero] intersects the filled path [p] on 
+      canvas [c]'s clip region using the specified fill rule *)
+
+  val clipPath_ : 'a t -> Path.t -> bool -> unit
+  (** [clipPath_ c p nonzero] is a labelless equivalent of
+      [clipPath_ c p ~nonzero]. *)
 
 
   (** {1 Immediate drawing} *)

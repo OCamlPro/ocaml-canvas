@@ -14,12 +14,14 @@
 #include <assert.h>
 
 #include "util.h"
+#include "list.h"
 #include "color.h"
 #include "transform.h"
 #include "font_desc.h"
 #include "draw_style.h"
 #include "polygonize.h"
 #include "color_composition.h"
+#include "draw_instr.h"
 #include "state.h"
 
 state_t *
@@ -44,6 +46,16 @@ state_create(
     return NULL;
   }
 
+  s->line_dash = NULL;
+
+  s->clip_path = list_new((free_val_fun_t*)path_fill_instr_destroy);
+  if (s->clip_path == NULL) {
+    transform_destroy(s->transform);
+    font_desc_destroy(s->font_desc);
+    free(s);
+    return NULL;
+  }
+
   s->fill_style.type = DRAW_STYLE_COLOR;
   s->stroke_style.type = DRAW_STYLE_COLOR;
 
@@ -57,16 +69,18 @@ state_destroy(
   state_t *s)
 {
   assert(s != NULL);
-  assert(s->font_desc != NULL);
   assert(s->transform != NULL);
+  assert(s->font_desc != NULL);
+  assert(s->clip_path != NULL);
 
   draw_style_destroy(&s->fill_style);
   draw_style_destroy(&s->stroke_style);
-  font_desc_destroy(s->font_desc);
-  transform_destroy(s->transform);
   if (s->line_dash != NULL) {
     free(s->line_dash);
   }
+  list_delete(s->clip_path);
+  font_desc_destroy(s->font_desc);
+  transform_destroy(s->transform);
 
   free(s);
 }
@@ -78,26 +92,32 @@ state_reset(
   assert(s != NULL);
   assert(s->transform != NULL);
   assert(s->font_desc != NULL);
+  assert(s->clip_path != NULL);
 
   transform_reset(s->transform);
   font_desc_reset(s->font_desc);
-  draw_style_destroy(&s->fill_style);
-  s->fill_style.type = DRAW_STYLE_COLOR;
-  s->fill_style.content.color = color_white;
-  draw_style_destroy(&s->stroke_style);
-  s->stroke_style.type = DRAW_STYLE_COLOR;
-  s->stroke_style.content.color = color_black;
-  s->global_alpha = 1.0;
-  s->line_width = 1.0;
-  s->join_type = JOIN_ROUND;
-  s->cap_type = CAP_BUTT;
-  s->global_composite_operation = SOURCE_OVER;
+  list_reset(s->clip_path);
+
   if (s->line_dash != NULL) {
     free(s->line_dash);
   }
+
+  draw_style_destroy(&s->fill_style);
+  s->fill_style.type = DRAW_STYLE_COLOR;
+  s->fill_style.content.color = color_white;
+
+  draw_style_destroy(&s->stroke_style);
+  s->stroke_style.type = DRAW_STYLE_COLOR;
+  s->stroke_style.content.color = color_black;
+
   s->line_dash = NULL;
   s->line_dash_len = 0;
   s->line_dash_offset = 0;
+  s->line_width = 1.0;
+  s->global_alpha = 1.0;
+  s->global_composite_operation = SOURCE_OVER;
+  s->join_type = JOIN_ROUND;
+  s->cap_type = CAP_BUTT;
 }
 
 state_t *
@@ -107,6 +127,7 @@ state_copy(
   assert(s != NULL);
   assert(s->transform != NULL);
   assert(s->font_desc != NULL);
+  assert(s->clip_path != NULL);
 
   state_t *sc = (state_t *)calloc(1, sizeof(state_t));
   if (sc == NULL) {
@@ -125,18 +146,55 @@ state_copy(
     free(sc);
     return NULL;
   }
+
+  sc->clip_path = list_new((free_val_fun_t*)path_fill_instr_destroy);
+  if (sc->clip_path == NULL) {
+    transform_destroy(sc->transform);
+    font_desc_destroy(sc->font_desc);
+    free(sc);
+    return NULL;
+  }
+
+  if (s->line_dash) {
+    sc->line_dash =
+      (double *)memdup(sc->line_dash, s->line_dash_len * sizeof(double));
+    if (sc->line_dash == NULL) {
+      transform_destroy(sc->transform);
+      font_desc_destroy(sc->font_desc);
+      list_delete(s->clip_path);
+      free(sc);
+    }
+  }
+
+  list_iterator_t *it = list_get_iterator(s->clip_path);
+  if (it == NULL) {
+    transform_destroy(sc->transform);
+    font_desc_destroy(sc->font_desc);
+    list_delete(s->clip_path);
+    if (sc->line_dash != NULL) {
+      free(sc->line_dash);
+    }
+    free(sc);
+    return NULL;
+  }
+
+  path_fill_instr_t *instr = NULL;
+  while ((instr = (path_fill_instr_t *)list_iterator_next(it)) != NULL) {
+    path_fill_instr_t *new =
+      path_fill_instr_create(instr->poly, instr->non_zero);
+    list_push(sc->clip_path, new);
+  }
+  list_free_iterator(it);
+
   sc->fill_style = draw_style_copy(&s->fill_style);
   sc->stroke_style = draw_style_copy(&s->stroke_style);
+
   sc->global_alpha = s->global_alpha;
   sc->line_width = s->line_width;
   sc->join_type = s->join_type;
   sc->cap_type = s->cap_type;
   sc->global_composite_operation = s->global_composite_operation;
   sc->line_dash_offset = s->line_dash_offset;
-  if (s->line_dash) {
-    sc->line_dash =
-      (double *)memdup(sc->line_dash, s->line_dash_len * sizeof(double));
-  }
   sc->line_dash_len = s->line_dash_len;
 
   return sc;

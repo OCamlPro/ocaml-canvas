@@ -32,6 +32,8 @@ typedef struct canvas_t {
   font_t *font;
   list_t *state_stack;
   path2d_t *path_2d;
+  pixmap_t clip_region;
+  bool clip_region_dirty;
   int32_t id;
   canvas_type_t type;
 } canvas_t;

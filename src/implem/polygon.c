@@ -13,6 +13,7 @@
 #include <stdbool.h>
 #include <assert.h>
 
+#include "util.h"
 #include "point.h"
 #include "polygon.h"
 #include "polygon_internal.h"
@@ -203,4 +204,25 @@ polygon_end_subpoly(
   }
 
   return true;
+}
+
+polygon_t *
+polygon_copy(
+  const polygon_t *p)
+{
+  assert(p != NULL);
+  assert(p->points != NULL);
+  assert(p->subpolys != NULL);
+
+  polygon_t *output =
+    polygon_create(max(8, p->nb_points), max(2, p->nb_subpolys));
+  for (int32_t i = 0; i < p->nb_subpolys; ++i) {
+    int32_t j = (i == 0) ? 0 : p->subpolys[i - 1] + 1;
+    for (; j <= p->subpolys[i]; ++j) {
+      polygon_add_point(output, p->points[j]);
+    }
+    polygon_end_subpoly(output, p->subpoly_closed[i]);
+  }
+
+  return output;
 }

@@ -425,7 +425,16 @@ canvas_stroke_path(
   canvas_t *c,
   path2d_t *path);
 
+void
+canvas_clip(
+  canvas_t *c,
+  bool non_zero);
 
+void 
+canvas_clip_path(
+  canvas_t *c,
+  path2d_t *path,
+  bool non_zero);
 
 /* Immediate drawing */
 
