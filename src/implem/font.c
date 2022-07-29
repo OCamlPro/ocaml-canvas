@@ -27,7 +27,7 @@
 #include "quartz/qtz_font.h"
 #endif
 #if defined HAS_X11 || defined HAS_WAYLAND
-#include "freetype/ft_font.h"
+#include "unix/unx_font.h"
 #endif
 
 font_t *
@@ -39,8 +39,8 @@ font_create(
   switch_IMPL() {
     case_GDI(f = (font_t *)gdi_font_create(fd));
     case_QUARTZ(f = (font_t *)qtz_font_create(fd));
-    case_X11(f = (font_t *)ft_font_create(fd));
-    case_WAYLAND(f = (font_t *)ft_font_create(fd));
+    case_X11(f = (font_t *)unx_font_create(fd));
+    case_WAYLAND(f = (font_t *)unx_font_create(fd));
     default_fail();
   }
 
@@ -71,8 +71,8 @@ font_destroy(
   switch_IMPL() {
     case_GDI(gdi_font_destroy((gdi_font_t *)f));
     case_QUARTZ(qtz_font_destroy((qtz_font_t *)f));
-    case_X11(ft_font_destroy((ft_font_t *)f));
-    case_WAYLAND(ft_font_destroy((ft_font_t *)f));
+    case_X11(unx_font_destroy((unx_font_t *)f));
+    case_WAYLAND(unx_font_destroy((unx_font_t *)f));
     default_fail();
   }
 }
@@ -112,9 +112,9 @@ font_char_as_poly(
     case_QUARTZ(
       res = qtz_font_char_as_poly((qtz_font_t *)f, t, c, pen, p, bbox));
     case_X11(
-      res = ft_font_char_as_poly((ft_font_t *)f, t, c, pen, p, bbox));
+      res = unx_font_char_as_poly((unx_font_t *)f, t, c, pen, p, bbox));
     case_WAYLAND(
-      res = ft_font_char_as_poly((ft_font_t *)f, t, c, pen, p, bbox));
+      res = unx_font_char_as_poly((unx_font_t *)f, t, c, pen, p, bbox));
     default_fail();
   }
 
@@ -137,7 +137,7 @@ font_char_as_poly_outline(
   assert(pen != NULL);
   assert(p != NULL);
   assert(bbox != NULL);
-  assert(c <= 0x10FFFF);
+  assert(c <= 0x10FFFF); // Valid Unicode code point
 
   polygon_t *tp = polygon_create(256, 8);
   if (tp == NULL) {

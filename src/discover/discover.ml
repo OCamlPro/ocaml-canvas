@@ -11,7 +11,8 @@ let query_or_default c package c_flags link_flags =
       | Some (p) -> p.cflags, p.libs
       | None -> c_flags, link_flags
 
-let c_test c ?(c_flags=[]) ?(link_flags=[]) test_code (test_cflags, test_link_flags) =
+let c_test c ?(c_flags=[]) ?(link_flags=[])
+    test_code (test_cflags, test_link_flags) =
   let c_flags = c_flags @ test_cflags in
   let link_flags = link_flags @ test_link_flags in
   C.c_test c ~c_flags ~link_flags test_code
@@ -20,10 +21,12 @@ let march_config _c =
   [ "-march=native" ], [ ]
 
 let gdi_config _c =
-  [ "-DHAS_GDI"; "-DUNICODE"; "-D_UNICODE" ], [ "-lkernel32"; "-lgdi32"; "-lgdiplus" ]
+  [ "-DHAS_GDI"; "-DUNICODE"; "-D_UNICODE" ],
+  [ "-lkernel32"; "-lgdi32"; "-lgdiplus" ]
 
 let qtz_config _c =
-  [ "-DHAS_QUARTZ"; "-Qunused-arguments"; "-framework"; "Cocoa"; "-x"; "objective-c" ],
+  [ "-DHAS_QUARTZ"; "-Qunused-arguments";
+    "-framework"; "Cocoa"; "-x"; "objective-c" ],
   [ "-framework"; "Cocoa"; "-framework"; "Carbon" (*"-x"; "objective-c" *) ]
 
 let x11_config c =
@@ -35,8 +38,8 @@ let x11_config c =
 
 let wl_config c =
   let cflags, libs =
-    query_or_default c "wayland-client wayland-cursor"
-      [] [ "-lwayland-client"; "-lwayland-cursor" ]
+    query_or_default c "wayland-client wayland-cursor xkbcommon"
+      [] [ "-lwayland-client"; "-lwayland-cursor"; "-lxkbcommon" ]
   in
   "-DHAS_WAYLAND" :: cflags, "-lrt" :: libs
 
