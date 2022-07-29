@@ -403,9 +403,12 @@ function ml_canvas_create_framed(title, pos, size) {
 
   var ctxt = surface.getContext("2d");
   ctxt.globalAlpha = 1.0;
-  ctxt.lineWidth = 2.0;
+  ctxt.lineWidth = 1.0;
   ctxt.fillStyle = "white";
   ctxt.strokeStyle = "black";
+
+  // Onscreen canvas are filled with white by default
+  ctxt.fillRect(0, 0, width, height);
 
   header.onmousedown = _header_down_handler;
   surface.onmousedown = _surface_down_handler;
@@ -931,6 +934,24 @@ function ml_canvas_stroke(canvas) {
 //Provides: ml_canvas_stroke_path
 function ml_canvas_stroke_path(canvas, path) {
   canvas.ctxt.stroke(path);
+}
+
+//Provides: ml_canvas_clip
+function ml_canvas_clip(canvas, nonzero) {
+  if (nonzero) {
+    canvas.ctxt.clip("nonzero");
+  } else {
+    canvas.ctxt.clip(); // "evenodd"
+  }
+}
+
+//Provides: ml_canvas_clip_path
+function ml_canvas_clip_path(canvas, path, nonzero) {
+  if (nonzero) {
+    canvas.ctxt.clip(path, "nonzero");
+  } else {
+    canvas.ctxt.clip(path);
+  }
 }
 
 

@@ -39,6 +39,7 @@
 #include "polygon_internal.h"
 #include "polygonize.h"
 #include "poly_render.h"
+#include "draw_instr.h"
 #include "backend.h"
 #include "canvas_internal.h"
 
@@ -85,7 +86,6 @@ _canvas_create_internal(
   }
 
   if (type == CANVAS_OFFSCREEN) {
-
     canvas->window = NULL;
 
     if (pixmap == NULL) {
@@ -125,15 +125,22 @@ _canvas_create_internal(
     if (canvas->surface == NULL) {
       goto error_onscreen_surface;
     }
-
   }
 
   canvas->font = NULL;
   canvas->width = width;
   canvas->height = height;
+  canvas->clip_region = pixmap_null();
+  canvas->clip_region_dirty = false;
+
   canvas->id = backend_next_id();
 
   backend_add_canvas(canvas);
+
+  if ((type == CANVAS_FRAMED) || (type == CANVAS_FRAMELESS)) {
+    // Onscreen canvas are filled with white by default
+    canvas_fill_rect(canvas, 0, 0, width, height);
+  }
 
   return canvas;
 
@@ -249,6 +256,10 @@ _canvas_destroy(
     font_destroy(canvas->font);
   }
 
+  if (pixmap_valid(canvas->clip_region) == true) {
+    pixmap_destroy(canvas->clip_region);
+  }
+
   path2d_release(canvas->path_2d);
   list_delete(canvas->state_stack);
   state_destroy(canvas->state);
@@ -347,9 +358,13 @@ _canvas_reset_state(
   assert(canvas->state != NULL);
   assert(canvas->state_stack != NULL);
 
-  path2d_reset(canvas->path_2d);
   state_reset(canvas->state);
   list_reset(canvas->state_stack);
+  path2d_reset(canvas->path_2d);
+  if (pixmap_valid(canvas->clip_region) == true) {
+    pixmap_destroy(canvas->clip_region);
+    canvas->clip_region_dirty = false;
+  }
 }
 
 void
@@ -464,6 +479,10 @@ canvas_restore(
   if (s != NULL) {
     state_destroy(canvas->state);
     canvas->state = s;
+    if (pixmap_valid(canvas->clip_region) == true) {
+      pixmap_destroy(canvas->clip_region);
+    }
+    canvas->clip_region_dirty = !list_is_empty(canvas->state->clip_path);
   }
 }
 
@@ -1041,6 +1060,69 @@ canvas_ellipse(
 
 /* Path stroking/filling */
 
+
+static void
+_canvas_clip_fill_instr(
+  canvas_t *c,
+  const path_fill_instr_t *instr)
+{
+  assert(c != NULL);
+  assert(c->state != NULL);
+  assert(pixmap_valid(c->clip_region) == true);
+  assert(instr != NULL);
+  assert(instr->poly != NULL);
+
+  draw_style_t white = (draw_style_t){ .type = DRAW_STYLE_COLOR,
+                                       .content.color = color_white };
+  rect_t bbox = rect(point(0.0, 0.0), point(c->width, c->height));
+  poly_render(&(c->clip_region), instr->poly, &bbox,
+              white, 1.0, ONE_MINUS_SRC,
+              NULL, instr->non_zero, c->state->transform);
+}
+
+static bool
+_canvas_clip_region_ensure(
+  canvas_t *c)
+{
+  assert(c != NULL);
+  assert(c->state != NULL);
+  assert(c->state->clip_path != NULL);
+
+  if (c->clip_region_dirty == false) {
+    return true;
+  }
+
+  if (pixmap_valid(c->clip_region) == false) {
+    c->clip_region = pixmap(c->width, c->height, NULL);
+    if (pixmap_valid(c->clip_region) == false) {
+      return false;
+    }
+  }
+
+  for (int32_t j = 0; j < c->height; ++j) {
+    for (int32_t i = 0; i < c->width; ++i) {
+      pixmap_at(c->clip_region, j, i) = color_transparent_black;
+    }
+  }
+
+  list_iterator_t *it = list_get_iterator(c->state->clip_path);
+  if (it == NULL) {
+    return false;
+  }
+
+  path_fill_instr_t *instr = NULL;
+  while ((instr = (path_fill_instr_t *)list_iterator_next(it)) != NULL) {
+    _canvas_clip_fill_instr(c, instr);
+  }
+
+  list_free_iterator(it);
+
+  c->clip_region_dirty = false;
+
+  return true;
+}
+
+
 void
 canvas_fill(
   canvas_t *c,
@@ -1051,19 +1133,21 @@ canvas_fill(
   assert(c->state != NULL);
   assert(c->surface != NULL);
 
+  _canvas_clip_region_ensure(c);
+
   // TODO: initial size according to number of primitive
   polygon_t *p = polygon_create(1024, 16);
   if (p == NULL) {
     return;
   }
 
-  rect_t bbox = rect(point(0.0, 0.0), point(c->width, c->height));
+  rect_t bbox = { 0 };
   if (polygonize(path2d_get_path(c->path_2d), p, &bbox) == true) {
     pixmap_t pm = surface_get_raw_pixmap(c->surface);
     poly_render(&pm, p, &bbox,
                 c->state->fill_style, c->state->global_alpha,
                 c->state->global_composite_operation,
-                non_zero, c->state->transform);
+                &(c->clip_region), non_zero, c->state->transform);
   }
 
   polygon_destroy(p);
@@ -1080,19 +1164,20 @@ canvas_fill_path(
   assert(c->surface != NULL);
   assert(path != NULL);
 
+  _canvas_clip_region_ensure(c);
+
   // TODO: initial size according to number of primitive
   polygon_t *p = polygon_create(1024, 16);
   if (p == NULL) {
     return;
   }
 
-  rect_t bbox = rect(point(0.0, 0.0), point(c->width, c->height));
-
+  rect_t bbox = { 0 };
   if (polygonize(path2d_get_path(path), p, &bbox) == true) {
 
     // Apply transformation
     for (int i = 0; i < p->nb_points; ++i) {
-      transform_apply(c->state->transform,&(p->points[i]));
+      transform_apply(c->state->transform, &(p->points[i]));
     }
 
     // Update bbox
@@ -1113,7 +1198,7 @@ canvas_fill_path(
     poly_render(&pm, p, &bbox,
                 c->state->fill_style, c->state->global_alpha,
                 c->state->global_composite_operation,
-                non_zero, c->state->transform);
+                &(c->clip_region), non_zero, c->state->transform);
   }
 
   polygon_destroy(p);
@@ -1128,14 +1213,15 @@ canvas_stroke(
   assert(c->surface != NULL);
   assert(c->path_2d != NULL);
 
+  _canvas_clip_region_ensure(c);
+
   // TODO: initial size according to number of primitive
   polygon_t *p = polygon_create(1024, 16);
   if (p == NULL) {
     return;
   }
 
-  rect_t bbox = rect(point(0.0, 0.0), point(c->width, c->height));
-
+  rect_t bbox = { 0 };
   if (polygonize_outline(path2d_get_path(c->path_2d),
                          c->state->line_width, p, &bbox,
                          c->state->join_type, c->state->cap_type,
@@ -1146,7 +1232,7 @@ canvas_stroke(
     poly_render(&pm, p, &bbox,
                 c->state->stroke_style, c->state->global_alpha,
                 c->state->global_composite_operation,
-                true, c->state->transform);
+                &(c->clip_region), true, c->state->transform);
   }
 
   polygon_destroy(p);
@@ -1162,14 +1248,15 @@ canvas_stroke_path(
   assert(c->surface != NULL);
   assert(path != NULL);
 
+  _canvas_clip_region_ensure(c);
+
   // TODO: initial size according to number of primitive
   polygon_t *p = polygon_create(1024, 16);
   if (p == NULL) {
     return;
   }
 
-  rect_t bbox = rect(point(0.0, 0.0), point(c->width, c->height));
-
+  rect_t bbox = { 0 };
   if (polygonize_outline(path2d_get_path(path),
                          c->state->line_width, p, &bbox,
                          c->state->join_type, c->state->cap_type,
@@ -1180,30 +1267,86 @@ canvas_stroke_path(
     poly_render(&pm, p, &bbox,
                 c->state->stroke_style, c->state->global_alpha,
                 c->state->global_composite_operation,
-                true, c->state->transform);
+                &(c->clip_region), true, c->state->transform);
   }
 
   polygon_destroy(p);
 }
 
+void
+canvas_clip(
+  canvas_t *c,
+  bool non_zero)
+{
+  assert(c != NULL);
+  assert(c->path_2d != NULL);
+  assert(c->state != NULL);
+  assert(c->state->clip_path != NULL);
+
+  // TODO: initial size according to number of primitive
+  polygon_t *p = polygon_create(1024, 16);
+  if (p == NULL) {
+    return;
+  }
+
+  rect_t bbox = { 0 };
+  if (polygonize(path2d_get_path(c->path_2d), p, &bbox) == true) {
+    list_push(c->state->clip_path, path_fill_instr_create(p, non_zero));
+  }
+
+  polygon_destroy(p);
+
+  c->clip_region_dirty = true;
+}
+
+void
+canvas_clip_path(
+  canvas_t *c,
+  path2d_t *path,
+  bool non_zero)
+{
+  assert(c != NULL);
+  assert(c->state != NULL);
+  assert(path != NULL);
+
+  // TODO: initial size according to number of primitive
+  polygon_t *p = polygon_create(1024, 16);
+  if (p == NULL) {
+    return;
+  }
+
+  rect_t bbox = { 0 };
+  if (polygonize(path2d_get_path(path), p, &bbox) == true) {
+    for (int32_t i = 0; i < p->nb_points; ++i) {
+      transform_apply(c->state->transform, &(p->points[i]));
+    }
+    list_push(c->state->clip_path, path_fill_instr_create(p, non_zero));
+  }
+
+  polygon_destroy(p);
+
+  c->clip_region_dirty = true;
+}
 
 
 /* Immediate drawing */
 
-void
-canvas_fill_rect(
+static polygon_t *
+_canvas_build_rect(
   canvas_t *c,
   double x,
   double y,
   double width,
-  double height)
+  double height,
+  rect_t *bbox) // out
 {
   assert(c != NULL);
   assert(c->state != NULL);
+  assert(bbox != NULL);
 
   polygon_t *p = polygon_create(8, 1);
   if (p == NULL) {
-    return;
+    return NULL;
   }
 
   point_t p1 = point(x, y);
@@ -1222,16 +1365,38 @@ canvas_fill_rect(
   polygon_add_point(p, p4);
   polygon_end_subpoly(p, true);
 
-  rect_t bbox = rect(point(min4(p1.x, p2.x, p3.x, p4.x),
-                           min4(p1.y, p2.y, p3.y, p4.y)),
-                     point(max4(p1.x, p2.x, p3.x, p4.x),
-                           max4(p1.y, p2.y, p3.y, p4.y)));
+  *bbox = rect(point(min4(p1.x, p2.x, p3.x, p4.x),
+                     min4(p1.y, p2.y, p3.y, p4.y)),
+               point(max4(p1.x, p2.x, p3.x, p4.x),
+                     max4(p1.y, p2.y, p3.y, p4.y)));
+
+  return p;
+}
+
+void
+canvas_fill_rect(
+  canvas_t *c,
+  double x,
+  double y,
+  double width,
+  double height)
+{
+  assert(c != NULL);
+  assert(c->state != NULL);
+
+  _canvas_clip_region_ensure(c);
+
+  rect_t bbox = { 0 };
+  polygon_t *p = _canvas_build_rect(c, x, y, width, height, &bbox);
+  if (p == NULL) {
+    return;
+  }
 
   pixmap_t pm = surface_get_raw_pixmap(c->surface);
   poly_render(&pm, p, &bbox,
               c->state->fill_style, c->state->global_alpha,
               c->state->global_composite_operation,
-              false, c->state->transform);
+              &(c->clip_region), false, c->state->transform);
 
   polygon_destroy(p);
 }
@@ -1247,47 +1412,34 @@ canvas_stroke_rect(
   assert(c != NULL);
   assert(c->state != NULL);
 
-  polygon_t *p = polygon_create(8, 1);
+  _canvas_clip_region_ensure(c);
+
+  rect_t bbox = { 0 };
+  polygon_t *p = _canvas_build_rect(c, x, y, width, height, &bbox);
   if (p == NULL) {
     return;
   }
 
-  point_t p1 = point(x, y);
-  point_t p2 = point(x + width, y);
-  point_t p3 = point(x + width, y + height);
-  point_t p4 = point(x, y + height);
-
-  transform_apply(c->state->transform, &p1);
-  transform_apply(c->state->transform, &p2);
-  transform_apply(c->state->transform, &p3);
-  transform_apply(c->state->transform, &p4);
-
-  polygon_add_point(p, p1);
-  polygon_add_point(p, p2);
-  polygon_add_point(p, p3);
-  polygon_add_point(p, p4);
-  polygon_end_subpoly(p, true);
-
   double d = c->state->line_width;
-
-  rect_t bbox = rect(point(min4(p1.x, p2.x, p3.x, p4.x) - d,
-                           min4(p1.y, p2.y, p3.y, p4.y) - d),
-                     point(max4(p1.x, p2.x, p3.x, p4.x) + d,
-                           max4(p1.y, p2.y, p3.y, p4.y) + d));
+  bbox.p1.x -= d; bbox.p1.y -= d;
+  bbox.p2.x += d; bbox.p2.y += d;
 
   polygon_t *tp = polygon_create(16, 1);
   if (p == NULL) {
+    polygon_destroy(p);
     return;
   }
 
   polygon_offset(p, tp, c->state->line_width, JOIN_ROUND, CAP_BUTT,
                  c->state->transform, true, c->state->line_dash,
                  c->state->line_dash_len, c->state->line_dash_offset);
+
   pixmap_t pm = surface_get_raw_pixmap(c->surface);
   poly_render(&pm, tp, &bbox,
               c->state->stroke_style, c->state->global_alpha,
               c->state->global_composite_operation,
-              true, c->state->transform);
+              &(c->clip_region), true, c->state->transform);
+
   polygon_destroy(tp);
   polygon_destroy(p);
 }
@@ -1332,6 +1484,8 @@ canvas_fill_text(
 
 // TODO: handle both vector and bitmap fonts
 
+  _canvas_clip_region_ensure(c);
+
   if (_canvas_prepare_font(c) == false) {
     return;
   }
@@ -1341,20 +1495,18 @@ canvas_fill_text(
     return;
   }
 
-  rect_t bbox = rect(point(0.0, 0.0), point(c->width, c->height));
-
   point_t pen = { x, y };
-
   while (*text) {
-    uint32_t chr = decode_utf8_char(&text);
     polygon_reset(p);
+    uint32_t chr = decode_utf8_char(&text);
+    rect_t bbox = { 0 };
     if (font_char_as_poly(c->font, c->state->transform,
                           chr, &pen, p, &bbox) == true) {
       pixmap_t pm = surface_get_raw_pixmap(c->surface);
       poly_render(&pm, p, &bbox,
                   c->state->fill_style, c->state->global_alpha,
                   c->state->global_composite_operation,
-                  true, c->state->transform);
+                  &(c->clip_region), true, c->state->transform);
     }
   }
 
@@ -1373,6 +1525,8 @@ canvas_stroke_text(
   assert(c->state != NULL);
   assert(text != NULL);
 
+  _canvas_clip_region_ensure(c);
+
   if (_canvas_prepare_font(c) == false) {
     return;
   }
@@ -1382,13 +1536,11 @@ canvas_stroke_text(
     return;
   }
 
-  rect_t bbox = rect(point(0.0, 0.0), point(c->width, c->height));
-
   point_t pen = { x, y };
-
   while (*text) {
-    uint32_t chr = decode_utf8_char(&text);
     polygon_reset(p);
+    uint32_t chr = decode_utf8_char(&text);
+    rect_t bbox = { 0 };
     if (font_char_as_poly_outline(c->font, c->state->transform,
                                   chr, c->state->line_width,
                                   &pen, p, &bbox) == true) {
@@ -1396,7 +1548,7 @@ canvas_stroke_text(
       poly_render(&pm, p, &bbox,
                   c->state->stroke_style, c->state->global_alpha,
                   c->state->global_composite_operation,
-                  true, c->state->transform);
+                  &(c->clip_region), true, c->state->transform);
     }
   }
 
@@ -1422,13 +1574,33 @@ canvas_blit(
   pixmap_t dp = surface_get_raw_pixmap(dc->surface);
   const pixmap_t sp = surface_get_raw_pixmap((surface_t *)sc->surface);
 
-  //TODO : Rework this optimization to account for transparency.
-  // It is disabled for now.
-  if (transform_is_pure_translation(dc->state->transform) == true
-      && false) {
+  if (transform_is_pure_translation(dc->state->transform) == true) {
     double tx = 0.0, ty = 0.0;
     transform_extract_translation(dc->state->transform, &tx, &ty);
-    pixmap_blit(&dp, dx + tx, dy + ty, &sp, sx, sy, width, height);
+    int32_t lo_x = max(dx + (int32_t)tx, 0);
+    int32_t hi_x = min(dx + (int32_t)tx + width, dc->width);
+    int32_t lo_y = max(dy + (int32_t)ty, 0);
+    int32_t hi_y = min(dy + (int32_t)ty + height, dc->height);
+    for (int32_t i = lo_x; i < hi_x; i++) {
+      for (int32_t j = lo_y; j < hi_y; j++) {
+        int32_t uvx = i + sx - dx - (int32_t)tx;
+        int32_t uvy = j + sy - dy - (int32_t)ty;
+        if (uvx < 0 || uvx >= sc->width ||
+            uvy < 0 || uvy >= sc->height) {
+              continue;
+        }
+        color_t_ fill_color = pixmap_at(sp, uvy, uvx);
+        int draw_alpha = fill_color.a;
+        if (pixmap_valid(dc->clip_region) == true) {
+          draw_alpha *= 255 - pixmap_at(dc->clip_region, j, i).a;
+          draw_alpha /= 255;
+        }
+        color_t_ compose_result =
+          comp_compose(fill_color, pixmap_at(dp, j, i), draw_alpha,
+                       dc->state->global_composite_operation);
+        pixmap_at(dp, j, i) = compose_result;
+      }
+    }
   } else {
     // Calculate output mesh
     point_t p1 = point(dx, dy);
@@ -1504,8 +1676,13 @@ canvas_blit(
           col11.a * w11 + col12.a * w12 +
           col21.a * w21 + col22.a * w22;
         color_t_ fill_color = color(a, r, g, b);
+        int draw_alpha = fill_color.a;
+        if (pixmap_valid(dc->clip_region) == true) {
+          draw_alpha *= 255 - pixmap_at(dc->clip_region, y, x).a;
+          draw_alpha /= 255;
+        }
         color_t_ compose_result =
-          comp_compose(fill_color, pixmap_at(dp, y, x), a,
+          comp_compose(fill_color, pixmap_at(dp, y, x), draw_alpha,
                        dc->state->global_composite_operation);
         pixmap_at(dp, y, x) = compose_result;
       }

@@ -639,6 +639,18 @@ module Canvas = struct
 
   external strokePath : 'a t -> Path.t -> unit
     = "ml_canvas_stroke_path"
+  
+  external clip : 'a t -> nonzero:bool -> unit
+    = "ml_canvas_clip"
+
+  external clip_ : 'a t -> bool -> unit
+    = "ml_canvas_clip"
+
+  external clipPath : 'a t -> Path.t -> nonzero:bool -> unit
+    = "ml_canvas_clip_path"
+
+  external clipPath_ : 'a t -> Path.t -> bool -> unit
+    = "ml_canvas_clip_path"
 
   (* Immediate drawing *)
 

@@ -71,6 +71,8 @@ list_reset(
     }
     free(e);
   }
+
+  l->head = NULL;
 }
 
 bool

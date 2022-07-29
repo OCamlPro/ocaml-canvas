@@ -77,3 +77,17 @@
  (modules aim_with_mouse)
  (libraries ocaml-canvas)
 )
+
+(executable
+ (name clipping)
+ (public_name ocaml-canvas-clipping)
+ (modes byte_complete native js)
+ (modules clipping)
+ (libraries ocaml-canvas)
+ (js_of_ocaml (javascript_files clipping-extfs.js))
+)
+
+(rule
+  (target clipping-extfs.js)
+  (action (run js_of_ocaml build-fs -o clipping-extfs.js -I ../ dragon.png))
+)

@@ -363,7 +363,7 @@ var repeat_to_tag = new joo_global_object.Map([
   ["no-repeat", REPEAT_TAG.NO_REPEAT],
   ["repeat-x",  REPEAT_TAG.REPEAT_X],
   ["repeat-y",  REPEAT_TAG.REPEAT_Y],
-  ["repeat-xy", REPEAT_TAG.REPEAT_XY],
+  ["repeat",    REPEAT_TAG.REPEAT_XY],
 ]);
 
 function Val_repeat(repeat) {
@@ -377,7 +377,7 @@ var tag_to_repeat = new joo_global_object.Map([
   [REPEAT_TAG.NO_REPEAT, "no-repeat"],
   [REPEAT_TAG.REPEAT_X,  "repeat-x"],
   [REPEAT_TAG.REPEAT_Y,  "repeat-y"],
-  [REPEAT_TAG.REPEAT_XY, "repeat-xy"],
+  [REPEAT_TAG.REPEAT_XY, "repeat"],
 ]);
 
 function Repeat_val(repeat) {

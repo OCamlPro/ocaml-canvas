@@ -34,6 +34,7 @@ poly_render(
   draw_style_t draw_style,
   double global_alpha,
   composite_operation_t compose_op,
+  const pixmap_t *clip_region,
   bool non_zero,
   transform_t *transform);
 

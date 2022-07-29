@@ -42,8 +42,8 @@ pattern_create(
 
 static color_t_ _pattern_evaluate_pixel(
   const pattern_t *pattern,
-  int x,
-  int y)
+  int32_t x,
+  int32_t y)
 {
   assert(pattern != NULL);
 

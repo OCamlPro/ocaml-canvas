@@ -374,6 +374,7 @@ poly_render(
   draw_style_t draw_style,
   composite_operation_t composite_operation,
   double global_alpha,
+  const pixmap_t *clip_region,
   bool non_zero,
   transform_t *transform)
 {
@@ -475,6 +476,10 @@ poly_render(
 
       int draw_alpha =
         (alpha * fastround(global_alpha * 256.0) * color.a) / (256 * 255);
+      if ((clip_region != NULL) && (pixmap_valid(*clip_region) == true)) {
+        draw_alpha *= 255 - pixmap_at(*clip_region, i, j).a;
+        draw_alpha /= 255;
+      }
 
       // Apply the coverage to the pixel
       // Only do this logic if there's something to apply

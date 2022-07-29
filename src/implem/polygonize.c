@@ -579,10 +579,10 @@ polygonize(
 
 bool
 polygonize_outline(
-  path_t *path,
+  path_t *path, // in
   double w,
   polygon_t *p, // out
-  rect_t *bbox,
+  rect_t *bbox, // out
   join_type_t join_type,
   cap_type_t cap_type,
   const transform_t *transform,

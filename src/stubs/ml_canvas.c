@@ -1334,6 +1334,29 @@ ml_canvas_stroke_path(
   CAMLreturn(Val_unit);
 }
 
+CAMLprim value
+ml_canvas_clip(
+  value mlCanvas,
+  value mlNonZero)
+{
+  CAMLparam2(mlCanvas, mlNonZero);
+  canvas_clip(Canvas_val(mlCanvas),
+              Bool_val(mlNonZero));
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
+ml_canvas_clip_path(
+  value mlCanvas,
+  value mlPath2d,
+  value mlNonZero)
+{
+  CAMLparam3(mlCanvas, mlPath2d, mlNonZero);
+  canvas_clip_path(Canvas_val(mlCanvas),
+                   Path2d_val(mlPath2d),
+                   Bool_val(mlNonZero));
+  CAMLreturn(Val_unit);
+}
 
 
 /* Immediate drawing */

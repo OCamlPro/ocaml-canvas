@@ -8,49 +8,25 @@
 /*                                                                        */
 /**************************************************************************/
 
-#ifndef __POLYGON_H
-#define __POLYGON_H
+#ifndef __DRAW_INSTR_H
+#define __DRAW_INSTR_H
 
-#include <stdint.h>
 #include <stdbool.h>
 
-#include "point.h"
+#include "polygon.h"
 
-typedef struct polygon_t polygon_t;
+typedef struct path_fill_instr_t {
+  polygon_t *poly;
+  bool non_zero;
+} path_fill_instr_t;
 
-polygon_t *
-polygon_create(
-  int32_t max_points,
-  int32_t max_subpolys);
+path_fill_instr_t *
+path_fill_instr_create(
+  const polygon_t *poly,
+  bool non_zero);
 
 void
-polygon_destroy(
-  polygon_t *p);
+path_fill_instr_destroy(
+  path_fill_instr_t *instr);
 
-void
-polygon_reset(
-  polygon_t *p);
-
-bool
-polygon_expand(
-  polygon_t *p);
-
-bool
-polygon_expand_subpoly(
-  polygon_t *p);
-
-bool
-polygon_add_point(
-  polygon_t *p,
-  point_t pt);
-
-bool
-polygon_end_subpoly(
-  polygon_t *p,
-  bool close);
-
-polygon_t *
-polygon_copy(
-  const polygon_t *p);
-
-#endif /* __POLYGON_H */
+#endif /*__DRAW_INSTR_H*/
