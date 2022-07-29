@@ -14,26 +14,46 @@ let () = Callback.register_exception "canvas_destroyed" CanvasDestroyed
 
 module Color = struct
 
-  type t = int
+  type t = Int32.t
 
   let clip_8 i =
     if i < 0 then 0
     else if i > 0xFF then 0xFF
     else i
 
-  let clip_24 i =
-    if i < 0 then 0
-    else if i > 0xFFFFFF then 0xFFFFFF
-    else i
-
   let of_rgb r g b =
-    0xFF000000 + (clip_8 r) * 0x10000 + (clip_8 g) * 0x100 + (clip_8 b)
+    Int32.add 0xFF000000l
+      (Int32.of_int (clip_8 r lsl 16 + clip_8 g lsl 8 + clip_8 b))
+
   let of_argb a r g b =
-    (clip_8 a) * 0x1000000 + (clip_8 r) * 0x10000 +
-    (clip_8 g) * 0x100 + (clip_8 b)
-  let to_rgb c = (c / 0x10000 mod 0x100), (c / 0x100 mod 0x100), (c mod 0x100)
-  let of_int i = clip_24 i
-  let to_int c = c
+    Int32.add
+      (Int32.shift_left (Int32.of_int (clip_8 a)) 24)
+      (Int32.of_int (clip_8 r lsl 16 + clip_8 g lsl 8 + clip_8 b))
+
+  let to_rgb c =
+    Int32.(to_int (logand (shift_right_logical c 16) 0xFFl)),
+    Int32.(to_int (logand (shift_right_logical c 8) 0xFFl)),
+    Int32.(to_int (logand c 0xFFl))
+
+  let to_argb c =
+    Int32.(to_int (shift_right_logical c 24)),
+    Int32.(to_int (logand (shift_right_logical c 16) 0xFFl)),
+    Int32.(to_int (logand (shift_right_logical c 8) 0xFFl)),
+    Int32.(to_int (logand c 0xFFl))
+
+  let of_int i =
+    if i < 0 then 0l
+    else if i > 0x00FFFFFF then 0xFFFFFFFFl
+    else Int32.add 0xFF000000l (Int32.of_int i)
+
+  let to_int c =
+    Int32.(to_int (logand c 0x00FFFFFFl))
+
+  let of_int32 i =
+    i
+
+  let to_int32 c =
+    c
 
   module StringMap = Map.Make(String)
   let colors = ref StringMap.empty
@@ -41,15 +61,15 @@ module Color = struct
     colors := StringMap.add (String.lowercase_ascii name) c !colors;
     c
 
-  let black = define_color "black" 0xFF000000
-  let white = define_color "white" 0xFFFFFFFF
-  let blue = define_color "blue" 0xFF0000FF
-  let cyan = define_color "cyan" 0xFF00FFFF
-  let green = define_color "green" 0xFF008000
-  let lime = define_color "lime" 0xFF00FF00
-  let orange = define_color "orange" 0xFFFFA500
-  let pink = define_color "pink" 0xFFFFC0CB
-  let red = define_color "red" 0xFFFF0000
+  let black = define_color "black" 0xFF000000l
+  let white = define_color "white" 0xFFFFFFFFl
+  let blue = define_color "blue" 0xFF0000FFl
+  let cyan = define_color "cyan" 0xFF00FFFFl
+  let green = define_color "green" 0xFF008000l
+  let lime = define_color "lime" 0xFF00FF00l
+  let orange = define_color "orange" 0xFFFFA500l
+  let pink = define_color "pink" 0xFFFFC0CBl
+  let red = define_color "red" 0xFFFF0000l
 
   let of_string s =
     if String.length s < 1 then

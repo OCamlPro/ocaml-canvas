@@ -156,11 +156,22 @@ module Color : sig
   val to_rgb : t -> int * int * int
   (** [to_rgb c] converts a color to its [r], [g] and [b] components *)
 
+  val to_argb : t -> int * int * int * int
+  (** [to_argb c] converts a color to its [a], [r], [g] and [b] components *)
+
   val of_int : int -> t
-  (** [of_int i] creates a color from its integer representation [i] *)
+  (** [of_int i] creates a color from its 24-bit integer representation [i] ;
+      this representation does not include the alpha component *)
 
   val to_int : t -> int
-  (** [to_int c] converts a color [c] to its integer representation *)
+  (** [to_int c] converts a color [c] to its 24-bit integer representation ;
+      this representation does not include the alpha component *)
+
+  val of_int32 : Int32.t -> t
+  (** [of_int i] creates a color from its 32-bit integer representation [i] *)
+
+  val to_int32 : t -> Int32.t
+  (** [to_int c] converts a color [c] to its 32-bit integer representation *)
 
   val black : t
   (** Predefined `black` color *)
