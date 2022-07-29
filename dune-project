@@ -28,6 +28,7 @@
   (conf-libxcb-xkb (and (<> :os macos) (<> :os win32)))
   (conf-libxcb-keysyms (and (<> :os macos) (<> :os win32)))
   (conf-libwayland (and (<> :os macos) (<> :os win32)))
+  (conf-xkbcommon (and (<> :os macos) (<> :os win32)))
   (odoc :with-doc))
  (synopsis "The OCaml-Canvas library")
  (description "\

@@ -25,14 +25,14 @@
 #include "../polygonize.h"
 #include "../transform.h"
 #include "../font_desc_internal.h"
-#include "ft_font_internal.h"
+#include "unx_font_internal.h"
 
 static bool _ft_initialized = false;
 static FcConfig *_fc_config = NULL;
 static FT_Library _ft_library = NULL;
 
 static void
-_ft_font_ensure_init(
+_unx_font_ensure_init(
   void)
 {
   if (_ft_initialized) {
@@ -54,7 +54,7 @@ _ft_font_ensure_init(
 }
 
 static int
-_ft_font_slant(
+_unx_font_slant(
   font_slant_t s)
 {
   switch (s) {
@@ -67,7 +67,7 @@ _ft_font_slant(
 
 static
 int
-_ft_font_weight(
+_unx_font_weight(
   int32_t w)
 {
   w = clip(w, 0, 1000);
@@ -90,8 +90,8 @@ _ft_font_weight(
   return -1;
 }
 
-ft_font_t *
-ft_font_create(
+unx_font_t *
+unx_font_create(
   font_desc_t *fd)
 {
   assert(fd != NULL);
@@ -112,12 +112,12 @@ ft_font_create(
   }
 
   // TODO: this should be part of backend init
-  _ft_font_ensure_init();
+  _unx_font_ensure_init();
 
   fp = FcPatternBuild(NULL,
                       FC_FAMILY, FcTypeString, (FcChar8 *)family,
-                      FC_SLANT, FcTypeInteger, _ft_font_slant(fd->slant),
-                      FC_WEIGHT, FcTypeInteger, _ft_font_weight(fd->weight),
+                      FC_SLANT, FcTypeInteger, _unx_font_slant(fd->slant),
+                      FC_WEIGHT, FcTypeInteger, _unx_font_weight(fd->weight),
                       FC_SIZE, FcTypeDouble, size,
                       (char *)0);
   if (fp == NULL) {
@@ -179,7 +179,7 @@ ft_font_create(
     goto error;
   }
 
-  ft_font_t *f = (ft_font_t *)calloc(1, sizeof(ft_font_t));
+  unx_font_t *f = (unx_font_t *)calloc(1, sizeof(unx_font_t));
   if (f == NULL) {
     goto error;
   }
@@ -202,8 +202,8 @@ error:
 }
 
 void
-ft_font_destroy(
-  ft_font_t *f)
+unx_font_destroy(
+  unx_font_t *f)
 {
   assert(f != NULL);
   assert(f->ft_face != NULL);
@@ -213,8 +213,8 @@ ft_font_destroy(
 }
 
 bool
-ft_font_char_as_poly(
-  const ft_font_t *f,
+unx_font_char_as_poly(
+  const unx_font_t *f,
   const transform_t *t,
   uint32_t c,
   point_t *pen, // in/out
@@ -365,6 +365,6 @@ it is itself used for the start point.
 
 #else
 
-const int ft_font = 0;
+const int unx_font = 0;
 
 #endif /* HAS_X11 || HAS_WAYLAND */

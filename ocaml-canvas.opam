@@ -25,6 +25,7 @@ depends: [
   "conf-libxcb-xkb" { os != "macos" & os != "win32" }
   "conf-libxcb-keysyms" { os != "macos" & os != "win32" }
   "conf-libwayland" { os != "macos" & os != "win32" }
+  "conf-xkbcommon" { os != "macos" & os != "win32" }
   "odoc" {with-doc}
 ]
 build: [

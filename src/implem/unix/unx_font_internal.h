@@ -8,32 +8,22 @@
 /*                                                                        */
 /**************************************************************************/
 
-#ifndef __FT_FONT_H
-#define __FT_FONT_H
+#ifndef __UNX_FONT_INTERNAL_H
+#define __UNX_FONT_INTERNAL_H
 
-#include "../point.h"
-#include "../rect.h"
-#include "../polygon.h"
-#include "../transform.h"
-#include "../font_desc.h"
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
-typedef struct ft_font_t ft_font_t;
+#include "../font_internal.h"
 
-ft_font_t *
-ft_font_create(
-  font_desc_t *fd);
+typedef struct unx_font_t {
 
-void
-ft_font_destroy(
-  ft_font_t *f);
+  /* Common to all fonts */
+  font_t base;
 
-bool
-ft_font_char_as_poly(
-  const ft_font_t *f,
-  const transform_t *t,
-  uint32_t c,
-  point_t *pen, // in/out
-  polygon_t *p, // out
-  rect_t *bbox); // out
+  /* Specific to FreeType fonts */
+  FT_Face ft_face;
 
-#endif /* __FT_FONT_H */
+} unx_font_t;
+
+#endif /* __UNX_FONT_INTERNAL_H */
