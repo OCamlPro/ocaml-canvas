@@ -198,7 +198,7 @@ ml_canvas_gradient_add_color_stop(
 {
   CAMLparam3(mlGradient, mlColor, mlStop);
   gradient_add_color_stop(Gradient_val(mlGradient),
-                          color_of_int(Unsigned_int_val(mlColor)),
+                          color_of_int(Int32_val(mlColor)),
                           Double_val(mlStop));
   CAMLreturn(Val_unit);
 }
@@ -860,7 +860,7 @@ ml_canvas_get_stroke_color(
   value mlCanvas)
 {
   CAMLparam1(mlCanvas);
-  CAMLreturn(Val_int(
+  CAMLreturn(caml_copy_int32(
     color_to_int(canvas_get_stroke_color(Canvas_val(mlCanvas)))));
 }
 
@@ -871,7 +871,7 @@ ml_canvas_set_stroke_color(
 {
   CAMLparam2(mlCanvas, mlColor);
   canvas_set_stroke_color(Canvas_val(mlCanvas),
-                          color_of_int(Unsigned_int_val(mlColor) | 0xFF000000));
+                          color_of_int(Int32_val(mlColor)));
   CAMLreturn(Val_unit);
 }
 
@@ -892,7 +892,7 @@ ml_canvas_set_stroke_style(
   switch (Tag_val(mlStyle)) {
     case TAG_COLOR:
       canvas_set_stroke_color(Canvas_val(mlCanvas),
-        color_of_int(Unsigned_int_val(Field(mlStyle, 0)) | 0xFF000000));
+                              color_of_int(Int32_val(Field(mlStyle, 0))));
       break;
     case TAG_GRADIENT:
       canvas_set_stroke_gradient(Canvas_val(mlCanvas),
@@ -921,7 +921,7 @@ ml_canvas_get_fill_color(
   value mlCanvas)
 {
   CAMLparam1(mlCanvas);
-  CAMLreturn(Val_int(
+  CAMLreturn(caml_copy_int32(
     color_to_int(canvas_get_fill_color(Canvas_val(mlCanvas)))));
 }
 
@@ -932,7 +932,7 @@ ml_canvas_set_fill_color(
 {
   CAMLparam2(mlCanvas, mlColor);
   canvas_set_fill_color(Canvas_val(mlCanvas),
-                        color_of_int(Unsigned_int_val(mlColor) | 0xFF000000));
+                        color_of_int(Int32_val(mlColor)));
   CAMLreturn(Val_unit);
 }
 
@@ -953,11 +953,11 @@ ml_canvas_set_fill_style(
   switch (Tag_val(mlStyle)) {
     case TAG_COLOR:
       canvas_set_fill_color(Canvas_val(mlCanvas),
-        color_of_int(Unsigned_int_val(Field(mlStyle,0)) | 0xFF000000));
+                            color_of_int(Int32_val(Field(mlStyle, 0))));
       break;
     case TAG_GRADIENT:
       canvas_set_fill_gradient(Canvas_val(mlCanvas),
-                               Gradient_val(Field(mlStyle,0)));
+                               Gradient_val(Field(mlStyle, 0)));
       break;
     default:
       assert(!"Unknown style");
@@ -1334,10 +1334,10 @@ ml_canvas_get_pixel(
   value mlPos)
 {
   CAMLparam2(mlCanvas, mlPos);
-  CAMLreturn(Val_int(color_to_int(
+  CAMLreturn(caml_copy_int32(color_to_int(
              canvas_get_pixel(Canvas_val(mlCanvas),
              Int32_val_clip(Field(mlPos, 0)),
-             Int32_val_clip(Field(mlPos, 1)))) & 0x00FFFFFF));
+             Int32_val_clip(Field(mlPos, 1))))));
 }
 
 CAMLprim value
@@ -1350,7 +1350,7 @@ ml_canvas_set_pixel(
   canvas_set_pixel(Canvas_val(mlCanvas),
                    Int32_val_clip(Field(mlPos, 0)),
                    Int32_val_clip(Field(mlPos, 1)),
-                   color_of_int(Unsigned_int_val(mlColor) | 0xFF000000));
+                   color_of_int(Int32_val(mlColor)));
   CAMLreturn(Val_unit);
 }
 
