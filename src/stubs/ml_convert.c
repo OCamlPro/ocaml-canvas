@@ -83,6 +83,39 @@ Int32_val_clip(
 }
 
 value
+Val_double_array(
+  const double *array,
+  size_t n)
+{
+  CAMLparam0();
+  CAMLlocal1(mlArray);
+  mlArray = caml_alloc_float_array(n);
+  for (size_t i = 0; i < n; ++i) {
+    Store_double_field(mlArray, i, array[i]);
+  }
+  CAMLreturn(mlArray);
+}
+
+double *
+Double_array_val(
+  value mlArray)
+{
+  CAMLparam1(mlArray);
+  size_t n = Wosize_val(mlArray);
+  if (n == 0) {
+    return NULL;
+  }
+  double *array = (double *)calloc(n, sizeof(double));
+  if (array == NULL) {
+    return NULL;
+  }
+  for (size_t i = 0; i < n; ++i) {
+    array[i] = Double_field(mlArray, i);
+  }
+  CAMLreturnT(double *, array);
+}
+
+value
 Val_focus_in_out(
   focus_in_out_t s)
 {

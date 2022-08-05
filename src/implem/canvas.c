@@ -619,6 +619,76 @@ canvas_set_cap_type(
   canvas->state->cap_type = cap_type;
 }
 
+double
+canvas_get_line_dash_offset(
+  const canvas_t *canvas)
+{
+  assert(canvas != NULL);
+  assert(canvas->state != NULL);
+
+  return canvas->state->line_dash_offset;
+}
+
+void
+canvas_set_line_dash_offset(
+  canvas_t *canvas,
+  double line_dash_offset)
+{
+  assert(canvas != NULL);
+  assert(canvas->state != NULL);
+
+  canvas->state->line_dash_offset = line_dash_offset;
+}
+
+const double *
+canvas_get_line_dash(
+  const canvas_t *canvas)
+{
+  assert(canvas != NULL);
+  assert(canvas->state != NULL);
+
+  return canvas->state->line_dash;
+}
+
+size_t
+canvas_get_line_dash_length(
+  const canvas_t *canvas)
+{
+  assert(canvas != NULL);
+  assert(canvas->state != NULL);
+
+  return canvas->state->line_dash_len;
+}
+
+void
+canvas_set_line_dash(
+  canvas_t *canvas,
+  const double *dash,
+  size_t n)
+{
+  assert(canvas != NULL);
+  assert(canvas->state != NULL);
+
+  if (canvas->state->line_dash != NULL) {
+    free(canvas->state->line_dash);
+  }
+
+  if ((dash == NULL) || (n == 0)) {
+    canvas->state->line_dash = NULL;
+    canvas->state->line_dash_len = 0;
+  } else if ((n % 2) == 0) {
+    canvas->state->line_dash = (double *)memdup(dash, n * sizeof(double));
+    canvas->state->line_dash_len = n;
+  } else {
+    double *new_dash = (double *)calloc(2 * n, sizeof(double));
+    for (size_t i = 0; i < 2 * n; ++i) {
+      new_dash[i] = dash[i % n];
+    }
+    canvas->state->line_dash = new_dash;
+    canvas->state->line_dash_len = 2 * n;
+  }
+}
+
 color_t_
 canvas_get_stroke_color(
   const canvas_t *canvas)
@@ -1050,9 +1120,9 @@ canvas_stroke(
   canvas_t *c)
 {
   assert(c != NULL);
-  assert(c->path_2d != NULL);
   assert(c->state != NULL);
   assert(c->surface != NULL);
+  assert(c->path_2d != NULL);
 
   // TODO: initial size according to number of primitive
   polygon_t *p = polygon_create(1024, 16);
@@ -1061,16 +1131,19 @@ canvas_stroke(
   }
 
   rect_t bbox = rect(point(0.0, 0.0), point(c->width, c->height));
-  if (polygonize_outline(path2d_get_path(c->path_2d), c->state->line_width,
-                         p, &bbox, c->state->join_type, c->state->cap_type,
-                         c->state->transform, true) == true) {
+
+  if (polygonize_outline(path2d_get_path(c->path_2d),
+                         c->state->line_width, p, &bbox,
+                         c->state->join_type, c->state->cap_type,
+                         c->state->transform, true,
+                         c->state->line_dash, c->state->line_dash_len,
+                         c->state->line_dash_offset) == true) {
     poly_render(c->surface, p, &bbox, c->state->stroke_style,
                 c->state->global_alpha, c->state->global_composite_operation,
                 true, c->state->transform);
   }
-  polygon_destroy(p);
 
-  // Thought: we could polygonize on the fly when building the path
+  polygon_destroy(p);
 }
 
 void
@@ -1094,7 +1167,9 @@ canvas_stroke_path(
   if (polygonize_outline(path2d_get_path(path),
                          c->state->line_width, p, &bbox,
                          c->state->join_type, c->state->cap_type,
-                         c->state->transform, false) == true) {
+                         c->state->transform, false,
+                         c->state->line_dash, c->state->line_dash_len,
+                         c->state->line_dash_offset) == true) {
     poly_render(c->surface, p, &bbox, c->state->stroke_style,
                 c->state->global_alpha, c->state->global_composite_operation,
                 true, c->state->transform);
@@ -1196,7 +1271,8 @@ canvas_stroke_rect(
   }
 
   polygon_offset(p, tp, c->state->line_width, JOIN_ROUND, CAP_BUTT,
-                 c->state->transform, true);
+                 c->state->transform, true, c->state->line_dash,
+                 c->state->line_dash_len, c->state->line_dash_offset);
   poly_render(c->surface, tp, &bbox, c->state->stroke_style,
               c->state->global_alpha, c->state->global_composite_operation,
               true, c->state->transform);
@@ -1337,9 +1413,7 @@ canvas_blit(
     double tx = 0.0, ty = 0.0;
     transform_extract_translation(dc->state->transform, &tx, &ty);
     pixmap_blit(&dp, dx + tx, dy + ty, &sp, sx, sy, width, height);
-  }
-  else
-  {
+  } else {
     // Calculate output mesh
     point_t p1 = point(dx, dy);
     point_t p2 = point(dx + width, dy);

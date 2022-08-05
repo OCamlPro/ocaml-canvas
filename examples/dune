@@ -54,9 +54,26 @@
 )
 
 (executable
+ (name dashing_line)
+ (public_name ocaml-canvas-dashingline)
+ (modes byte_complete native js)
+ (modules dashing_line)
+ (libraries ocaml-canvas)
+)
+
+(executable
  (name compositions)
  (public_name ocaml-canvas-compositions)
  (modes byte_complete native js)
  (modules compositions)
+ (libraries ocaml-canvas)
+)
+
+
+(executable
+ (name aim_with_mouse)
+ (public_name ocaml-canvas-aim_with_mouse)
+ (modes byte_complete native js)
+ (modules aim_with_mouse)
  (libraries ocaml-canvas)
 )

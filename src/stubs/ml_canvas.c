@@ -850,7 +850,7 @@ ml_canvas_set_line_join(
   value mlCanvas,
   value mlLineJoin)
 {
-  CAMLparam2(mlCanvas,mlLineJoin);
+  CAMLparam2(mlCanvas, mlLineJoin);
   canvas_set_join_type(Canvas_val(mlCanvas),
                        Join_type_val(mlLineJoin));
   CAMLreturn(Val_unit);
@@ -869,9 +869,55 @@ ml_canvas_set_line_cap(
   value mlCanvas,
   value mlLineCap)
 {
-  CAMLparam2(mlCanvas,mlLineCap);
+  CAMLparam2(mlCanvas, mlLineCap);
   canvas_set_cap_type(Canvas_val(mlCanvas),
                       Cap_type_val(mlLineCap));
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
+ml_canvas_get_line_dash_offset(
+  value mlCanvas)
+{
+  CAMLparam1(mlCanvas);
+  CAMLreturn(caml_copy_double(
+    canvas_get_line_dash_offset(Canvas_val(mlCanvas))));
+}
+
+CAMLprim value
+ml_canvas_set_line_dash_offset(
+  value mlCanvas,
+  value mlLineOffset)
+{
+  CAMLparam2(mlCanvas, mlLineOffset);
+  canvas_set_line_dash_offset(Canvas_val(mlCanvas),
+                              Double_val(mlLineOffset));
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
+ml_canvas_get_line_dash(
+  value mlCanvas)
+{
+  CAMLparam1(mlCanvas);
+  canvas_t *canvas = Canvas_val(mlCanvas);
+  CAMLreturn(Val_double_array(canvas_get_line_dash(canvas),
+                              canvas_get_line_dash_length(canvas)));
+}
+
+CAMLprim value
+ml_canvas_set_line_dash(
+  value mlCanvas,
+  value mlDashPattern)
+{
+  CAMLparam1(mlCanvas);
+  double *dash_pattern = Double_array_val(mlDashPattern);
+  canvas_set_line_dash(Canvas_val(mlCanvas),
+                       dash_pattern,
+                       Wosize_val(mlDashPattern));
+  if (dash_pattern != NULL) {
+    free(dash_pattern);
+  }
   CAMLreturn(Val_unit);
 }
 

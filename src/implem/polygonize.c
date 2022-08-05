@@ -213,17 +213,86 @@ polygon_offset(
   join_type_t join_type,
   cap_type_t cap_type,
   const transform_t *transform,
-  bool only_linear)
+  bool only_linear,
+  const double *dash,
+  size_t dash_array_size,
+  double dash_offset)
 {
   assert(p != NULL);
   assert(np != NULL);
   assert(transform != NULL);
+  assert(dash_array_size == 0 || dash != NULL);
 
   // Apply transformation to all points
   if (!only_linear) {
     for (int i = 0; i < p->nb_points; i++) {
       transform_apply(transform, &(p->points[i]));
     }
+  }
+
+  // Make dashed
+  polygon_t *dashed_poly = NULL;
+  if (dash_array_size > 0) {
+    dashed_poly = polygon_create(p->max_points * 2, p->max_subpolys * 2);
+
+    double dash_length = 0.0;
+    for (size_t i = 0; i < dash_array_size; ++i) {
+      dash_length += dash[i];
+    }
+
+    size_t init_indx = 0;
+    dash_offset = -dash_offset;
+    dash_offset -= dash_length * floor(dash_offset / dash_length);
+    while (dash_offset >= dash[init_indx]) {
+      dash_offset -= dash[init_indx];
+      init_indx++;
+    }
+
+    for (size_t i = 0; i < p->nb_subpolys; ++i) {
+      size_t indx = init_indx;
+      double l = dash_offset;
+      size_t fst = (i == 0) ? 0 : p->subpolys[i - 1];
+      if (init_indx % 2 == 0) {
+        polygon_add_point(dashed_poly, p->points[fst]);
+      }
+
+      for (int j = fst; j < p->subpolys[i]; ++j) {
+        if (j == p->subpolys[i] && !p->subpoly_closed[i]) {
+          break;
+        }
+
+        point_t current_point = p->points[j];
+        point_t final_point = p->points[j == p->subpolys[i] ? fst : j + 1];
+        double dst = point_dist(current_point, final_point);
+        double line_x = (p->points[j+1].x - p->points[j].x) / dst;
+        double line_y = (p->points[j+1].y - p->points[j].y) / dst;
+
+        while (l + dst >= dash[indx]) {
+          double dst_to_cut = dash[indx] - l;
+          point_t cut_point = point(current_point.x + dst_to_cut * line_x,
+                                    current_point.y + dst_to_cut * line_y);
+          polygon_add_point(dashed_poly, cut_point);
+          if (indx % 2 == 0) {
+            polygon_end_subpoly(dashed_poly, false);
+          }
+          dst -= dash[indx] - l;
+          indx++;
+          indx %= dash_array_size;
+          l = 0;
+          current_point = cut_point;
+        }
+
+        if (l + dst < dash[indx]) {
+          l = l + dst;
+          if (indx % 2 == 0) {
+            polygon_add_point(dashed_poly, final_point);
+          }
+        }
+      }
+      polygon_end_subpoly(dashed_poly, false);
+    }
+
+    p = dashed_poly;
   }
 
   transform_t *lin = transform_extract_linear(transform);
@@ -430,6 +499,10 @@ polygon_offset(
     polygon_end_subpoly(np, true);
   }
 
+  if (dashed_poly != NULL) {
+    polygon_destroy(dashed_poly);
+  }
+
   transform_destroy(lin);
   transform_destroy(inv_lin);
 }
@@ -513,13 +586,17 @@ polygonize_outline(
   join_type_t join_type,
   cap_type_t cap_type,
   const transform_t *transform,
-  bool only_linear)
+  bool only_linear,
+  const double *dash,
+  size_t dash_array_size,
+  double dash_offset)
 {
   assert(path != NULL);
   assert(w > 0.0);
   assert(p != NULL);
   assert(bbox != NULL);
   assert(transform != NULL);
+  assert(dash_array_size == 0 || dash != NULL);
 
   // TODO: initial size according to number of primitive
   polygon_t *tp = polygon_create(1024, 16);
@@ -533,7 +610,8 @@ polygonize_outline(
     return false;
   }
 
-  polygon_offset(tp, p, w, join_type, cap_type, transform, only_linear);
+  polygon_offset(tp, p, w, join_type, cap_type, transform, only_linear,
+                 dash, dash_array_size, dash_offset);
 
   polygon_destroy(tp);
 

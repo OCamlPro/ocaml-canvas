@@ -215,6 +215,33 @@ canvas_set_cap_type(
   canvas_t *canvas,
   cap_type_t cap_type);
 
+double
+canvas_get_line_dash_offset(
+  const canvas_t *canvas);
+
+void
+canvas_set_line_dash_offset(
+  canvas_t *canvas,
+  double line_dash_offset);
+
+// Direct access to the line dash array
+// Do NOT free the returned pointer !
+const double *
+canvas_get_line_dash(
+  const canvas_t *canvas);
+
+size_t
+canvas_get_line_dash_length(
+  const canvas_t *canvas);
+
+// Stores a line dash array (NULL is accepted)
+// The provided array is copied
+void
+canvas_set_line_dash(
+  canvas_t *canvas,
+  const double *dash,
+  size_t n);
+
 color_t_
 canvas_get_stroke_color(
   const canvas_t *c);
@@ -228,6 +255,8 @@ draw_style_t
 canvas_get_stroke_style(
   const canvas_t *c);
 
+// Stores the gradient to use for stroking lines
+// The provided gradient reference count is increased
 void
 canvas_set_stroke_gradient(
   canvas_t *c,
@@ -251,6 +280,8 @@ draw_style_t
 canvas_get_fill_style(
   const canvas_t *c);
 
+// Stores the gradient to use for filling polygons
+// The provided gradient reference count is increased
 void
 canvas_set_fill_gradient(
   canvas_t *c,
@@ -279,6 +310,8 @@ canvas_set_comp_operation(
   canvas_t *c,
   composite_operation_t op);
 
+// Sets the canvas font
+// The provided font name is copied
 void
 canvas_set_font(
   canvas_t *c,

@@ -46,6 +46,15 @@ Int32_val_clip(
   value mlValue);
 
 value
+Val_double_array(
+  const double *array,
+  size_t n);
+
+double *
+Double_array_val(
+  value mlArray);
+
+value
 Val_focus_in_out(
   focus_in_out_t s);
 
