@@ -487,6 +487,18 @@ module Canvas = struct
   external setLineCap : 'a t -> line_cap -> unit
     = "ml_canvas_set_line_cap"
 
+  external getLineDashOffset : 'a t -> float
+    = "ml_canvas_get_line_dash_offset"
+
+  external setLineDashOffset : 'a t -> float -> unit
+    = "ml_canvas_set_line_dash_offset"
+
+  external getLineDash : 'a t -> float array
+    = "ml_canvas_get_line_dash"
+
+  external setLineDash : 'a t -> float array -> unit
+    = "ml_canvas_set_line_dash"
+
   external getStrokeColor : 'a t -> Color.t
     = "ml_canvas_get_stroke_color"
 

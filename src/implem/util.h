@@ -67,7 +67,7 @@ normalize_angle(
 
 void *
 memdup(
-  void *p,
+  const void *p,
   size_t size);
 
 #endif /* __UTIL_H */

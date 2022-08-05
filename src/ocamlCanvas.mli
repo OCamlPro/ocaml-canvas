@@ -712,6 +712,18 @@ module Canvas : sig
   val setLineCap : 'a t -> line_cap -> unit
   (** [setLineJoin c j] sets the current line cap type for canvas[c] to [j] *)
 
+  val getLineDashOffset : 'a t -> float
+  (** [getLineDashOffset c] returns the current line offset of [c] *)
+
+  val setLineDashOffset : 'a t -> float -> unit
+  (** [setLineDashOffset c t] sets the current line offset of [c] to [t] *)
+
+  val getLineDash : 'a t -> float array
+  (** [getLineDash c t] returns the current line dash pattern of [c] *)
+
+  val setLineDash : 'a t -> float array -> unit
+  (** [setLineDash c t] sets the current line dash pattern of [c] to [t] *)
+
   val getStrokeColor : 'a t -> Color.t
   (** [getStrokeColor c] returns the current stroke color for canvas [c] *)
 

@@ -150,7 +150,7 @@ font_char_as_poly_outline(
     return false;
   }
 
-  polygon_offset(tp, p, w, JOIN_ROUND, CAP_BUTT, t, true);
+  polygon_offset(tp, p, w, JOIN_ROUND, CAP_BUTT, t, true, NULL, 0, 0);
 
   polygon_destroy(tp);
 

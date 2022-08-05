@@ -64,6 +64,9 @@ state_destroy(
   draw_style_destroy(&s->stroke_style);
   font_desc_destroy(s->font_desc);
   transform_destroy(s->transform);
+  if (s->line_dash != NULL) {
+    free(s->line_dash);
+  }
 
   free(s);
 }
@@ -89,6 +92,12 @@ state_reset(
   s->join_type = JOIN_ROUND;
   s->cap_type = CAP_BUTT;
   s->global_composite_operation = SOURCE_OVER;
+  if (s->line_dash != NULL) {
+    free(s->line_dash);
+  }
+  s->line_dash = NULL;
+  s->line_dash_len = 0;
+  s->line_dash_offset = 0;
 }
 
 state_t *
@@ -123,6 +132,12 @@ state_copy(
   sc->join_type = s->join_type;
   sc->cap_type = s->cap_type;
   sc->global_composite_operation = s->global_composite_operation;
+  sc->line_dash_offset = s->line_dash_offset;
+  if (s->line_dash) {
+    sc->line_dash =
+      (double *)memdup(sc->line_dash, s->line_dash_len * sizeof(double));
+  }
+  sc->line_dash_len = s->line_dash_len;
 
   return sc;
 }

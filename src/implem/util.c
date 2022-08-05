@@ -84,7 +84,7 @@ normalize_angle(
 
 void *
 memdup(
-  void *p,
+  const void *p,
   size_t size)
 {
   assert(p != NULL);
