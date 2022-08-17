@@ -36,6 +36,10 @@ typedef struct state_t {
   // outline region
   draw_style_t fill_style;
   draw_style_t stroke_style;
+  color_t_ shadow_color;
+  double shadow_offset_x;
+  double shadow_offset_y;
+  double shadow_blur;
   composite_operation_t global_composite_operation;
   join_type_t join_type; // lineJoin, miterLimit, lineDashOffset
   cap_type_t cap_type; // lineCap

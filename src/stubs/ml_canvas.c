@@ -1110,6 +1110,70 @@ ml_canvas_set_global_composite_operation(
 }
 
 CAMLprim value
+ml_canvas_get_shadow_color(
+  value mlCanvas)
+{
+  CAMLparam1(mlCanvas);
+  CAMLreturn(caml_copy_int32(
+             color_to_int(canvas_get_shadow_color(Canvas_val(mlCanvas)))));
+}
+
+CAMLprim value
+ml_canvas_set_shadow_color(
+  value mlCanvas,
+  value mlColor)
+{
+  CAMLparam2(mlCanvas, mlColor);
+  canvas_set_shadow_color(Canvas_val(mlCanvas),
+                          color_of_int(Int32_val(mlColor)));
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
+ml_canvas_get_shadow_blur(
+  value mlCanvas)
+{
+  CAMLparam1(mlCanvas);
+  CAMLreturn(caml_copy_double(canvas_get_shadow_blur(Canvas_val(mlCanvas))));
+}
+
+CAMLprim value
+ml_canvas_set_shadow_blur(
+  value mlCanvas,
+  value mlShadowBlur)
+{
+  CAMLparam2(mlCanvas, mlShadowBlur);
+  canvas_set_shadow_blur(Canvas_val(mlCanvas),
+                         Double_val(mlShadowBlur));
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
+ml_canvas_get_shadow_offset(
+  value mlCanvas)
+{
+  CAMLparam1(mlCanvas);
+  CAMLlocal1(mlResult);
+  pair_t(double) result = canvas_get_shadow_offset(Canvas_val(mlCanvas));
+  mlResult = caml_alloc_tuple(2);
+  Store_field(mlResult, 0, caml_copy_double(fst(result)));
+  Store_field(mlResult, 1, caml_copy_double(snd(result)));
+  CAMLreturn(mlResult);
+}
+
+CAMLprim value
+ml_canvas_set_shadow_offset(
+  value mlCanvas,
+  value mlShadowOffset)
+{
+  CAMLparam2(mlCanvas, mlShadowOffset);
+  canvas_set_shadow_offset(Canvas_val(mlCanvas),
+                           Double_val(Field(mlShadowOffset, 0)),
+                           Double_val(Field(mlShadowOffset, 1)));
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
 ml_canvas_set_font(
   value mlCanvas,
   value mlFamily,

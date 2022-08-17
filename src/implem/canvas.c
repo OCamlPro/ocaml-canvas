@@ -40,6 +40,7 @@
 #include "polygonize.h"
 #include "poly_render.h"
 #include "draw_instr.h"
+#include "filters.h"
 #include "backend.h"
 #include "canvas_internal.h"
 
@@ -904,6 +905,71 @@ canvas_set_font(
 */
 }
 
+color_t_
+canvas_get_shadow_color(
+  const canvas_t *c)
+{
+  assert(c != NULL);
+  assert(c->state != NULL);
+
+  return c->state->shadow_color;
+}
+
+void
+canvas_set_shadow_color(
+  canvas_t *c,
+  color_t_ color)
+{
+  assert(c != NULL);
+  assert(c->state != NULL);
+
+  c->state->shadow_color = color;
+}
+
+double
+canvas_get_shadow_blur(
+  const canvas_t *c)
+{
+  assert(c != NULL);
+  assert(c->state != NULL);
+
+  return c->state->shadow_blur;
+}
+
+void
+canvas_set_shadow_blur(
+  canvas_t *c,
+  double shadow_blur)
+{
+  assert(c != NULL);
+  assert(c->state != NULL);
+
+  c->state->shadow_blur = shadow_blur;
+}
+
+pair_t(double)
+canvas_get_shadow_offset(
+  const canvas_t *c)
+{
+  assert(c != NULL);
+  assert(c->state != NULL);
+
+  return pair(double, c->state->shadow_offset_x, c->state->shadow_offset_y);
+}
+
+void
+canvas_set_shadow_offset(
+  canvas_t *c,
+  double x,
+  double y)
+{
+  assert(c != NULL);
+  assert(c->state != NULL);
+
+  c->state->shadow_offset_x = x;
+  c->state->shadow_offset_y = y;
+}
+
 
 
 /* Paths */
@@ -1060,7 +1126,6 @@ canvas_ellipse(
 
 /* Path stroking/filling */
 
-
 static void
 _canvas_clip_fill_instr(
   canvas_t *c,
@@ -1077,8 +1142,8 @@ _canvas_clip_fill_instr(
   rect_t bbox = rect(point(0.0, 0.0),
                      point((double)c->width, (double)c->height));
   poly_render(&(c->clip_region), instr->poly, &bbox,
-              white, 1.0, ONE_MINUS_SRC,
-              NULL, instr->non_zero, c->state->transform);
+              white, 1.0, color_transparent_black, 0, 0, 0,
+              ONE_MINUS_SRC, NULL, instr->non_zero, c->state->transform);
 }
 
 static bool
@@ -1147,6 +1212,8 @@ canvas_fill(
     pixmap_t pm = surface_get_raw_pixmap(c->surface);
     poly_render(&pm, p, &bbox,
                 c->state->fill_style, c->state->global_alpha,
+                c->state->shadow_color, c->state->shadow_blur,
+                c->state->shadow_offset_x, c->state->shadow_offset_y,
                 c->state->global_composite_operation,
                 &(c->clip_region), non_zero, c->state->transform);
   }
@@ -1198,6 +1265,8 @@ canvas_fill_path(
     pixmap_t pm = surface_get_raw_pixmap(c->surface);
     poly_render(&pm, p, &bbox,
                 c->state->fill_style, c->state->global_alpha,
+                c->state->shadow_color, c->state->shadow_blur,
+                c->state->shadow_offset_x, c->state->shadow_offset_y,
                 c->state->global_composite_operation,
                 &(c->clip_region), non_zero, c->state->transform);
   }
@@ -1232,6 +1301,8 @@ canvas_stroke(
     pixmap_t pm = surface_get_raw_pixmap(c->surface);
     poly_render(&pm, p, &bbox,
                 c->state->stroke_style, c->state->global_alpha,
+                c->state->shadow_color, c->state->shadow_blur,
+                c->state->shadow_offset_x, c->state->shadow_offset_y,
                 c->state->global_composite_operation,
                 &(c->clip_region), true, c->state->transform);
   }
@@ -1267,6 +1338,8 @@ canvas_stroke_path(
     pixmap_t pm = surface_get_raw_pixmap(c->surface);
     poly_render(&pm, p, &bbox,
                 c->state->stroke_style, c->state->global_alpha,
+                c->state->shadow_color, c->state->shadow_blur,
+                c->state->shadow_offset_x, c->state->shadow_offset_y,
                 c->state->global_composite_operation,
                 &(c->clip_region), true, c->state->transform);
   }
@@ -1396,6 +1469,8 @@ canvas_fill_rect(
   pixmap_t pm = surface_get_raw_pixmap(c->surface);
   poly_render(&pm, p, &bbox,
               c->state->fill_style, c->state->global_alpha,
+              c->state->shadow_color, c->state->shadow_blur,
+              c->state->shadow_offset_x, c->state->shadow_offset_y,
               c->state->global_composite_operation,
               &(c->clip_region), false, c->state->transform);
 
@@ -1438,6 +1513,8 @@ canvas_stroke_rect(
   pixmap_t pm = surface_get_raw_pixmap(c->surface);
   poly_render(&pm, tp, &bbox,
               c->state->stroke_style, c->state->global_alpha,
+              c->state->shadow_color, c->state->shadow_blur,
+              c->state->shadow_offset_x, c->state->shadow_offset_y,
               c->state->global_composite_operation,
               &(c->clip_region), true, c->state->transform);
 
@@ -1506,6 +1583,8 @@ canvas_fill_text(
       pixmap_t pm = surface_get_raw_pixmap(c->surface);
       poly_render(&pm, p, &bbox,
                   c->state->fill_style, c->state->global_alpha,
+                  c->state->shadow_color, c->state->shadow_blur,
+                  c->state->shadow_offset_x, c->state->shadow_offset_y,
                   c->state->global_composite_operation,
                   &(c->clip_region), true, c->state->transform);
     }
@@ -1548,6 +1627,8 @@ canvas_stroke_text(
       pixmap_t pm = surface_get_raw_pixmap(c->surface);
       poly_render(&pm, p, &bbox,
                   c->state->stroke_style, c->state->global_alpha,
+                  c->state->shadow_color, c->state->shadow_blur,
+                  c->state->shadow_offset_x, c->state->shadow_offset_y,
                   c->state->global_composite_operation,
                   &(c->clip_region), true, c->state->transform);
     }
@@ -1556,6 +1637,7 @@ canvas_stroke_text(
   polygon_destroy(p);
 }
 
+//TODO : This is equivalent to rendering with a rectangle with a pattern. We might as well reuse the code for shadows
 void
 canvas_blit(
   canvas_t *dc,

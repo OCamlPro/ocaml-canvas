@@ -547,6 +547,24 @@ module Canvas = struct
   external setGlobalCompositeOperation : 'a t -> composite_op -> unit
     = "ml_canvas_set_global_composite_operation"
 
+  external getShadowColor : 'a t -> Color.t
+    = "ml_canvas_get_shadow_color"
+
+  external setShadowColor : 'a t -> Color.t -> unit
+    = "ml_canvas_set_shadow_color"
+
+  external getShadowBlur : 'a t -> float
+    = "ml_canvas_get_shadow_blur"
+
+  external setShadowBlur : 'a t -> float -> unit
+    = "ml_canvas_set_shadow_blur"
+
+  external getShadowOffset : 'a t -> (float * float)
+    = "ml_canvas_get_shadow_offset"
+
+  external setShadowOffset : 'a t -> (float * float) -> unit
+    = "ml_canvas_set_shadow_offset"
+
   external setFont :
     'a t -> string -> size:Font.size -> slant:Font.slant ->
     weight:Font.weight -> unit
@@ -639,7 +657,7 @@ module Canvas = struct
 
   external strokePath : 'a t -> Path.t -> unit
     = "ml_canvas_stroke_path"
-  
+
   external clip : 'a t -> nonzero:bool -> unit
     = "ml_canvas_clip"
 
