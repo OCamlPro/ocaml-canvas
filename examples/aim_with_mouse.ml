@@ -18,6 +18,10 @@ let () =
 
   let c = Canvas.createFramed "Hello world"
             ~pos:(300, 50) ~size:(800, 600) in
+  
+  Canvas.setShadowBlur c 2.;
+  Canvas.setShadowColor c (Color.of_argb 128 0 0 0);
+  Canvas.setShadowOffset c (2., 2.);
 
   Canvas.setFillColor c Color.white;
   Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(800.0, 600.0);

@@ -783,6 +783,31 @@ module Canvas : sig
   (** [setGlobalCompositeOperation c o] sets the global composite or blending
       operation for canvas[c] to [o] *)
 
+  val getShadowColor :
+    'a t -> Color.t
+  (** [setShadowColor c] returns the canvas [c]'s shadow color. *)
+
+  val setShadowColor :
+    'a t -> Color.t -> unit
+  (** [setShadowColor c col] sets the canvas [c]'s shadow color to [col].*)
+
+  val getShadowBlur :
+    'a t -> float
+  (** [setShadowBlur c] returns the shadow blur radius for canvas [c]. *)
+
+  val setShadowBlur :
+    'a t -> float -> unit
+  (** [setShadowBlur c b] sets the shadow blur radius of canvas [c] to [b]. *)
+
+  val getShadowOffset :
+    'a t -> (float * float)
+  (** [setShadowOffset c] returns the offset for the shadows drawn in [c]. *)
+
+  val setShadowOffset :
+    'a t -> (float * float) -> unit
+  (** [setShadowOffset c o] sets the offset for the
+      shadows drawn in [c] to [o] *)
+
   val setFont :
     'a t -> string -> size:Font.size ->
     slant:Font.slant -> weight:Font.weight -> unit
@@ -914,9 +939,9 @@ module Canvas : sig
   val strokePath : 'a t -> Path.t -> unit
   (** [strokePath c p] draws the outline of the path [p] on
       canvas [c] using the current stroke style and line width *)
-  
+
   val clip : 'a t -> nonzero:bool -> unit
-  (** [clipPath c p ~nonzero] intersects the current subpath of [c]  
+  (** [clipPath c p ~nonzero] intersects the current subpath of [c]
       on canvas [c]'s clip region using the specified fill rule *)
 
   val clip_ : 'a t -> bool -> unit
@@ -924,7 +949,7 @@ module Canvas : sig
       [clip c ~nonzero]  *)
 
   val clipPath : 'a t -> Path.t -> nonzero:bool -> unit
-  (** [clipPath c p ~nonzero] intersects the filled path [p] on 
+  (** [clipPath c p ~nonzero] intersects the filled path [p] on
       canvas [c]'s clip region using the specified fill rule *)
 
   val clipPath_ : 'a t -> Path.t -> bool -> unit

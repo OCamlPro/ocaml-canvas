@@ -115,6 +115,10 @@ state_reset(
   s->line_dash_offset = 0;
   s->line_width = 1.0;
   s->global_alpha = 1.0;
+  s->shadow_blur = 0;
+  s->shadow_color = color_transparent_black;
+  s->shadow_offset_x = 0;
+  s->shadow_offset_y = 0;
   s->global_composite_operation = SOURCE_OVER;
   s->join_type = JOIN_ROUND;
   s->cap_type = CAP_BUTT;
@@ -189,13 +193,17 @@ state_copy(
   sc->fill_style = draw_style_copy(&s->fill_style);
   sc->stroke_style = draw_style_copy(&s->stroke_style);
 
-  sc->global_alpha = s->global_alpha;
   sc->line_width = s->line_width;
-  sc->join_type = s->join_type;
-  sc->cap_type = s->cap_type;
+  sc->global_alpha = s->global_alpha;
+  sc->shadow_blur = s->shadow_blur;
+  sc->shadow_color = s->shadow_color;
+  sc->shadow_offset_x = s->shadow_offset_x;
+  sc->shadow_offset_y = s->shadow_offset_y;
   sc->global_composite_operation = s->global_composite_operation;
   sc->line_dash_offset = s->line_dash_offset;
   sc->line_dash_len = s->line_dash_len;
+  sc->join_type = s->join_type;
+  sc->cap_type = s->cap_type;
 
   return sc;
 }

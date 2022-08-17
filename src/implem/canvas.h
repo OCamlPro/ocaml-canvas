@@ -320,7 +320,33 @@ canvas_set_font(
   font_slant_t slant,
   int32_t weight);
 
+color_t_
+canvas_get_shadow_color(
+  const canvas_t *c);
 
+void
+canvas_set_shadow_color(
+  canvas_t *c,
+  color_t_ color);
+
+double
+canvas_get_shadow_blur(
+  const canvas_t *c);
+
+void
+canvas_set_shadow_blur(
+  canvas_t *c,
+  double shadow_blur);
+
+pair_t(double)
+canvas_get_shadow_offset(
+  const canvas_t *c);
+
+void
+canvas_set_shadow_offset(
+  canvas_t *c,
+  double x,
+  double y);
 
 /* Paths */
 

@@ -703,12 +703,29 @@ function ml_canvas_restore(canvas) {
 
 //Provides: _color_of_int
 function _color_of_int(i) {
-  return "#" + (i & 0x00FFFFFF).toString(16).padStart(6, '0');
+  i = i >>> 0;
+  var a = ((i & 0xFF000000) >>> 24);
+  if (a == 255) {
+    return "#" + (i & 0x00FFFFFF).toString(16).padStart(6, '0');
+  }
+  var b = i & 0x000000FF;
+  var g = (i & 0x0000FF00) >>> 8;
+  var r = (i & 0x00FF0000) >>> 16;
+  return "rgba(" + r + "," + g + "," + b + "," + a / 255.0 + ")";
 }
 
 //Provides: _int_of_color
 function _int_of_color(c) {
-  return parseInt(c.substr(1, c.length - 1), 16);
+  if (c[0] == '#') {
+    return parseInt(c.substr(1, c.length - 1), 16);
+  } else {
+    var rgba = c.replace(/^rgba?\(|\s+|\)$/g, '').split(',');
+    var r = parseInt(rgba[0]);
+    var g = parseInt(rgba[1]);
+    var b = parseInt(rgba[2]);
+    var a = parseFloat(rgba[3]) * 255;
+    return b | (g << 8) | (r << 16) | (a << 24);
+  }
 }
 
 //Provides: ml_canvas_get_line_width
@@ -843,8 +860,41 @@ function ml_canvas_set_global_composite_operation(canvas, op) {
   canvas.ctxt.globalCompositeOperation = Compop_val([op]);
 }
 
+//Provides: ml_canvas_get_shadow_color
+//Requires: _int_of_color
+function ml_canvas_get_shadow_color(canvas) {
+  return _int_of_color(canvas.ctxt.shadowColor);
+}
+
+//Provides: ml_canvas_set_shadow_color
+//Requires: _color_of_int
+function ml_canvas_set_shadow_color(canvas, color) {
+  canvas.ctxt.shadowColor = _color_of_int(color);
+}
+
+//Provides: ml_canvas_get_shadow_blur
+function ml_canvas_get_shadow_blur(canvas) {
+  return canvas.ctxt.shadowBlur;
+}
+
+//Provides: ml_canvas_set_shadow_blur
+function ml_canvas_set_shadow_blur(canvas, blur) {
+  canvas.ctxt.shadowBlur = blur;
+}
+
+//Provides: ml_canvas_get_shadow_offset
+function ml_canvas_get_shadow_offset(canvas, offset) {
+  return [ 0, canvas.ctxt.shadowOffsetX, canvas.ctxt.shadowOffsetY ];
+}
+
+//Provides: ml_canvas_set_shadow_offset
+function ml_canvas_set_shadow_offset(canvas, offset) {
+  canvas.ctxt.shadowOffsetX = offset[1];
+  canvas.ctxt.shadowOffsetY = offset[2];
+}
+
 //Provides: ml_canvas_set_font
-// Requires: Slant_val
+//Requires: Slant_val
 function ml_canvas_set_font(canvas, family, size, slant, weight) {
   canvas.ctxt.font =
     Slant_val(slant) + " " + weight + " " + size + "pt " + family;

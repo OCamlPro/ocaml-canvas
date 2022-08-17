@@ -27,6 +27,7 @@
 #include "polygon.h"
 #include "polygon_internal.h"
 #include "pixmap.h"
+#include "filters.h"
 
 // Mask array
 static uint64_t _masks[(9 * 9) * (9 * 9)] = { 0 };
@@ -83,7 +84,9 @@ _clip_horizontal(
   float y,
   float norm,
   const polygon_t *p,
-  polygon_t *np)
+  polygon_t *np,
+  float x_offset,
+  float y_offset)
 {
   assert(p != NULL);
   assert(np != NULL);
@@ -100,6 +103,10 @@ _clip_horizontal(
 
       point_t current = p->points[i];
       point_t previous = p->points[j];
+      current.x += x_offset;
+      current.y += y_offset;
+      previous.x += x_offset;
+      previous.y += y_offset;
 
       // If current is on the correct side
       if (((float)current.y - y) * norm <= 0.0f) {
@@ -139,7 +146,9 @@ _clip_vertical(
   float x,
   float norm,
   const polygon_t *p,
-  polygon_t *np)
+  polygon_t *np,
+  float x_offset,
+  float y_offset)
 {
   assert(p != NULL);
   assert(np != NULL);
@@ -156,6 +165,10 @@ _clip_vertical(
 
       point_t current = p->points[i];
       point_t previous = p->points[j];
+      current.x += x_offset;
+      current.y += y_offset;
+      previous.x += x_offset;
+      previous.y += y_offset;
 
       // If current is on the correct side
       if (((float)current.x - x) * norm <= 0.0f) {
@@ -312,14 +325,10 @@ _calculate_coverage_non_zero(
 
 static bool *
 _build_complex(
-  const pixmap_t *pm,
+  int32_t w,
   const polygon_t *p)
 {
-  assert(pm != NULL);
-  assert(pixmap_valid(*pm) == true);
   assert(p != NULL);
-
-  int w = pm->width;
   bool *complex = (bool *)calloc(w, sizeof(bool));
 
   int i = 0;
@@ -336,13 +345,16 @@ _build_complex(
 
         if (ix1 < w && ix2 >= 0) { // Are any pixels affected?
 
-          if (ix2 >= w)	// Clamp to the complex table
+          if (ix2 >= w) { // Clamp to the complex table
             ix2 = w - 1;
-          if (ix1 < 0)	// Clamp to the complex table
+          }
+          if (ix1 < 0) { // Clamp to the complex table
             ix1 = 0;
+          }
 
-          for (int x = ix1; x <= ix2; ++x)
+          for (int x = ix1; x <= ix2; ++x) {
             complex[x] = true;
+          }
         }
       }
     }
@@ -351,41 +363,52 @@ _build_complex(
   return complex;
 }
 
-static void
-_setpixel(
-  pixmap_t *pm,
-  int i,
-  int j,
-  color_t_ color)
+static color_t_
+_determine_base_color(
+  const draw_style_t *draw_style,
+  float x,
+  float y,
+  const transform_t *inv)
 {
-  assert(pm != NULL);
-  assert(pixmap_valid(*pm) == true);
-  assert((i >= 0) && (i < pm->height));
-  assert((j >= 0) && (j < pm->width));
+  assert(draw_style != NULL);
+  assert(inv != NULL);
 
-  pixmap_at(*pm, i, j) = color;
+  color_t_ color = color_transparent_black;
+
+  switch (draw_style->type) {
+    case DRAW_STYLE_COLOR:
+      color = draw_style->content.color;
+      break;
+    case DRAW_STYLE_GRADIENT:
+      color = gradient_evaluate_pos(draw_style->content.gradient, x, y, inv);
+      break;
+    case DRAW_STYLE_PATTERN:
+      color = pattern_evaluate_pos(draw_style->content.pattern, x, y, inv);
+      break;
+    default:
+      assert(!"Invalid draw style");
+      break;
+  }
+
+  return color;
 }
 
-void
-poly_render(
-  pixmap_t *pm,
+static pixmap_t
+_poly_render_pixmap(
   const polygon_t *p,
   const rect_t *bbox,
-  draw_style_t draw_style,
-  composite_operation_t composite_operation,
-  double global_alpha,
-  const pixmap_t *clip_region,
-  bool non_zero,
-  transform_t *transform)
+  const draw_style_t draw_style,
+  const transform_t *transform,
+  bool non_zero)
 {
-  assert(pm != NULL);
-  assert(pixmap_valid(*pm) == true);
   assert(p != NULL);
   assert(bbox != NULL);
+  assert(transform != NULL);
   assert((draw_style.type != DRAW_STYLE_GRADIENT) ||
          (draw_style.content.gradient != NULL));
   assert((draw_style.type != DRAW_STYLE_PATTERN) ||
          (draw_style.content.pattern != NULL));
+  assert(transform != NULL);
 
   int alpha = 0;
 
@@ -396,54 +419,30 @@ poly_render(
   transform_t *inverse = transform_copy(transform);
   transform_inverse(inverse);
 
-  int lower_bound_i = 0;
-  int upper_bound_i = pm->height;
-  int lower_bound_j = 0;
-  int upper_bound_j = pm->width;
+  int32_t w = (int32_t)(bbox->p2.x - bbox->p1.x) + 1;
+  int32_t h = (int32_t)(bbox->p2.y - bbox->p1.y) + 1;
 
-  if (comp_is_full_screen(composite_operation) == false) {
-    lower_bound_i = max((int)bbox->p1.y, 0);
-    upper_bound_i = min((int)(bbox->p2.y + 1.0), pm->height);
-    lower_bound_j = max((int)bbox->p1.x, 0);
-    upper_bound_j = min((int)(bbox->p2.x + 1.0), pm->width);
-  }
+  pixmap_t pm = pixmap(w, h, NULL);
 
-  for (int i = lower_bound_i; i < upper_bound_i; ++i) {
+  for (int32_t i = 0; i < h; i++) {
 
-    // If not in the bounding box, take src color as transparent black
-    if (i < bbox->p1.y || i > bbox->p2.y) {
-      for (int j = 0; j < pm->width; ++j) {
-        _setpixel(pm, i, j, comp_compose(color_transparent_black,
-                                         pixmap_at(*pm, i, j), 0,
-                                         composite_operation));
-      }
-      continue;
-    }
+    _clip_horizontal((float)i, -1.0, p, tmp_poly, -bbox->p1.x, -bbox->p1.y);
+    _clip_horizontal((float)(i + 1), 1.0, tmp_poly, line_poly, 0.0, 0.0);
 
-    _clip_horizontal((float)i, -1.0, p, tmp_poly);
-    _clip_horizontal((float)(i + 1), 1.0, tmp_poly, line_poly);
-
-    bool *complex = _build_complex(pm, line_poly);
+    bool *complex = _build_complex(w, line_poly);
     bool calculate = true;
 
-    // Calculate scanline, bounded by the bounding box
-    for (int j = lower_bound_j; j < upper_bound_j; ++j) {
-
-      if (j < bbox->p1.x || j > bbox->p2.x) {
-        _setpixel(pm, i, j, comp_compose(color_transparent_black,
-                                         pixmap_at(*pm, i, j), 0,
-                                         composite_operation));
-        continue;
-      }
+    // Calculate scanline
+    for (int32_t j = 0; j < w; j++) {
 
       bool is_complex = complex[j];
 
-      // If the current cell is complex, we need to calculate it.
+      // If the current cell is complex, we need to calculate it
       calculate |= is_complex;
 
       if (calculate) {
-        _clip_vertical((float)j, -1.0, line_poly, tmp_poly);
-        _clip_vertical((float)(j + 1), 1.0, tmp_poly, pixel_poly);
+        _clip_vertical((float)j, -1.0, line_poly, tmp_poly, 0.0, 0.0);
+        _clip_vertical((float)(j + 1), 1.0, tmp_poly, pixel_poly, 0.0, 0.0);
 
         swap(polygon_t *, line_poly, tmp_poly);
 
@@ -456,23 +455,276 @@ poly_render(
         // only if this pixel is simple
         calculate = is_complex;
       }
-      color_t_ color = color_transparent_black;
-      switch (draw_style.type) {
-        case DRAW_STYLE_COLOR:
-          color = draw_style.content.color;
-          break;
-        case DRAW_STYLE_GRADIENT:
-          color =
-            gradient_evaluate_pos(draw_style.content.gradient, j, i, inverse);
-          break;
-        case DRAW_STYLE_PATTERN:
-          color =
-            pattern_evaluate_pos(draw_style.content.pattern, j, i, inverse);
-          break;
-        default:
-          assert(!"Invalid draw style");
-          break;
+
+      // Determine the pixel base color according to draw style
+      color_t_ color = _determine_base_color(&draw_style, (float)j + bbox->p1.x,
+                                             (float)i + bbox->p1.y, inverse);
+
+      int draw_alpha = (alpha * color.a) / 255;
+      pixmap_at(pm, i, j) = color(draw_alpha, color.r, color.g, color.b);
+    }
+
+    free(complex);
+  }
+
+  transform_destroy(inverse);
+
+  polygon_destroy(tmp_poly);
+  polygon_destroy(pixel_poly);
+  polygon_destroy(line_poly);
+
+  return pm;
+}
+
+static void
+_poly_render_layered(
+  pixmap_t *pm,
+  const polygon_t *p,
+  const rect_t *bbox,
+  draw_style_t draw_style,
+  composite_operation_t composite_operation,
+  color_t_ shadow_color,
+  double shadow_blur,
+  double shadow_offset_x,
+  double shadow_offset_y,
+  double global_alpha,
+  const pixmap_t *clip_region,
+  bool non_zero,
+  const transform_t *transform)
+{
+  assert(pm != NULL);
+  assert(pixmap_valid(*pm) == true);
+  assert(p != NULL);
+  assert(bbox != NULL);
+  assert((draw_style.type != DRAW_STYLE_GRADIENT) ||
+         (draw_style.content.gradient != NULL));
+  assert((draw_style.type != DRAW_STYLE_PATTERN) ||
+         (draw_style.content.pattern != NULL));
+  assert(transform != NULL);
+
+  pixmap_t rendered_poly =
+    _poly_render_pixmap(p, bbox, draw_style, transform, non_zero);
+
+  // Compose shadows if any
+  if ((shadow_blur > 0.0 || shadow_offset_x != 0.0 || shadow_offset_y != 0.0) &&
+      composite_operation != COPY && shadow_color.a != 0) {
+
+    int shadow_size_offset = (int)(sqrt(3.0 * shadow_blur * shadow_blur));
+
+    pixmap_t shadow_poly =
+      pixmap(rendered_poly.width + shadow_size_offset * 2,
+             rendered_poly.height + shadow_size_offset * 2, NULL);
+    for (int32_t i = 0; i < rendered_poly.width; i++) {
+      for (int32_t j = 0; j < rendered_poly.height; j++) {
+        pixmap_at(shadow_poly,
+                  j + shadow_size_offset,
+                  i + shadow_size_offset).a =
+          pixmap_at(rendered_poly, j, i).a;
       }
+    }
+
+    pixmap_t blurred_shadow_poly;
+    if (shadow_blur == 0.0) {
+      blurred_shadow_poly = shadow_poly;
+    } else {
+      blurred_shadow_poly =
+        filter_gaussian_blur_alpha(&shadow_poly, shadow_blur / 2.0);
+      pixmap_destroy(shadow_poly);
+    }
+
+    rect_t sbbox =
+      rect(point(bbox->p1.x - shadow_size_offset + shadow_offset_x,
+                 bbox->p1.y - shadow_size_offset + shadow_offset_y),
+           point(bbox->p2.x + shadow_size_offset + shadow_offset_x,
+                 bbox->p2.y + shadow_size_offset + shadow_offset_y));
+
+    int32_t lower_bound_i = 0, upper_bound_i = pm->height;
+    int32_t lower_bound_j = 0, upper_bound_j = pm->width;
+
+    if (comp_is_full_screen(composite_operation) == false) {
+      lower_bound_i = max((int32_t)sbbox.p1.y, 0);
+      upper_bound_i = min((int32_t)(sbbox.p2.y + 1.0), pm->height);
+      lower_bound_j = max((int32_t)sbbox.p1.x, 0);
+      upper_bound_j = min((int32_t)(sbbox.p2.x + 1.0), pm->width);
+    }
+
+    for (int32_t i = lower_bound_i; i < upper_bound_i; ++i) {
+      for (int32_t j = lower_bound_j; j < upper_bound_j; ++j) {
+
+        if (j < sbbox.p1.x || j > sbbox.p2.x ||
+            i < sbbox.p1.y || i > sbbox.p2.y) {
+          pixmap_at(*pm, i, j) =
+            comp_compose(color_transparent_black,
+                         pixmap_at(*pm, i, j), 0,
+                         composite_operation);
+          continue;
+        }
+
+        color_t_ fill_color =
+          pixmap_at(blurred_shadow_poly,
+                    i - (int32_t)sbbox.p1.y,
+                    j - (int32_t)sbbox.p1.x);
+
+        fill_color.r = shadow_color.r;
+        fill_color.g = shadow_color.g;
+        fill_color.b = shadow_color.b;
+
+        double draw_alpha = fill_color.a;
+
+        if ((clip_region != NULL) && (pixmap_valid(*clip_region) == true)) {
+          draw_alpha *= 255 - pixmap_at(*clip_region, i, j).a;
+          draw_alpha /= 255;
+        }
+
+        pixmap_at(*pm, i, j) =
+          comp_compose(fill_color, pixmap_at(*pm, i, j),
+                       (int)(draw_alpha * shadow_color.a * global_alpha / 255),
+                       composite_operation);
+      }
+    }
+
+    pixmap_destroy(blurred_shadow_poly);
+  }
+
+  // Compose rendered mesh
+  int32_t lower_bound_i = 0, upper_bound_i = pm->height;
+  int32_t lower_bound_j = 0, upper_bound_j = pm->width;
+
+  if (comp_is_full_screen(composite_operation) == false) {
+    lower_bound_i = max((int32_t)bbox->p1.y, 0);
+    upper_bound_i = min((int32_t)(bbox->p2.y + 1.0), pm->height);
+    lower_bound_j = max((int32_t)bbox->p1.x, 0);
+    upper_bound_j = min((int32_t)(bbox->p2.x + 1.0), pm->width);
+  }
+
+  for (int32_t i = lower_bound_i; i < upper_bound_i; ++i) {
+    for (int32_t j = lower_bound_j; j < upper_bound_j; ++j) {
+
+      if (j < bbox->p1.x || j > bbox->p2.x ||
+          i < bbox->p1.y || i > bbox->p2.y) {
+        pixmap_at(*pm, i, j) =
+          comp_compose(color_transparent_black,
+                       pixmap_at(*pm, i, j), 0,
+                       composite_operation);
+        continue;
+      }
+
+      color_t_ fill_color =
+        pixmap_at(rendered_poly,
+                  i - (int32_t)bbox->p1.y,
+                  j - (int32_t)bbox->p1.x);
+
+      double draw_alpha = fill_color.a;
+
+      if ((clip_region != NULL) && (pixmap_valid(*clip_region) == true)) {
+        draw_alpha *= 255 - pixmap_at(*clip_region, i, j).a;
+        draw_alpha /= 255;
+      }
+
+      pixmap_at(*pm, i, j) =
+        comp_compose(fill_color, pixmap_at(*pm, i, j),
+                     (int)(draw_alpha * global_alpha),
+                     composite_operation);
+    }
+  }
+
+  pixmap_destroy(rendered_poly);
+}
+
+static void
+_poly_render_direct(
+  pixmap_t *pm,
+  const polygon_t *p,
+  const rect_t *bbox,
+  draw_style_t draw_style,
+  composite_operation_t composite_operation,
+  double global_alpha,
+  const pixmap_t *clip_region,
+  bool non_zero,
+  const transform_t *transform)
+{
+  assert(pm != NULL);
+  assert(pixmap_valid(*pm) == true);
+  assert(p != NULL);
+  assert(bbox != NULL);
+  assert((draw_style.type != DRAW_STYLE_GRADIENT) ||
+         (draw_style.content.gradient != NULL));
+  assert((draw_style.type != DRAW_STYLE_PATTERN) ||
+         (draw_style.content.pattern != NULL));
+  assert(transform != NULL);
+
+  int alpha = 0;
+
+  polygon_t *line_poly = polygon_create(1024, 16);
+  polygon_t *pixel_poly = polygon_create(1024, 16);
+  polygon_t *tmp_poly = polygon_create(1024, 16);
+
+  transform_t *inverse = transform_copy(transform);
+  transform_inverse(inverse);
+
+  int32_t lower_bound_i = 0, upper_bound_i = pm->height;
+  int32_t lower_bound_j = 0, upper_bound_j = pm->width;
+
+  if (comp_is_full_screen(composite_operation) == false) {
+    lower_bound_i = max((int32_t)bbox->p1.y, 0);
+    upper_bound_i = min((int32_t)(bbox->p2.y + 1.0), pm->height);
+    lower_bound_j = max((int32_t)bbox->p1.x, 0);
+    upper_bound_j = min((int32_t)(bbox->p2.x + 1.0), pm->width);
+  }
+
+  for (int32_t i = lower_bound_i; i < upper_bound_i; ++i) {
+
+    // If not in the bounding box, take src color as transparent black
+    if (i < bbox->p1.y || i > bbox->p2.y) {
+      for (int32_t j = 0; j < pm->width; ++j) {
+        pixmap_at(*pm, i, j) = comp_compose(color_transparent_black,
+                                            pixmap_at(*pm, i, j), 0,
+                                            composite_operation);
+      }
+      continue;
+    }
+
+    _clip_horizontal((float)i, -1.0, p, tmp_poly, 0.0, 0.0);
+    _clip_horizontal((float)(i + 1), 1.0, tmp_poly, line_poly, 0.0, 0.0);
+
+    bool *complex = _build_complex(pm->width , line_poly);
+    bool calculate = true;
+
+    // Calculate scanline, bounded by the bounding box
+    for (int32_t j = lower_bound_j; j < upper_bound_j; ++j) {
+
+      // If not in the bounding box, take src color as transparent black
+      if (j < bbox->p1.x || j > bbox->p2.x) {
+        pixmap_at(*pm, i, j) = comp_compose(color_transparent_black,
+                                            pixmap_at(*pm, i, j), 0,
+                                            composite_operation);
+        continue;
+      }
+
+      bool is_complex = complex[j];
+
+      // If the current cell is complex, we need to calculate it.
+      calculate |= is_complex;
+
+      if (calculate) {
+        _clip_vertical((float)j, -1.0, line_poly, tmp_poly, 0.0, 0.0);
+        _clip_vertical((float)(j + 1), 1.0, tmp_poly, pixel_poly, 0.0, 0.0);
+
+        swap(polygon_t *, line_poly, tmp_poly);
+
+        alpha =
+          non_zero ?
+          _calculate_coverage_non_zero((float)i, (float)j, pixel_poly) :
+          _calculate_coverage_even_odd((float)i, (float)j, pixel_poly);
+
+        // Our coverage can be used in the next pixel
+        // only if this pixel is simple
+        calculate = is_complex;
+      }
+
+      // Determine the pixel base color according to draw style
+      color_t_ color =
+        _determine_base_color(&draw_style, (float)j, (float)i, inverse);
 
       int draw_alpha =
         (alpha * fastround(global_alpha * 256.0) * color.a) / (256 * 255);
@@ -483,9 +735,10 @@ poly_render(
 
       // Apply the coverage to the pixel
       // Only do this logic if there's something to apply
-      _setpixel(pm, i, j, comp_compose(color, pixmap_at(*pm, i, j),
-                                       draw_alpha, composite_operation));
+      pixmap_at(*pm, i, j) = comp_compose(color, pixmap_at(*pm, i, j),
+                                          draw_alpha, composite_operation);
     }
+
     free(complex);
   }
 
@@ -494,4 +747,34 @@ poly_render(
   polygon_destroy(tmp_poly);
   polygon_destroy(pixel_poly);
   polygon_destroy(line_poly);
+}
+
+
+void
+poly_render(
+  pixmap_t *s,
+  const polygon_t *p,
+  const rect_t *bbox,
+  draw_style_t draw_style,
+  double global_alpha,
+  color_t_ shadow_color,
+  double shadow_blur,
+  double shadow_offset_x,
+  double shadow_offset_y,
+  composite_operation_t compose_op,
+  const pixmap_t *clip_region,
+  bool non_zero,
+  const transform_t *transform)
+{
+  if ((shadow_blur > 0.0 || shadow_offset_x != 0.0 || shadow_offset_y != 0.0) &&
+      compose_op != COPY && shadow_color.a != 0) {
+    _poly_render_layered(s, p, bbox, draw_style, compose_op,
+                         shadow_color, shadow_blur,
+                         shadow_offset_x, shadow_offset_y,
+                         global_alpha, clip_region, non_zero, transform);
+  }
+  else {
+    _poly_render_direct(s, p, bbox, draw_style, compose_op,
+                        global_alpha, clip_region, non_zero, transform);
+  }
 }
