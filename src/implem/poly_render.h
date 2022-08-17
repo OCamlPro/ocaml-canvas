@@ -28,7 +28,7 @@ poly_render_init(
 
 void
 poly_render(
-  surface_t *s,
+  pixmap_t *pm,
   const polygon_t *p,
   const rect_t *bbox,
   draw_style_t draw_style,

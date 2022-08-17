@@ -1059,8 +1059,10 @@ canvas_fill(
 
   rect_t bbox = rect(point(0.0, 0.0), point(c->width, c->height));
   if (polygonize(path2d_get_path(c->path_2d), p, &bbox) == true) {
-    poly_render(c->surface, p, &bbox, c->state->fill_style,
-                c->state->global_alpha, c->state->global_composite_operation,
+    pixmap_t pm = surface_get_raw_pixmap(c->surface);
+    poly_render(&pm, p, &bbox,
+                c->state->fill_style, c->state->global_alpha,
+                c->state->global_composite_operation,
                 non_zero, c->state->transform);
   }
 
@@ -1107,8 +1109,10 @@ canvas_fill_path(
     bbox.p1 = point(xmin, ymin);
     bbox.p2 = point(xmax, ymax);
 
-    poly_render(c->surface, p, &bbox, c->state->fill_style,
-                c->state->global_alpha, c->state->global_composite_operation,
+    pixmap_t pm = surface_get_raw_pixmap(c->surface);
+    poly_render(&pm, p, &bbox,
+                c->state->fill_style, c->state->global_alpha,
+                c->state->global_composite_operation,
                 non_zero, c->state->transform);
   }
 
@@ -1138,8 +1142,10 @@ canvas_stroke(
                          c->state->transform, true,
                          c->state->line_dash, c->state->line_dash_len,
                          c->state->line_dash_offset) == true) {
-    poly_render(c->surface, p, &bbox, c->state->stroke_style,
-                c->state->global_alpha, c->state->global_composite_operation,
+    pixmap_t pm = surface_get_raw_pixmap(c->surface);
+    poly_render(&pm, p, &bbox,
+                c->state->stroke_style, c->state->global_alpha,
+                c->state->global_composite_operation,
                 true, c->state->transform);
   }
 
@@ -1170,8 +1176,10 @@ canvas_stroke_path(
                          c->state->transform, false,
                          c->state->line_dash, c->state->line_dash_len,
                          c->state->line_dash_offset) == true) {
-    poly_render(c->surface, p, &bbox, c->state->stroke_style,
-                c->state->global_alpha, c->state->global_composite_operation,
+    pixmap_t pm = surface_get_raw_pixmap(c->surface);
+    poly_render(&pm, p, &bbox,
+                c->state->stroke_style, c->state->global_alpha,
+                c->state->global_composite_operation,
                 true, c->state->transform);
   }
 
@@ -1219,8 +1227,10 @@ canvas_fill_rect(
                      point(max4(p1.x, p2.x, p3.x, p4.x),
                            max4(p1.y, p2.y, p3.y, p4.y)));
 
-  poly_render(c->surface, p, &bbox, c->state->fill_style,
-              c->state->global_alpha, c->state->global_composite_operation,
+  pixmap_t pm = surface_get_raw_pixmap(c->surface);
+  poly_render(&pm, p, &bbox,
+              c->state->fill_style, c->state->global_alpha,
+              c->state->global_composite_operation,
               false, c->state->transform);
 
   polygon_destroy(p);
@@ -1273,8 +1283,10 @@ canvas_stroke_rect(
   polygon_offset(p, tp, c->state->line_width, JOIN_ROUND, CAP_BUTT,
                  c->state->transform, true, c->state->line_dash,
                  c->state->line_dash_len, c->state->line_dash_offset);
-  poly_render(c->surface, tp, &bbox, c->state->stroke_style,
-              c->state->global_alpha, c->state->global_composite_operation,
+  pixmap_t pm = surface_get_raw_pixmap(c->surface);
+  poly_render(&pm, tp, &bbox,
+              c->state->stroke_style, c->state->global_alpha,
+              c->state->global_composite_operation,
               true, c->state->transform);
   polygon_destroy(tp);
   polygon_destroy(p);
@@ -1338,8 +1350,10 @@ canvas_fill_text(
     polygon_reset(p);
     if (font_char_as_poly(c->font, c->state->transform,
                           chr, &pen, p, &bbox) == true) {
-      poly_render(c->surface, p, &bbox, c->state->fill_style,
-                  c->state->global_alpha, c->state->global_composite_operation,
+      pixmap_t pm = surface_get_raw_pixmap(c->surface);
+      poly_render(&pm, p, &bbox,
+                  c->state->fill_style, c->state->global_alpha,
+                  c->state->global_composite_operation,
                   true, c->state->transform);
     }
   }
@@ -1378,8 +1392,10 @@ canvas_stroke_text(
     if (font_char_as_poly_outline(c->font, c->state->transform,
                                   chr, c->state->line_width,
                                   &pen, p, &bbox) == true) {
-      poly_render(c->surface, p, &bbox, c->state->stroke_style,
-                  c->state->global_alpha, c->state->global_composite_operation,
+      pixmap_t pm = surface_get_raw_pixmap(c->surface);
+      poly_render(&pm, p, &bbox,
+                  c->state->stroke_style, c->state->global_alpha,
+                  c->state->global_composite_operation,
                   true, c->state->transform);
     }
   }
