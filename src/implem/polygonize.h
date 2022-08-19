@@ -66,7 +66,7 @@ polygonize_outline(
   const transform_t *transform,
   bool only_linear,
   const double *dash,
-  size_t dash_array_size,
+  int32_t dash_array_size,
   double dash_offset);
 
 void
@@ -79,7 +79,7 @@ polygon_offset(
   const transform_t *transform,
   bool only_linear,
   const double *dash,
-  size_t dash_array_size,
+  int32_t dash_array_size,
   double dash_offset);
 
 #endif /* __POLYGONIZE_H */

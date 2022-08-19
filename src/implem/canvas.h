@@ -33,7 +33,7 @@ typedef enum canvas_type_t {
   CANVAS_FRAMELESS = 2
 } canvas_type_t;
 
-DECLARE_OBJECT_METHODS(canvas_t, canvas);
+DECLARE_OBJECT_METHODS(canvas_t, canvas)
 
 canvas_t *
 canvas_create_framed(

@@ -264,7 +264,8 @@ x11_window_set_size(
 
   xcb_configure_window(x11_back->c, window->wid,
                        XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
-                       (uint32_t[]){ window->base.width, window->base.height });
+                       (uint32_t[]){ (uint32_t)window->base.width,
+                                     (uint32_t)window->base.height });
 
   xcb_flush(x11_back->c);
 }

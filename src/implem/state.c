@@ -180,9 +180,9 @@ state_copy(
 
   path_fill_instr_t *instr = NULL;
   while ((instr = (path_fill_instr_t *)list_iterator_next(it)) != NULL) {
-    path_fill_instr_t *new =
+    path_fill_instr_t *copy =
       path_fill_instr_create(instr->poly, instr->non_zero);
-    list_push(sc->clip_path, new);
+    list_push(sc->clip_path, copy);
   }
   list_free_iterator(it);
 
