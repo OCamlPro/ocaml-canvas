@@ -750,6 +750,29 @@ function ml_canvas_set_line_cap(canvas, cap) {
   canvas.ctxt.lineCap = Cap_type_val(cap);
 }
 
+//Provides: ml_canvas_get_line_dash_offset
+function ml_canvas_get_line_dash_offset(canvas) {
+  return canvas.ctxt.lineDashOffset;
+}
+
+//Provides: ml_canvas_set_line_dash_offset
+function ml_canvas_set_line_dash_offset(canvas, offset) {
+  canvas.ctxt.lineDashOffset = offset;
+}
+
+//Provides: ml_canvas_get_line_dash
+function ml_canvas_get_line_dash(canvas) {
+  var arr = canvas.ctxt.getLineDash();
+  arr.unshift(254); // Double array tag
+  return arr;
+}
+
+//Provides: ml_canvas_set_line_dash
+function ml_canvas_set_line_dash(canvas, dash) {
+  dash.shift();
+  canvas.ctxt.setLineDash(dash);
+}
+
 //Provides: ml_canvas_get_line_join
 //Requires: Val_join_type
 function ml_canvas_get_line_join(canvas) {
