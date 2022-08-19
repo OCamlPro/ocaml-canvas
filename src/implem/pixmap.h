@@ -23,17 +23,18 @@ typedef struct pixmap_t {
 } pixmap_t;
 
 #define pixmap_null() \
-  ((pixmap_t){ .width = 0, .height = 0, .data = NULL })
+  ((pixmap_t){ .data = NULL, .width = 0, .height = 0 })
 
 #define pixmap(w,h,d) \
-  ((pixmap_t){ .width = (w), .height = (h), \
-               .data = ((d) != NULL) ? (d) : \
-                        calloc((w) * (h), COLOR_SIZE) })
+  ((pixmap_t){ .data = ((d) != NULL) ? (d) : \
+                        (color_t_ *)calloc((w) * (h), COLOR_SIZE), \
+               .width = (w), .height = (h) })
 
 #define pixmap_copy(p) \
-  ((pixmap_t){ .width = (p).width, .height = (p).height, \
-               .data = ((p).data == NULL) ? NULL : \
-                        memdup((p).data, (p).width * (p).height * COLOR_SIZE) })
+  ((pixmap_t){ .data = ((p).data == NULL) ? NULL : \
+                        (color_t_ *)memdup((p).data, (p).width * \
+                                           (p).height * COLOR_SIZE), \
+               .width = (p).width, .height = (p).height })
 
 #define pixmap_destroy(p) \
   do { \

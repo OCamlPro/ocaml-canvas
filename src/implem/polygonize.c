@@ -215,7 +215,7 @@ polygon_offset(
   const transform_t *transform,
   bool only_linear,
   const double *dash,
-  size_t dash_array_size,
+  int32_t dash_array_size,
   double dash_offset)
 {
   assert(p != NULL);
@@ -236,11 +236,11 @@ polygon_offset(
     dashed_poly = polygon_create(p->max_points * 2, p->max_subpolys * 2);
 
     double dash_length = 0.0;
-    for (size_t i = 0; i < dash_array_size; ++i) {
+    for (int32_t i = 0; i < dash_array_size; ++i) {
       dash_length += dash[i];
     }
 
-    size_t init_indx = 0;
+    int32_t init_indx = 0;
     dash_offset = -dash_offset;
     dash_offset -= dash_length * floor(dash_offset / dash_length);
     while (dash_offset >= dash[init_indx]) {
@@ -248,10 +248,10 @@ polygon_offset(
       init_indx++;
     }
 
-    for (size_t i = 0; i < p->nb_subpolys; ++i) {
-      size_t indx = init_indx;
+    for (int32_t i = 0; i < p->nb_subpolys; ++i) {
+      int32_t indx = init_indx;
       double l = dash_offset;
-      size_t fst = (i == 0) ? 0 : p->subpolys[i - 1];
+      int32_t fst = (i == 0) ? 0 : p->subpolys[i - 1];
       if (init_indx % 2 == 0) {
         polygon_add_point(dashed_poly, p->points[fst]);
       }
@@ -538,7 +538,7 @@ polygonize(
 
     primitive_type_t prim = path_iterator_get_prim(i);
 
-    for (size_t i = 0; i < prim_points[prim]; ++i) {
+    for (int32_t i = 0; i < prim_points[prim]; ++i) {
       rect_expand(bbox, points[i]);
     }
 
@@ -588,7 +588,7 @@ polygonize_outline(
   const transform_t *transform,
   bool only_linear,
   const double *dash,
-  size_t dash_array_size,
+  int32_t dash_array_size,
   double dash_offset)
 {
   assert(path != NULL);

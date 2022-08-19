@@ -220,7 +220,7 @@ unx_impexp_import_png(
   }
 
   if (alloc == true) {
-    data = calloc(width * height, COLOR_SIZE);
+    data = (color_t_ *)calloc(width * height, COLOR_SIZE);
     if (data == NULL) {
       goto error;
     }

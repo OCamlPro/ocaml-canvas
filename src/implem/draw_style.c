@@ -40,7 +40,7 @@ draw_style_copy(
 {
   assert(s != NULL);
 
-  draw_style_t sc = (draw_style_t)*s;
+  draw_style_t sc = *(draw_style_t *)s;
   switch (s->type) {
     case DRAW_STYLE_COLOR:
       break;

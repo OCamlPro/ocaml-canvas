@@ -29,7 +29,7 @@ typedef struct state_t {
   font_desc_t *font_desc; // font, textAlign, textBaseline, direction
   list_t *clip_path;
   double *line_dash;
-  size_t line_dash_len;
+  int32_t line_dash_len;
   double line_dash_offset;
   double line_width;
   double global_alpha; // 0.0 - 1.0

@@ -1074,7 +1074,8 @@ _canvas_clip_fill_instr(
 
   draw_style_t white = (draw_style_t){ .type = DRAW_STYLE_COLOR,
                                        .content.color = color_white };
-  rect_t bbox = rect(point(0.0, 0.0), point(c->width, c->height));
+  rect_t bbox = rect(point(0.0, 0.0),
+                     point((double)c->width, (double)c->height));
   poly_render(&(c->clip_region), instr->poly, &bbox,
               white, 1.0, ONE_MINUS_SRC,
               NULL, instr->non_zero, c->state->transform);
@@ -1603,10 +1604,10 @@ canvas_blit(
     }
   } else {
     // Calculate output mesh
-    point_t p1 = point(dx, dy);
-    point_t p2 = point(dx + width, dy);
-    point_t p3 = point(dx + width, dy + height);
-    point_t p4 = point(dx, dy + height);
+    point_t p1 = point((double)dx, (double)dy);
+    point_t p2 = point((double)(dx + width), (double)dy);
+    point_t p3 = point((double)(dx + width), (double)(dy + height));
+    point_t p4 = point((double)dx, (double)(dy + height));
 
     transform_apply(dc->state->transform, &p1);
     transform_apply(dc->state->transform, &p2);
@@ -1632,7 +1633,7 @@ canvas_blit(
     // Run through
     for (int32_t x = aabb_min_x; x <= aabb_max_x; x++) {
       for (int32_t y = aabb_min_y; y <= aabb_max_y; y++) {
-        point_t p = point(x, y);
+        point_t p = point((double)x, (double)y);
         transform_apply(inv_transform, &p);
         // Get coords
         double uvx = p.x + sx - dx;
