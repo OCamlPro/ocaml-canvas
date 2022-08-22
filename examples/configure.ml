@@ -57,3 +57,8 @@ let () =
   add_executable "compositions" [ "fabric.png"; "dragon.png" ];
   add_executable "aim_with_mouse" [];
   add_executable "clipping" [ "dragon.png" ];
+  add_executable "hexagon_grid" [ "hexagon.png" ];
+  add_executable "ball" [ "dragon.png" ];
+  add_executable "spritesheet" [ "spritesheet.png" ];
+  add_executable "draw" [ "colors.png" ];
+  add_executable "window_with_textbox" [];
