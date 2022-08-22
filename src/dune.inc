@@ -15,8 +15,9 @@
          qtz_sw_context qtz_hw_context
          x11_keysym x11_keyboard x11_backend x11_target x11_window
          x11_sw_context x11_hw_context
-         wl_backend wl_target wl_window
+         wl_backend wl_memory wl_target wl_window
          wl_sw_context wl_hw_context
+         wl_decoration wl_keyboard xdg-shell-protocol xdg-decor-protocol
          window pixmap image_interpolation filters transform draw_instr
          sw_context hw_context context
          font_desc gdi_font qtz_font unx_font font

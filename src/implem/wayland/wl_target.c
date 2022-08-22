@@ -10,21 +10,36 @@
 
 #ifdef HAS_WAYLAND
 
-#include <stddef.h>
+#include <stdlib.h>
+#include <assert.h>
+
+#include <wayland-client.h>
 
 #include "wl_target.h"
 
 wl_target_t *
 wl_target_create(
-  void *dummy)
+  struct wl_surface *wl_surface)
 {
-  return NULL;
+  assert(wl_surface != NULL);
+
+  wl_target_t *target = (wl_target_t *)calloc(1, sizeof(wl_target_t));
+  if (target == NULL) {
+    return NULL;
+  }
+
+  target->wl_surface = wl_surface;
+
+  return target;
 }
 
 void
 wl_target_destroy(
   wl_target_t *target)
 {
+  assert(target != NULL);
+
+  free(target);
 }
 
 #else

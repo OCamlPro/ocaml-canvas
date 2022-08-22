@@ -44,6 +44,9 @@ let wl_config c =
   in
   "-DHAS_WAYLAND" :: cflags, "-lrt" :: libs
 
+let xdg_decoration_config _c =
+  [ "-DHAS_XDG_DECORATION" ], []
+
 let fc_config c =
   let cflags, libs =
     query_or_default c "fontconfig"
@@ -120,6 +123,19 @@ int main()
 }
 |}
 
+let xdg_decoration_test = {|
+#include <wayland-client.h>
+#include <wayland-cursor.h>
+#define HAS_XDG_DECORATION
+#include "../implem/wayland/xdg-decor-protocol.h"
+#include "../implem/wayland/xdg-decor-protocol.c"
+int main()
+{
+  wl_display_connect(NULL);
+  return 0;
+}
+|}
+
 let fc_test = {|
 #include <fontconfig/fontconfig.h>
 int main()
@@ -168,6 +184,7 @@ let () =
           (qtz_config, qtz_test);
           (x11_config, x11_test);
           (wl_config, wl_test);
+          (xdg_decoration_config, xdg_decoration_test);
           (fc_config, fc_test);
           (ft_config, ft_test);
           (png_config, png_test); ]
