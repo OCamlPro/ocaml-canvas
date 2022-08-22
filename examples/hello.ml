@@ -10,9 +10,10 @@
 
 open OcamlCanvas.V1
 
-type Event.payload += CanvasBlit of [`Offscreen] Canvas.t * [`Onscreen] Canvas.t * (int * int)
+type Event.payload += CanvasBlit of [`Offscreen] Canvas.t *
+                                      [`Onscreen] Canvas.t * (int * int)
 
-let pi = acos(-1.)
+let pi = acos (-1.0)
 
 let () =
 
@@ -99,8 +100,8 @@ let () =
         Canvas.fill c ~nonzero:false;
         state, true
 
-    | Event.KeyAction { canvas = _; timestamp = _;
-                        key; char = _; flags = _; state = Down } ->
+    | Event.KeyAction { canvas = _; timestamp = _; key;
+                        char = _; flags = _; state = Down } ->
         if key = Event.KeyEscape then
           Backend.stop ();
         state, true
@@ -115,6 +116,6 @@ let () =
     | _ ->
         state, false
 
-    ) (function state ->
+    ) (fun state ->
          Printf.printf "Displayed %Ld frames. Goodbye !\n" state
     ) 0L

@@ -103,3 +103,67 @@
  (action (run js_of_ocaml build-fs -o %{target} -I ../assets
           dragon.png:/static/assets/)))
 
+
+(executable
+ (name hexagon_grid)
+ (public_name ocaml-canvas-hexagon_grid)
+ (modes byte_complete native js)
+ (modules hexagon_grid)
+ (libraries ocaml-canvas)
+ (js_of_ocaml (javascript_files hexagon_grid-extfs.js)))
+
+(rule
+ (target hexagon_grid-extfs.js)
+ (action (run js_of_ocaml build-fs -o %{target} -I ../assets
+          hexagon.png:/static/assets/)))
+
+
+(executable
+ (name ball)
+ (public_name ocaml-canvas-ball)
+ (modes byte_complete native js)
+ (modules ball)
+ (libraries ocaml-canvas)
+ (js_of_ocaml (javascript_files ball-extfs.js)))
+
+(rule
+ (target ball-extfs.js)
+ (action (run js_of_ocaml build-fs -o %{target} -I ../assets
+          dragon.png:/static/assets/)))
+
+
+(executable
+ (name spritesheet)
+ (public_name ocaml-canvas-spritesheet)
+ (modes byte_complete native js)
+ (modules spritesheet)
+ (libraries ocaml-canvas)
+ (js_of_ocaml (javascript_files spritesheet-extfs.js)))
+
+(rule
+ (target spritesheet-extfs.js)
+ (action (run js_of_ocaml build-fs -o %{target} -I ../assets
+          spritesheet.png:/static/assets/)))
+
+
+(executable
+ (name draw)
+ (public_name ocaml-canvas-draw)
+ (modes byte_complete native js)
+ (modules draw)
+ (libraries ocaml-canvas)
+ (js_of_ocaml (javascript_files draw-extfs.js)))
+
+(rule
+ (target draw-extfs.js)
+ (action (run js_of_ocaml build-fs -o %{target} -I ../assets
+          colors.png:/static/assets/)))
+
+
+(executable
+ (name window_with_textbox)
+ (public_name ocaml-canvas-window_with_textbox)
+ (modes byte_complete native js)
+ (modules window_with_textbox)
+ (libraries ocaml-canvas))
+
