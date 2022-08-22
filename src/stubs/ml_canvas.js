@@ -703,7 +703,6 @@ function ml_canvas_restore(canvas) {
 
 //Provides: _color_of_int
 function _color_of_int(i) {
-  i = i >>> 0;
   var a = ((i & 0xFF000000) >>> 24);
   if (a == 255) {
     return "#" + (i & 0x00FFFFFF).toString(16).padStart(6, '0');
@@ -1111,7 +1110,7 @@ function ml_canvas_blit(dst_canvas, dpos, src_canvas, spos, size) {
 //Provides: ml_canvas_get_pixel
 function ml_canvas_get_pixel(canvas, pos) {
   var image = canvas.ctxt.getImageData(pos[1], pos[2], 1, 1);
-  return /*image.data[3] << 24 +*/
+  return image.data[3] << 24 +
          image.data[0] << 16 +
          image.data[1] << 8 +
          image.data[2] << 0;
@@ -1120,10 +1119,10 @@ function ml_canvas_get_pixel(canvas, pos) {
 //Provides: ml_canvas_set_pixel
 function ml_canvas_set_pixel(canvas, pos, color) {
   var image = canvas.ctxt.createImageData(1, 1);
-  image.data[3] = 0xFF; //(color & 0xFF000000) >> 24; // A
-  image.data[0] = (color & 0x00FF0000) >> 16; // R
-  image.data[1] = (color & 0x0000FF00) >> 8; // G
-  image.data[2] = (color & 0x000000FF) >> 0; // B
+  image.data[3] = (color & 0xFF000000) >>> 24; // A
+  image.data[0] = (color & 0x00FF0000) >>> 16; // R
+  image.data[1] = (color & 0x0000FF00) >>> 8; // G
+  image.data[2] = (color & 0x000000FF) >>> 0; // B
   canvas.ctxt.putImageData(image, pos[1], pos[2]);
 }
 
