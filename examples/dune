@@ -114,6 +114,15 @@
  (js_of_ocaml (javascript_files clipping-extfs.js))
 )
 
+(executable
+ (name ball)
+ (public_name ocaml-canvas-ball)
+ (modes byte_complete native js)
+ (modules ball)
+ (libraries ocaml-canvas)
+ (js_of_ocaml (javascript_files clipping-extfs.js))
+)
+
 (rule
   (target clipping-extfs.js)
   (action (run js_of_ocaml build-fs -o %{target} -I ../assets
