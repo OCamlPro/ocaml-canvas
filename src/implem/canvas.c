@@ -641,6 +641,31 @@ canvas_set_cap_type(
 }
 
 double
+canvas_get_miter_limit(
+  const canvas_t *canvas)
+{
+  assert(canvas != NULL);
+  assert(canvas->state != NULL);
+
+  return canvas->state->miter_limit;
+}
+
+void
+canvas_set_miter_limit(
+  canvas_t *canvas,
+  double miter_limit)
+{
+  assert(canvas != NULL);
+  assert(canvas->state != NULL);
+
+  if (miter_limit <= 0.0) {
+    return;
+  }
+
+  canvas->state->miter_limit = miter_limit;
+}
+
+double
 canvas_get_line_dash_offset(
   const canvas_t *canvas)
 {
@@ -1296,6 +1321,7 @@ canvas_stroke(
   if (polygonize_outline(path2d_get_path(c->path_2d),
                          c->state->line_width, p, &bbox,
                          c->state->join_type, c->state->cap_type,
+                         c->state->miter_limit,
                          c->state->transform, true,
                          c->state->line_dash, c->state->line_dash_len,
                          c->state->line_dash_offset) == true) {
@@ -1333,6 +1359,7 @@ canvas_stroke_path(
   if (polygonize_outline(path2d_get_path(path),
                          c->state->line_width, p, &bbox,
                          c->state->join_type, c->state->cap_type,
+                         c->state->miter_limit,
                          c->state->transform, false,
                          c->state->line_dash, c->state->line_dash_len,
                          c->state->line_dash_offset) == true) {
@@ -1508,6 +1535,7 @@ canvas_stroke_rect(
   }
 
   polygon_offset(p, tp, c->state->line_width, JOIN_ROUND, CAP_BUTT,
+                 c->state->miter_limit,
                  c->state->transform, true, c->state->line_dash,
                  c->state->line_dash_len, c->state->line_dash_offset);
 

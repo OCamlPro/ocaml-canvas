@@ -216,6 +216,15 @@ canvas_set_cap_type(
   cap_type_t cap_type);
 
 double
+canvas_get_miter_limit(
+  const canvas_t *canvas);
+
+void
+canvas_set_miter_limit(
+  canvas_t *canvas,
+  double miter_limit);
+
+double
 canvas_get_line_dash_offset(
   const canvas_t *canvas);
 

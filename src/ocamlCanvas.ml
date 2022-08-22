@@ -487,6 +487,12 @@ module Canvas = struct
   external setLineCap : 'a t -> line_cap -> unit
     = "ml_canvas_set_line_cap"
 
+  external getMiterLimit : 'a t -> float
+    = "ml_canvas_get_miter_limit"
+
+  external setMiterLimit : 'a t -> float -> unit
+    = "ml_canvas_set_miter_limit"
+
   external getLineDashOffset : 'a t -> float
     = "ml_canvas_get_line_dash_offset"
 

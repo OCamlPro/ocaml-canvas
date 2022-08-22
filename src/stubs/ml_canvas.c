@@ -876,6 +876,25 @@ ml_canvas_set_line_cap(
 }
 
 CAMLprim value
+ml_canvas_get_miter_limit(
+  value mlCanvas)
+{
+  CAMLparam1(mlCanvas);
+  CAMLreturn(caml_copy_double(canvas_get_miter_limit(Canvas_val(mlCanvas))));
+}
+
+CAMLprim value
+ml_canvas_set_miter_limit(
+  value mlCanvas,
+  value mlMiterLimit)
+{
+  CAMLparam2(mlCanvas, mlMiterLimit);
+  canvas_set_miter_limit(Canvas_val(mlCanvas),
+                         Double_val(mlMiterLimit));
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
 ml_canvas_get_line_dash_offset(
   value mlCanvas)
 {

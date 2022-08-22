@@ -167,9 +167,14 @@ _miter_to_poly(
   point_t p12,
   point_t p21,
   point_t p22,
-  polygon_t *p)
+  polygon_t *p,
+  double miter_limit,
+  point_t po,
+  double line_width,
+  const transform_t *inverse_linear)
 {
   assert(p != NULL);
+  assert(inverse_linear != NULL);
 
   // Compute intersection and add point
   double a11 = p12.x - p11.x;
@@ -183,7 +188,13 @@ _miter_to_poly(
   double ans = topdet / det;
   point_t intersection =
     point(p11.x + ans * (p12.x - p11.x), p11.y + ans * (p12.y - p11.y));
-  polygon_add_point(p, intersection);
+  point_t dp = point(intersection.x - po.x, intersection.y - po.y);
+  transform_apply(inverse_linear, &dp);
+  double dist_to_intersection = point_dist_2(dp, point(0.0, 0.0));
+  double miter_cut = (line_width * miter_limit / 2.0);
+  if (dist_to_intersection < miter_cut * miter_cut) {
+    polygon_add_point(p, intersection);
+  }
 }
 
 static void
@@ -212,6 +223,7 @@ polygon_offset(
   double w,
   join_type_t join_type,
   cap_type_t cap_type,
+  double miter_limit,
   const transform_t *transform,
   bool only_linear,
   const double *dash,
@@ -331,7 +343,8 @@ polygon_offset(
                                           iter, lin, inv_lin);
             break;
           case JOIN_MITER:
-            _miter_to_poly(p1o, p2o, p1n, p2n, np);
+            _miter_to_poly(p1o, p2o, p1n, p2n, np, miter_limit,
+                           p->points[i], w, inv_lin);
             break;
           case JOIN_BEVEL:
             break;
@@ -362,7 +375,8 @@ polygon_offset(
                                           iter, lin, inv_lin);
             break;
           case JOIN_MITER:
-            _miter_to_poly(p1o, p2o, p1n, p2n, np);
+            _miter_to_poly(p1o, p2o, p1n, p2n, np, miter_limit,
+                           p->points[ifp], w, inv_lin);
             break;
           case JOIN_BEVEL:
             break;
@@ -425,7 +439,8 @@ polygon_offset(
                                           iter, lin, inv_lin);
             break;
           case JOIN_MITER:
-            _miter_to_poly(p1o, p2o, p1n, p2n, np);
+            _miter_to_poly(p1o, p2o, p1n, p2n, np, miter_limit,
+                           p->points[i], w, inv_lin);
             break;
           case JOIN_BEVEL:
             break;
@@ -455,7 +470,8 @@ polygon_offset(
                                           iter, lin, inv_lin);
             break;
           case JOIN_MITER:
-            _miter_to_poly(p1o, p2o, p1n, p2n, np);
+            _miter_to_poly(p1o, p2o, p1n, p2n, np, miter_limit,
+                           p->points[ifp], w, inv_lin);
             break;
           case JOIN_BEVEL:
             break;
@@ -584,6 +600,7 @@ polygonize_outline(
   rect_t *bbox, // out
   join_type_t join_type,
   cap_type_t cap_type,
+  double miter_limit,
   const transform_t *transform,
   bool only_linear,
   const double *dash,
@@ -609,8 +626,8 @@ polygonize_outline(
     return false;
   }
 
-  polygon_offset(tp, p, w, join_type, cap_type, transform, only_linear,
-                 dash, dash_array_size, dash_offset);
+  polygon_offset(tp, p, w, join_type, cap_type, miter_limit, transform,
+                 only_linear, dash, dash_array_size, dash_offset);
 
   polygon_destroy(tp);
 
