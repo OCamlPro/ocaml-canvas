@@ -105,6 +105,15 @@
  (libraries ocaml-canvas)
  (js_of_ocaml (javascript_files clipping-extfs.js)))
 
+(executable
+ (name hexagon_grid)
+ (public_name ocaml-canvas-hexagon_grid)
+ (modes byte_complete native js)
+ (modules hexagon_grid)
+ (libraries ocaml-canvas)
+ (js_of_ocaml (javascript_files clipping-extfs.js))
+)
+
 (rule
   (target clipping-extfs.js)
   (action (run js_of_ocaml build-fs -o %{target} -I ../assets
