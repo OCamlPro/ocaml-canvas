@@ -91,3 +91,12 @@
   (target clipping-extfs.js)
   (action (run js_of_ocaml build-fs -o clipping-extfs.js -I ../ dragon.png))
 )
+
+
+(executable
+ (name arcs)
+ (public_name ocaml-canvas-arcs)
+ (modes byte_complete native js)
+ (modules arcs)
+ (libraries ocaml-canvas)
+)
