@@ -33,17 +33,16 @@ typedef struct state_t {
   double line_dash_offset;
   double line_width;
   double global_alpha; // 0.0 - 1.0
-  // outline region
   draw_style_t fill_style;
   draw_style_t stroke_style;
   color_t_ shadow_color;
   double shadow_offset_x;
   double shadow_offset_y;
   double shadow_blur;
-  composite_operation_t global_composite_operation;
-  join_type_t join_type; // lineJoin, miterLimit, lineDashOffset
+  double miter_limit;
+  join_type_t join_type; // lineJoin
   cap_type_t cap_type; // lineCap
-  // imageSmoothingEnabled
+  composite_operation_t global_composite_operation;
 } state_t;
 
 state_t *

@@ -712,6 +712,12 @@ module Canvas : sig
   val setLineCap : 'a t -> line_cap -> unit
   (** [setLineJoin c j] sets the current line cap type for canvas[c] to [j] *)
 
+  val getMiterLimit : 'a t -> float
+  (** [getMiterLimit c] returns the current miter limit for canvas [c] *)
+
+  val setMiterLimit : 'a t -> float -> unit
+  (** [getMiterLimit c m] sets the current miter limit for canvas [c] to [m] *)
+
   val getLineDashOffset : 'a t -> float
   (** [getLineDashOffset c] returns the current line offset of [c] *)
 

@@ -813,6 +813,16 @@ function ml_canvas_set_line_join(canvas, join) {
   canvas.ctxt.lineJoin = Join_type_val(join);
 }
 
+//Provides: ml_canvas_get_miter_limit
+function ml_canvas_get_miter_limit(canvas) {
+  return canvas.ctxt.miterLimit;
+}
+
+//Provides: ml_canvas_set_miter_limit
+function ml_canvas_set_miter_limit(canvas, limit) {
+  canvas.ctxt.miterLimit = limit;
+}
+
 //Provides: ml_canvas_get_stroke_color
 //Requires: _int_of_color
 function ml_canvas_get_stroke_color(canvas) {
