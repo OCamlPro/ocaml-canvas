@@ -1,7 +1,7 @@
 
 (rule
   (target index.html)
-  (deps (glob_files *.ml))
+  (deps (glob_files *.js))
   (action (run ./make_index/make_index.exe %{target})))
 
 
