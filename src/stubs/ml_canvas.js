@@ -48,7 +48,9 @@ function _make_key_event(e, state) {
 function _key_down_handler(e) {
   if (_focus !== null) {
     var evt = _make_key_event(e, KEY_STATE.DOWN);
-    _ml_canvas_mlEventListener(evt);
+    if (_ml_canvas_mlEventListener !== null) {
+      _ml_canvas_mlEventListener(evt);
+    }
   }
   return false;
 }
@@ -58,7 +60,9 @@ function _key_down_handler(e) {
 function _key_up_handler(e) {
   if (_focus !== null) {
     var evt = _make_key_event(e, KEY_STATE.UP);
-    _ml_canvas_mlEventListener(evt);
+    if (_ml_canvas_mlEventListener !== null) {
+      _ml_canvas_mlEventListener(evt);
+    }
   }
   return false;
 }
@@ -74,7 +78,9 @@ function _header_down_handler(e) {
       var evt = [ EVENT_TAG.CANVAS_CLOSED,
                   [ 0, e.target.canvas,
                     caml_int64_of_float(e.timeStamp * 1000.0) ] ];
-      _ml_canvas_mlEventListener(evt);
+      if (_ml_canvas_mlEventListener !== null) {
+        _ml_canvas_mlEventListener(evt);
+      }
       ml_canvas_destroy(e.target.canvas);
       _focus = null;
       return false;
@@ -98,7 +104,9 @@ function _surface_down_handler(e) {
                 [ 0, e.target.canvas,
                   caml_int64_of_float(e.timeStamp * 1000.0),
                   [ 0, e.offsetX, e.offsetY ], e.button + 1, 1 ] ];
-    _ml_canvas_mlEventListener(evt);
+    if (_ml_canvas_mlEventListener !== null) {
+      _ml_canvas_mlEventListener(evt);
+    }
   }
   return false;
 }
@@ -112,7 +120,9 @@ function _up_handler(e) {
                     [ 0, e.target.canvas,
                       caml_int64_of_float(e.timeStamp * 1000.0),
                       [ 0, e.offsetX, e.offsetY ], e.button + 1, 0 ] ];
-        _ml_canvas_mlEventListener(evt);
+        if (_ml_canvas_mlEventListener !== null) {
+          _ml_canvas_mlEventListener(evt);
+        }
     }
   return false; // = prevent default behavior
 }
@@ -137,7 +147,9 @@ function _move_handler(e) {
                 [ 0, e.target.canvas,
                   caml_int64_of_float(e.timeStamp * 1000.0),
                   [ 0, e.offsetX, e.offsetY ] ] ];
-    _ml_canvas_mlEventListener(evt);
+    if (_ml_canvas_mlEventListener !== null) {
+      _ml_canvas_mlEventListener(evt);
+    }
   }
   return false;
 }
@@ -152,7 +164,9 @@ function _frame_handler(timestamp) {
     var evt = [ EVENT_TAG.FRAME,
                 [ 0, surfaces[i].canvas,
                   caml_int64_of_float(timestamp * 1000.0) ] ];
-    _ml_canvas_mlEventListener(evt);
+    if (_ml_canvas_mlEventListener !== null) {
+      _ml_canvas_mlEventListener(evt);
+    }
   }
 
   window.requestAnimationFrame(_frame_handler);
