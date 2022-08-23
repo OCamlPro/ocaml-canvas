@@ -54,7 +54,7 @@ let () =
   Canvas.blit ~dst:c ~dpos:(10, 0) ~src:c2 ~spos:(0, 0) ~size:(15, 15);
   Canvas.restore c;
 
-  let c3 = Canvas.createOffscreenFromPNG "frog.png" in
+  let c3 = Canvas.createOffscreenFromPNG "assets/frog.png" in
   let size = Canvas.getSize c3 in
   Canvas.save c;
   Canvas.setTransform c (1.0, 0.0, 0.0, 1.0, 0.0, 0.0);
