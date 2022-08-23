@@ -24,7 +24,7 @@ var _move = {
 }
 
 //Provides: _make_key_event
-//Requires: _focus,keyname_to_keycode,Val_key_code,Val_key_state,EVENT_TAG
+//Requires: _focus,caml_int64_of_float,keyname_to_keycode,Val_key_code,Val_key_state,EVENT_TAG
 function _make_key_event(e, state) {
   var char = e.key.length === 1 ? e.key.charCodeAt(0) : 0;
   var flags = [ 0, e.shiftKey, e.altKey, e.ctrlKey, e.metaKey,
@@ -32,7 +32,7 @@ function _make_key_event(e, state) {
                    e.getModifierState("NumLock"),
                    e.key === "Dead" ];
   var evt = [ EVENT_TAG.KEY_ACTION,
-              [ 0, _focus, e.timeStamp * 1000.0,
+              [ 0, _focus, caml_int64_of_float(e.timeStamp * 1000.0),
                 Val_key_code(keyname_to_keycode(e.code)),
                 char, flags, Val_key_state(state) ] ];
   return evt;
@@ -64,7 +64,7 @@ function _key_up_handler(e) {
 }
 
 //Provides: _header_down_handler
-//Requires: _focus,_move,ml_canvas_destroy,_ml_canvas_mlEventListener,EVENT_TAG
+//Requires: _focus,_move,ml_canvas_destroy,_ml_canvas_mlEventListener,caml_int64_of_float,EVENT_TAG
 function _header_down_handler(e) {
   if (e.target !== null) {
     _focus = e.target.canvas;
@@ -72,7 +72,8 @@ function _header_down_handler(e) {
         (e.offsetX <= e.target.canvas.width - 10) &&
         (e.offsetY >= 10) && (e.offsetY <= 20)) {
       var evt = [ EVENT_TAG.CANVAS_CLOSED,
-                  [ 0, e.target.canvas, e.timeStamp * 1000.0 ] ];
+                  [ 0, e.target.canvas,
+                    caml_int64_of_float(e.timeStamp * 1000.0) ] ];
       _ml_canvas_mlEventListener(evt);
       ml_canvas_destroy(e.target.canvas);
       _focus = null;
@@ -88,13 +89,14 @@ function _header_down_handler(e) {
 }
 
 //Provides: _surface_down_handler
-//Requires: _focus,_ml_canvas_mlEventListener,EVENT_TAG
+//Requires: _focus,_ml_canvas_mlEventListener,caml_int64_of_float,EVENT_TAG
 function _surface_down_handler(e) {
   if (e.target !== null) {
     _focus = e.target.canvas;
     document.body.insertBefore(e.target.canvas.frame, null);
     var evt = [ EVENT_TAG.BUTTON_ACTION,
-                [ 0, e.target.canvas, e.timeStamp * 1000.0,
+                [ 0, e.target.canvas,
+                  caml_int64_of_float(e.timeStamp * 1000.0),
                   [ 0, e.offsetX, e.offsetY ], e.button + 1, 1 ] ];
     _ml_canvas_mlEventListener(evt);
   }
@@ -102,12 +104,13 @@ function _surface_down_handler(e) {
 }
 
 //Provides: _up_handler
-//Requires: _move,_ml_canvas_mlEventListener,EVENT_TAG
+//Requires: _move,_ml_canvas_mlEventListener,caml_int64_of_float,EVENT_TAG
 function _up_handler(e) {
   _move.moving = false;
     if (e.target.canvas !== undefined) {
         var evt = [ EVENT_TAG.BUTTON_ACTION,
-                    [ 0, e.target.canvas, e.timeStamp * 1000.0,
+                    [ 0, e.target.canvas,
+                      caml_int64_of_float(e.timeStamp * 1000.0),
                       [ 0, e.offsetX, e.offsetY ], e.button + 1, 0 ] ];
         _ml_canvas_mlEventListener(evt);
     }
@@ -115,7 +118,7 @@ function _up_handler(e) {
 }
 
 //Provides: _move_handler
-//Requires: _move,_ml_canvas_mlEventListener,EVENT_TAG
+//Requires: _move,_ml_canvas_mlEventListener,caml_int64_of_float,EVENT_TAG
 function _move_handler(e) {
   if (_move.moving) {
     var new_x = e.pageX;
@@ -131,7 +134,8 @@ function _move_handler(e) {
     _move.target.style.top = canvas.y + "px";
   } else if (e.target.canvas !== undefined) {
     var evt = [ EVENT_TAG.MOUSE_MOVE,
-                [ 0, e.target.canvas, e.timeStamp * 1000.0,
+                [ 0, e.target.canvas,
+                  caml_int64_of_float(e.timeStamp * 1000.0),
                   [ 0, e.offsetX, e.offsetY ] ] ];
     _ml_canvas_mlEventListener(evt);
   }
@@ -139,14 +143,15 @@ function _move_handler(e) {
 }
 
 //Provides: _frame_handler
-//Requires: _ml_canvas_mlEventListener,EVENT_TAG
+//Requires: _ml_canvas_mlEventListener,caml_int64_of_float,EVENT_TAG
 function _frame_handler(timestamp) {
 
   var surfaces = document.getElementsByTagName("canvas");
 
   for (var i = 0; i < surfaces.length; ++i) {
     var evt = [ EVENT_TAG.FRAME,
-                [ 0, surfaces[i].canvas, timestamp * 1000.0 ] ];
+                [ 0, surfaces[i].canvas,
+                  caml_int64_of_float(timestamp * 1000.0) ] ];
     _ml_canvas_mlEventListener(evt);
   }
 
