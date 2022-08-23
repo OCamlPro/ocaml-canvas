@@ -123,6 +123,15 @@
  (js_of_ocaml (javascript_files clipping-extfs.js))
 )
 
+(executable
+ (name spritesheet)
+ (public_name ocaml-canvas-spritesheet)
+ (modes byte_complete native js)
+ (modules spritesheet)
+ (libraries ocaml-canvas)
+ (js_of_ocaml (javascript_files clipping-extfs.js))
+)
+
 (rule
   (target clipping-extfs.js)
   (action (run js_of_ocaml build-fs -o %{target} -I ../assets
