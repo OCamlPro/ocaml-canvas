@@ -32,16 +32,21 @@ let gen_global_index file files =
 
 let () =
   let files = Array.to_list (Sys.readdir "./") in
-  let ml_files =
-    List.fold_left (fun ml_files file ->
+  let js_files =
+    List.fold_left (fun js_files file ->
         try
+(*
           let pos = String.rindex file '.' in
           let ext = String.sub file pos (String.length file - pos) in
           if not (String.equal ext ".ml") then ml_files
           else String.sub file 0 pos :: ml_files
+*)
+          let ext = String.sub file (String.length file - 6) 6 in
+          if not (String.equal ext ".bc.js") then js_files
+          else String.sub file 0 (String.length file - 6) :: js_files
         with _ ->
-          ml_files
+          js_files
       ) [] files |> List.fast_sort String.compare
   in
-  List.iter gen_sample_index ml_files;
-  gen_global_index Sys.argv.(1) ml_files
+  List.iter gen_sample_index js_files;
+  gen_global_index Sys.argv.(1) js_files
