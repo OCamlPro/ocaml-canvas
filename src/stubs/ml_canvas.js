@@ -96,21 +96,26 @@ function _surface_down_handler(e) {
     var evt = [ EVENT_TAG.BUTTON_ACTION,
                 [ 0, e.target.canvas, e.timeStamp * 1000.0,
                   [ 0, e.offsetX, e.offsetY ], e.button + 1, 1 ] ];
-
     _ml_canvas_mlEventListener(evt);
   }
   return false;
 }
 
 //Provides: _up_handler
-//Requires: _move
+//Requires: _move,_ml_canvas_mlEventListener,EVENT_TAG
 function _up_handler(e) {
   _move.moving = false;
+    if (e.target.canvas !== undefined) {
+        var evt = [ EVENT_TAG.BUTTON_ACTION,
+                    [ 0, e.target.canvas, e.timeStamp * 1000.0,
+                      [ 0, e.offsetX, e.offsetY ], e.button + 1, 0 ] ];
+        _ml_canvas_mlEventListener(evt);
+    }
   return false; // = prevent default behavior
 }
 
 //Provides: _move_handler
-//Requires: _move
+//Requires: _move,_ml_canvas_mlEventListener,EVENT_TAG
 function _move_handler(e) {
   if (_move.moving) {
     var new_x = e.pageX;
@@ -124,6 +129,11 @@ function _move_handler(e) {
     canvas.y += dy;
     _move.target.style.left = canvas.x + "px";
     _move.target.style.top = canvas.y + "px";
+  } else if (e.target.canvas !== undefined) {
+    var evt = [ EVENT_TAG.MOUSE_MOVE,
+                [ 0, e.target.canvas, e.timeStamp * 1000.0,
+                  [ 0, e.offsetX, e.offsetY ] ] ];
+    _ml_canvas_mlEventListener(evt);
   }
   return false;
 }
