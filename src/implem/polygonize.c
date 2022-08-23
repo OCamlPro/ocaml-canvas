@@ -241,7 +241,6 @@ polygon_offset(
     }
 
     int32_t init_indx = 0;
-    //dash_offset = -dash_offset;
     dash_offset -= dash_length * floor(dash_offset / dash_length);
     while (dash_offset >= dash[init_indx]) {
       dash_offset -= dash[init_indx];
