@@ -991,7 +991,7 @@ Val_repeat(
   pattern_repeat_t repeat)
 {
   CAMLparam0();
-  static const pattern_repeat_t map[4] = {
+  static const repeat_tag_t map[4] = {
     [PATTERN_NO_REPEAT] = TAG_NO_REPEAT,
     [PATTERN_REPEAT_X]  = TAG_REPEAT_X,
     [PATTERN_REPEAT_Y]  = TAG_REPEAT_Y,
