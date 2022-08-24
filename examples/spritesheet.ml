@@ -17,7 +17,7 @@ let () =
 
   Backend.(init default_options);
 
-  let c = Canvas.createFramed "Hexagon Grid"
+  let c = Canvas.createFramed "Spritesheet"
             ~pos:(300, 200) ~size:(1024, 1024) in
   let sprite_sheet = Canvas.createOffscreenFromPNG "./assets/spritesheet.png" in
   let look_direction = ref 0 and animation_frame = ref 0 and clock = ref Int64.zero in

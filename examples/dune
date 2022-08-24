@@ -137,6 +137,15 @@
   (action (run js_of_ocaml build-fs -o %{target} -I ../assets
            spritesheet.png:/static/assets/)))
 
+(executable
+ (name select_and_clip)
+ (public_name ocaml-canvas-select_and_clip)
+ (modes byte_complete native js)
+ (modules select_and_clip)
+ (libraries ocaml-canvas)
+)
+
+
 (rule
   (target clipping-extfs.js)
   (action (run js_of_ocaml build-fs -o %{target} -I ../assets
