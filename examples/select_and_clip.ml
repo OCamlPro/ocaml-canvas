@@ -23,7 +23,8 @@ let () =
   Canvas.setFillColor c (Color.of_argb 0 0 0 0);
   Canvas.setStrokeColor c Color.white;
   Canvas.setStrokeColor draw Color.white;
-  Canvas.setFillColor draw Color.white;
+  Canvas.setFillColor draw Color.black;
+
   Canvas.setLineJoin draw Round;
   Canvas.setLineCap draw RoundCap;
   Canvas.save draw;
@@ -32,6 +33,7 @@ let () =
   Array.set a 1 20.0;
   Canvas.setLineDash c (a);
   Canvas.setFillColor draw Color.black;
+  Canvas.fillRect draw ~pos:(0., 0.) ~size:(float_of_int width, float_of_int height);
   Canvas.show c;
   let selecting = ref false and selection = ref (Path.create ()) in
   let first_pos_x = ref (-1) and first_pos_y = ref (-1) in
@@ -98,6 +100,7 @@ let () =
             proper_path := true;
             Canvas.save draw;
             Canvas.clipPath draw !selection ~nonzero:false;
+            pressing_button := false;
           ) else
             Path.lineTo !selection (float_of_int pos_x, float_of_int pos_y);
         );
