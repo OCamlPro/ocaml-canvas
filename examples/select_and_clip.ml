@@ -20,6 +20,7 @@ let () =
   let c = Canvas.createFramed "Draw"
             ~pos:(300, 200) ~size:(width, height) in
   let draw = Canvas.createOffscreen ~size:(width, height) in
+  let color_map = Canvas.createOffscreenFromPNG "assets/colors.png" in
   Canvas.setFillColor c (Color.of_argb 0 0 0 0);
   Canvas.setStrokeColor c Color.white;
   Canvas.setStrokeColor draw Color.white;
@@ -42,12 +43,14 @@ let () =
   let pressing_button = ref false in
   let proper_path = ref false in
   let line_width = ref 20. in
+  let selected_color = ref Color.white in
+  let selecting_color = ref false in
   Backend.run (function
     | Event.KeyAction { canvas = _; timestamp = _;
                         key; char = _; flags = _; state = Down } ->
         if key = Event.KeyEscape then
           Backend.stop ();
-        if key = Event.KeyS then (
+        if key = Event.KeyS && not !selecting_color then (
           first_pos_x := -1;
           first_pos_y := -1;
           selection := Path.create ();
@@ -55,15 +58,15 @@ let () =
           proper_path := false;
           Canvas.restore draw;
         );
-        if key = Event.KeyD then (
+        if key = Event.KeyD && not !selecting_color then (
           selection := Path.create ();
           selecting := false;
           proper_path := false;
           Canvas.restore draw;
         );
-        if key = Event.KeyF then (
+        if key = Event.KeyF && not !selecting_color then (
           if (!proper_path && not !selecting) then (
-            Canvas.setFillColor draw Color.white;
+            Canvas.setFillColor draw !selected_color;
             Canvas.fillRect draw ~pos:(0., 0.) ~size:(float_of_int width, float_of_int height);
           );
         );
@@ -75,6 +78,7 @@ let () =
                 line_width := !line_width -. 4.;
           );
         );
+        if key = Event.KeyC then selecting_color := true;
         true
     
     | Event.MouseMove { canvas = _; timestamp = _;
@@ -86,10 +90,12 @@ let () =
     | Event.ButtonAction {canvas = _; timestamp = _;
                           position = (pos_x, pos_y); button = ButtonLeft;
                           state = Down} ->
-        pressing_button := true;
+        if (not !selecting && not !selecting_color) then
+          pressing_button := true;
+
         old_m_pos_x := float_of_int pos_x;
         old_m_pos_y := float_of_int pos_y;
-        if !selecting then ( 
+        if !selecting && not !selecting_color then ( 
           if (!first_pos_x < 0) then (
             first_pos_x := pos_x;
             first_pos_y := pos_y;
@@ -104,6 +110,11 @@ let () =
           ) else
             Path.lineTo !selection (float_of_int pos_x, float_of_int pos_y);
         );
+        if (!selecting_color) then (
+          selected_color := Canvas.getPixel color_map (pos_x, pos_y);
+          selecting_color := false;
+        );
+
         true
     
     | Event.ButtonAction {canvas = _; timestamp = _;
@@ -113,8 +124,9 @@ let () =
       true
 
     | Event.Frame { canvas = _; timestamp = t } ->
-        if (!pressing_button && not !selecting) then (
+        if (!pressing_button && not !selecting && not !selecting_color) then (
             Canvas.clearPath draw;
+            Canvas.setStrokeColor draw !selected_color;
             Canvas.setLineWidth draw !line_width;
             Canvas.moveTo draw (!old_m_pos_x, !old_m_pos_y);
             Canvas.lineTo draw (!m_pos_x, !m_pos_y);
@@ -128,6 +140,10 @@ let () =
         Canvas.blit ~dst:c ~dpos:(0, 0) ~src:draw ~spos:(0, 0) ~size:(width, height);  
         Canvas.setGlobalCompositeOperation c SourceOver;
         Canvas.strokePath c !selection;
+        if !selecting_color then (
+          Canvas.setGlobalCompositeOperation c Copy;
+          Canvas.blit ~dst:c ~dpos:(0, 0) ~src:color_map ~spos:(0, 0) ~size:(width, height);  
+        );
         true
 
     | _ ->
