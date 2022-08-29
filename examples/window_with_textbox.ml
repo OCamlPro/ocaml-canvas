@@ -102,10 +102,26 @@ let () =
         position = (pos_x, pos_y); button = ButtonLeft;
         state = Down} ->
         
-        if (in_rect (pos_x, pos_y) (152., 54.) (97., 27.)) then
-          active := 1
-        else if (in_rect (pos_x, pos_y) (152., 104.) (97., 27.)) then
-          active := 2
+        if (in_rect (pos_x, pos_y) (152., 54.) (97., 27.)) then (
+          active := 1;
+          let cursor_target = int_of_float (((float_of_int pos_x) -. 152.) /. char_size) + !offset_1 in
+          if (cursor_target < 0) then
+            cursor_1 := 0 
+          else if (cursor_target > String.length !st1) then
+            cursor_1 := String.length !st1
+          else
+            cursor_1 := cursor_target;
+        )
+        else if (in_rect (pos_x, pos_y) (152., 104.) (97., 27.)) then (
+          active := 2;
+          let cursor_target = int_of_float (((float_of_int pos_x) -. 152.) /. char_size) + !offset_2 in
+          if (cursor_target < 0) then
+            cursor_2 := 0 
+          else if (cursor_target > String.length !st2) then
+            cursor_2 := String.length !st2
+          else
+            cursor_2 := cursor_target;
+        )
         else
           active := 0;        
         true
