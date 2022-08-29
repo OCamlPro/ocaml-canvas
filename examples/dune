@@ -145,6 +145,14 @@
  (libraries ocaml-canvas)
 )
 
+(executable
+ (name window_with_textbox)
+ (public_name ocaml-canvas-window_with_textbox)
+ (modes byte_complete native js)
+ (modules window_with_textbox)
+ (libraries ocaml-canvas)
+)
+
 
 (rule
   (target clipping-extfs.js)
