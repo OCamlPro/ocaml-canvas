@@ -111,7 +111,7 @@
  (modes byte_complete native js)
  (modules hexagon_grid)
  (libraries ocaml-canvas)
- (js_of_ocaml (javascript_files clipping-extfs.js))
+ (js_of_ocaml (javascript_files hexagon-extfs.js))
 )
 
 (executable
@@ -143,7 +143,13 @@
  (modes byte_complete native js)
  (modules select_and_clip)
  (libraries ocaml-canvas)
+ (js_of_ocaml (javascript_files draw-extfs.js))
 )
+
+(rule
+  (target draw-extfs.js)
+  (action (run js_of_ocaml build-fs -o %{target} -I ../assets
+           colors.png:/static/assets/)))
 
 (executable
  (name window_with_textbox)
@@ -158,3 +164,7 @@
   (target clipping-extfs.js)
   (action (run js_of_ocaml build-fs -o %{target} -I ../assets
            dragon.png:/static/assets/)))
+(rule
+  (target hexagon-extfs.js)
+  (action (run js_of_ocaml build-fs -o %{target} -I ../assets
+           hexagon.png:/static/assets/)))
