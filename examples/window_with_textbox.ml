@@ -17,6 +17,7 @@ let in_rect (x1,y1) (posx, posy) (sizex, sizey) =
   (float_of_int y1 >= posy) && (float_of_int y1 <= posy +. sizey)
 
 let is_digit = function '0' .. '9' -> true | _ -> false
+let is_alpha = function 'a' .. 'z' | 'A' .. 'Z' -> true | _ -> false
 
 let insert c s pos =
   let left = String.sub s 0 pos and right = String.sub s pos (String.length s - pos) in
@@ -30,7 +31,7 @@ let () =
 
   Backend.(init default_options);
 
-  let ccm = Canvas.createFramed "Simple Image Manipulation Program"
+  let ccm = Canvas.createFramed "文章入力欄"
   ~pos:(500, 500) ~size:(300, 200) in
   Canvas.setFillColor ccm Color.white;
   Canvas.fillRect ccm ~pos:(0., 0.) ~size:(500., 500.);
@@ -73,7 +74,7 @@ let () =
           let target_offset = match !active with
             | 1 -> offset_1
             | _ -> offset_2 in
-          if (Uchar.is_char c && is_digit (Uchar.to_char c)) then (
+          if (Uchar.is_char c && (is_digit (Uchar.to_char c) || is_alpha (Uchar.to_char c))) then (
             target_string := insert c !target_string !target_cursor;
             target_cursor := !target_cursor + 1;
             if (!target_cursor < !target_offset || !target_cursor > !target_offset + 7) then
