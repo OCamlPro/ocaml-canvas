@@ -918,7 +918,7 @@ function ml_canvas_get_global_composite_operation(canvas) {
 //Provides: ml_canvas_set_global_composite_operation
 //Requires: Compop_val
 function ml_canvas_set_global_composite_operation(canvas, op) {
-  canvas.ctxt.globalCompositeOperation = Compop_val([op]);
+  canvas.ctxt.globalCompositeOperation = Compop_val(op);
 }
 
 //Provides: ml_canvas_get_shadow_color
@@ -1149,10 +1149,11 @@ function ml_canvas_blit(dst_canvas, dpos, src_canvas, spos, size) {
 //Provides: ml_canvas_get_pixel
 function ml_canvas_get_pixel(canvas, pos) {
   var image = canvas.ctxt.getImageData(pos[1], pos[2], 1, 1);
-  return image.data[3] << 24 +
-         image.data[0] << 16 +
-         image.data[1] << 8 +
-         image.data[2] << 0;
+  return ((image.data[3] << 24) >>> 0) |
+          (image.data[0] << 16) |
+          (image.data[1] << 8) |
+          (image.data[2] << 0);
+
 }
 
 //Provides: ml_canvas_set_pixel
