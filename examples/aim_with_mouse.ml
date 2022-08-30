@@ -52,7 +52,7 @@ let () =
 
     
     | Event.Frame { canvas = _; timestamp = _ } ->
-        t := !t +. 1.;
+        t := !t -. 1.;
         Canvas.setLineDashOffset c !t;
         Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(800.0, 600.0);
         Canvas.clearPath c;
@@ -66,6 +66,8 @@ let () =
           Canvas.lineTo c (x_1, y_1);
         done;
         Canvas.stroke c;
+        Canvas.clearPath c;
+        
         true
 
     | _ ->

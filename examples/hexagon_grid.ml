@@ -41,6 +41,7 @@ let () =
         Canvas.setFillColor c Color.black;
         Canvas.fillRect c ~pos:(0. , 0.) ~size:(800., 696.);
         Canvas.setFillGradient hex_grid g;
+        Canvas.setGlobalCompositeOperation hex_grid SourceAtop;
         Canvas.fillRect hex_grid ~pos:(400. -. !counter/. 2., 300. -. !counter/. 2.) ~size:(100., 100.);
         Canvas.fillRect hex_grid ~pos:(400. +. !counter/. 2., 300. +. !counter/. 2.) ~size:(100., 100.);
         Canvas.blit ~dst:c ~dpos:(0, 0) ~src:hex_grid ~spos:(0, 0) ~size:(800, 696);  

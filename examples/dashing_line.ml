@@ -53,6 +53,7 @@ let () =
         if key = Event.KeyEscape then
           Backend.stop ();
         true
+
     
     | Event.Frame { canvas = _; timestamp = _ } ->
         r := !r +. 1.0;
