@@ -120,6 +120,6 @@ path2d_get_path(
 
 void
 path2d_set_destroy_callback(
-  void (*callback)(path2d_t *));
+  void (*callback_function)(path2d_t *));
 
 #endif /* __PATH2D_H */

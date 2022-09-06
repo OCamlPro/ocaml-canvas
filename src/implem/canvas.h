@@ -67,7 +67,7 @@ canvas_create_offscreen_from_png(
 
 void
 canvas_set_destroy_callback(
-  void (*callback)(canvas_t *));
+  void (*callback_function)(canvas_t *));
 
 
 

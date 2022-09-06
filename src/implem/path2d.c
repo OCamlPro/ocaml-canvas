@@ -397,9 +397,9 @@ static void (*_path2d_destroy_callback)(path2d_t *) = NULL;
 
 void
 path2d_set_destroy_callback(
-  void (*callback)(path2d_t *))
+  void (*callback_function)(path2d_t *))
 {
-  _path2d_destroy_callback = callback;
+  _path2d_destroy_callback = callback_function;
 }
 
 static void

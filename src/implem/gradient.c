@@ -280,9 +280,9 @@ static void (*_gradient_destroy_callback)(gradient_t *) = NULL;
 
 void
 gradient_set_destroy_callback(
-  void (*callback)(gradient_t *))
+  void (*callback_function)(gradient_t *))
 {
-  _gradient_destroy_callback = callback;
+  _gradient_destroy_callback = callback_function;
 }
 
 static void
