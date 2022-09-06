@@ -226,9 +226,9 @@ static void (*_canvas_destroy_callback)(canvas_t *) = NULL;
 
 void
 canvas_set_destroy_callback(
-  void (*callback)(canvas_t *))
+  void (*callback_function)(canvas_t *))
 {
-  _canvas_destroy_callback = callback;
+  _canvas_destroy_callback = callback_function;
 }
 
 static void

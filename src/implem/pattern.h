@@ -40,6 +40,6 @@ pattern_evaluate_pos(
 
 void
 pattern_set_destroy_callback(
-  void (*callback)(pattern_t *));
+  void (*callback_function)(pattern_t *));
 
 #endif /* __PATTERN_H */

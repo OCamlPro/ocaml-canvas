@@ -58,6 +58,6 @@ gradient_evaluate_pos(
 
 void
 gradient_set_destroy_callback(
-  void (*callback)(gradient_t *));
+  void (*callback_function)(gradient_t *));
 
 #endif /* __GRADIENT_H */
