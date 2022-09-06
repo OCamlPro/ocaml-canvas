@@ -377,11 +377,6 @@ module Path : sig
       (if such point exists) will be connected to the first point
       of the arc by a straight line. *)
 
-  val arc_ :
-    t -> (float * float) -> float -> float -> float -> bool -> unit
-  (** [arc_ p center radius theta1 theta2 ccw] is a labelless equivalent of
-      [arc p ~center ~radius ~theta1 ~theta2 ~ccw]  *)
-
   val arcTo :
     t -> p1:(float * float) -> p2:(float * float) -> radius:float -> unit
   (** [arcTo p ~p1 ~p2 ~radius] adds an arc of the given [radius]
@@ -389,17 +384,9 @@ module Path : sig
       If the path [p] is empty, this behaves as if
       [moveTo p ~p:p1] was called. *)
 
-  val arcTo_ : t -> (float * float) -> (float * float) -> float -> unit
-  (** [arcTo_ p p1 p2 radius] is a labelless equivalent of
-      [arcTo p ~p1 ~p2 ~radius]  *)
-
   val quadraticCurveTo : t -> cp:(float * float) -> p:(float * float) -> unit
   (** [quadraticCurveTo path ~cp ~p] adds a quadratic curve from
       [path]'s brush position to [~p] with control point [~cp]. *)
-
-  val quadraticCurveTo_: t -> (float * float) -> (float * float) -> unit
-  (** [quadraticCurveTo_ path cp p] is a labelless equivalent
-      of [quadraticCurveTo path ~cp ~p]. *)
 
   val bezierCurveTo :
     t -> cp1:(float * float) -> cp2:(float * float) -> p:(float * float) -> unit
@@ -407,31 +394,15 @@ module Path : sig
       [path]'s brush position to [~p] with control points [~cp1]
       and [~cp2]. *)
 
-  val bezierCurveTo_ :
-    t -> (float * float) -> (float * float) -> (float * float) -> unit
-  (** [bezierCurveTo_ path cp1 cp2 p] is a labelless equivalent
-      of [bezierCurveTo path ~cp1 ~cp2 ~p]. *)
-
   val rect : t -> pos:(float * float) -> size:(float * float) -> unit
   (** [rect p ~pos ~size] adds the rectangle specified by [pos]
       and [size]) to the path [p] *)
-
-  val rect_ : t -> (float * float) -> (float * float) -> unit
-  (** [rect_ p pos size] is a labelless equivalent of
-      [rect p ~pos ~size]  *)
 
   val ellipse :
     t -> center:(float * float) -> radius:(float * float) ->
     rotation:float -> theta1:float -> theta2:float -> ccw:bool -> unit
   (** [ellipse p ~center ~radius ~rotation ~theta1 ~theta2] adds an ellipse
       with the given parameters to the path [p] *)
-
-  val ellipse_ :
-    t -> (float * float) -> (float * float) ->
-    float -> float -> float -> bool -> unit
-  (** [ellipse_ p center radius rotation theta1 theta2]
-      is a labelless equivalent of
-      [ellipse p ~center ~radius ~rotation ~theta1 ~theta2]  *)
 
   val add : t -> t -> unit
   (** [add dst src] adds the path [src] into the path [dst] *)
@@ -504,11 +475,6 @@ module Canvas : sig
       gradient parallel to the line ([pos1][pos2]) in window
       coordinates for canvas [c] *)
 
-  val createLinearGradient_:
-    'a t -> (float * float) -> (float * float) -> Gradient.t
-  (** [createLinearGradient_ c pos1 pos2] is a labelless
-      equivalent of [createLinearGradient c ~pos1 ~pos] *)
-
   val createRadialGradient:
     'a t -> center1:(float * float) -> rad1:float ->
     center2:(float * float) -> rad2:float -> Gradient.t
@@ -516,10 +482,10 @@ module Canvas : sig
       radial gradient between the disks with centers [center1] and [center2]
       and radi [rad1] and [rad2] in window coordinates for canvas [c] *)
 
-  val createRadialGradient_ :
-    'a t -> (float * float) -> float -> (float * float) -> float -> Gradient.t
-  (** [createRadialGradient_ c center1 rad1 center2 rad2] is a labelless
-      equivalent of [createLinearGradient c ~center1 ~rad1 ~center2 ~rad2] *)
+  val createConicGradient:
+    'a t -> center:(float * float) -> angle:float -> Gradient.t
+  (** [createConicGradient c ~center ~angle] creates a new conic gradient
+      with center [center] and initial angle [angle] for canvas [c] *)
 
 
   (** {1 Pattern creation function} *)
@@ -527,16 +493,6 @@ module Canvas : sig
     'a t -> ImageData.t -> Pattern.repeat -> Pattern.t
   (** [createPattern img rep] creates a pattern of [rep] using [img]
       as source *)
-
-  val createConicGradient:
-    'a t -> center:(float * float) -> angle:float -> Gradient.t
-  (** [createConicGradient c ~center ~angle] creates a new conic gradient
-      with center [center] and initial angle [angle] for canvas [c] *)
-
-  val createConicGradient_ :
-    'a t -> (float * float) -> float -> Gradient.t
-  (** [createConicGradient c center angle] is a labelless
-      equivalent of [createConicGradient canvas ~center ~angle] *)
 
 
   (** {1 Comparison functions} *)
@@ -588,24 +544,12 @@ module Canvas : sig
   (** [createFramed title ~pos ~size] creates a canvas in a window
       with title [title] at position [pos] and of size [size] *)
 
-  val createFramed_ : string -> (int * int) -> (int * int) -> [> `Onscreen] t
-  (** [createFramed_ title pos size] is a labelless equivalent of
-      [createFramed title ~pos ~size]  *)
-
   val createFrameless : pos:(int * int) -> size:(int * int) -> [> `Onscreen] t
   (** [createFrameless ~pos ~size] creates a canvas in an
       undecorated window at position [pos] and of size [size] *)
 
-  val createFrameless_ : (int * int) -> (int * int) -> [> `Onscreen] t
-  (** [createFrameless_ pos size] is a labelless equivalent of
-      [createFrameless ~pos ~size]  *)
-
   val createOffscreen : size:(int * int) -> [> `Offscreen] t
   (** [createOffscreen ~size] creates an offscreen canvas of size [size] *)
-
-  val createOffscreen_ : (int * int) -> [> `Offscreen] t
-  (** [createOffscreen_ size] is a labelless equivalent of
-      [createOffscreen ~size]  *)
 
   val createOffscreenFromImageData : ImageData.t -> [> `Offscreen] t
   (** [createOffscreenFromImageData id] creates an offscreen canvas
@@ -821,11 +765,6 @@ module Canvas : sig
       canvas [c] to the one specified by the given [family], [size],
       [slant] and [weight] *)
 
-  val setFont_ :
-    'a t -> string -> Font.size -> Font.slant -> Font.weight -> unit
-  (** [setFont_ c family size slant weight] is a labelless equivalent of
-      [setFont c family ~size ~slant ~weight]  *)
-
 
   (** {1 Path} *)
 
@@ -859,11 +798,6 @@ module Canvas : sig
       (if such point exists) will be connected to the first point of the
       arc by a straight line. *)
 
-  val arc_ :
-    'a t -> (float * float) -> float -> float -> float -> bool -> unit
-  (** [arc_ c center radius theta1 theta2 ccw] is a labelless equivalent of
-      [arc c ~center ~radius ~theta1 ~theta2 ~ccw]  *)
-
   val arcTo :
     'a t -> p1:(float * float) -> p2:(float * float) -> radius:float -> unit
   (** [arcTo c ~p1 ~p2 ~radius] adds an arc of the given [radius]
@@ -871,20 +805,11 @@ module Canvas : sig
       subpath of canvas [c]. If the current subpath is empty,
       this behaves as if [moveTo c ~p:p1] was called. *)
 
-  val arcTo_ : 'a t -> (float * float) -> (float * float) -> float -> unit
-  (** [arcTo_ c p1 p2 radius] is a labelless equivalent of
-      [arcTo c ~p1 ~p2 ~radius]  *)
-
   val quadraticCurveTo :
     'a t -> cp:(float * float) -> p:(float * float) -> unit
   (** [quadraticCurveTo c ~cp ~p] adds a quadratic Bezier curve
       using the control point [cp] and the end point [p]
       to the current subpath of canvas [c] *)
-
-  val quadraticCurveTo_ :
-    'a t -> (float * float) -> (float * float) -> unit
-  (** [quadraticCurveTo_ c cp p] is a labelless equivalent of
-      [quadraticCurveTo c ~cp ~p]  *)
 
   val bezierCurveTo :
     'a t -> cp1:(float * float) -> cp2:(float * float) ->
@@ -893,31 +818,15 @@ module Canvas : sig
       the control points [cp1] and [cp2] and the end point [p]
       to the current subpath of canvas [c] *)
 
-  val bezierCurveTo_ :
-    'a t -> (float * float) -> (float * float) -> (float * float) -> unit
-  (** [bezierCurve_ c cp1 cp2 p] is a labelless equivalent of
-      [bezierCurve c ~cp1 ~cp2 ~p]  *)
-
   val rect : 'a t -> pos:(float * float) -> size:(float * float) -> unit
   (** [rect c ~pos ~size] adds the rectangle specified by [pos]
       and [size]) to the current subpath of canvas [c] *)
-
-  val rect_ : 'a t -> (float * float) -> (float * float) -> unit
-  (** [rect_ c pos size] is a labelless equivalent of
-      [rect c ~pos ~size]  *)
 
   val ellipse :
     'a t -> center:(float * float) -> radius:(float * float) ->
     rotation:float -> theta1:float -> theta2:float -> ccw:bool -> unit
   (** [ellipse c ~center ~radius ~rotation ~theta1 ~theta2] adds an ellipse
       with the given parameters to the current subpath of canvas [c] *)
-
-  val ellipse_ :
-    'a t -> (float * float) -> (float * float) ->
-    float -> float -> float -> bool -> unit
-  (** [ellipse_ c center radius rotation theta1 theta2]
-      is a labelless equivalent of
-      [ellipse c ~center ~radius ~rotation ~theta1 ~theta2]  *)
 
 
   (** {1 Path stroking and filling} *)
@@ -926,17 +835,9 @@ module Canvas : sig
   (** [fill c ~nonzero] fills the current subpath of canvas [c]
       using the current fill color and the specified fill rule *)
 
-  val fill_ : 'a t -> bool -> unit
-  (** [fill_ c nonzero] is a labelless equivalent of
-      [fill c ~nonzero]  *)
-
   val fillPath : 'a t -> Path.t -> nonzero:bool -> unit
   (** [fillPath c p ~nonzero] fills the path [p] on canvas [c]
       using the current fill style and the specified fill rule. *)
-
-  val fillPath_ : 'a t -> Path.t -> bool -> unit
-  (** [fillPath_ c p nonzero] is a labelless equivalent of
-      [fillPath_ c p ~nonzero]. *)
 
   val stroke : 'a t -> unit
   (** [stroke c] draws the outline of the current subpath of
@@ -950,17 +851,9 @@ module Canvas : sig
   (** [clipPath c p ~nonzero] intersects the current subpath of [c]
       on canvas [c]'s clip region using the specified fill rule *)
 
-  val clip_ : 'a t -> bool -> unit
-  (** [clip_ c nonzero] is a labelless equivalent of
-      [clip c ~nonzero]  *)
-
   val clipPath : 'a t -> Path.t -> nonzero:bool -> unit
   (** [clipPath c p ~nonzero] intersects the filled path [p] on
       canvas [c]'s clip region using the specified fill rule *)
-
-  val clipPath_ : 'a t -> Path.t -> bool -> unit
-  (** [clipPath_ c p nonzero] is a labelless equivalent of
-      [clipPath_ c p ~nonzero]. *)
 
 
   (** {1 Immediate drawing} *)
@@ -969,18 +862,10 @@ module Canvas : sig
   (** [fillRect c ~pos ~size] immediatly fills the rectangle specified by
       [pos] and [size] to the canvas [c] using the current fill color *)
 
-  val fillRect_ : 'a t -> (float * float) -> (float * float) -> unit
-  (** [fillRect_ c pos size] is a labelless equivalent of
-      [fillRect c ~pos ~size]  *)
-
   val strokeRect : 'a t -> pos:(float * float) -> size:(float * float) -> unit
   (** [strokeRect c ~pos ~size] immediatly draws the outline of
       the rectangle specified by [pos] and [size] to the canvas
       [c] using the current stroke color and line width *)
-
-  val strokeRect_ : 'a t -> (float * float) -> (float * float) -> unit
-  (** [strokeRect_ c pos size] is a labelless equivalent of
-      [strokeRect c ~pos ~size]  *)
 
   val fillText : 'a t -> string -> (float * float) -> unit
   (** [fillText c text pos] immediatly draws the text [text] at
@@ -996,11 +881,6 @@ module Canvas : sig
     src:'b t -> spos:(int * int) -> size:(int * int) -> unit
   (** [blit ~dst ~dpos ~src ~spos ~size] copies the area specified by [spos]
       and [size] from canvas [src] to canvas [dst] at position [dpos] *)
-
-  val blit_ :
-    'a t -> (int * int) -> 'b t -> (int * int) -> (int * int) -> unit
-  (** [blit_ dst dpos src spos size] is a labelless equivalent of
-      [blit ~dst ~dpos ~src ~spos ~size]  *)
 
 
   (** {1 Direct pixel access} *)
@@ -1021,21 +901,12 @@ module Canvas : sig
   (** [getImageData c ~pos ~size] returns a copy of the pixel
       data at position [pos] of size [size] in canvas [c] *)
 
-  val getImageData_ : 'a t -> (int * int) -> (int * int) -> ImageData.t
-  (** [getImageData_ c pos size] is a labelless equivalent of
-      [getImageData c ~pos ~size]  *)
-
   val setImageData :
     'a t -> dpos:(int * int) -> ImageData.t ->
     spos:(int * int) -> size:(int * int) -> unit
   (** [setImageData c ~dpos id ~spos ~size] overwrite the pixels
       at position [dpos] in canvas [c] with the provided pixel data
       starting at position [spos] and of size [size] *)
-
-  val setImageData_ :
-    'a t -> (int * int) -> ImageData.t -> (int * int) -> (int * int) -> unit
-  (** [setImageData_ c dpos id spos size] is a labelless equivalent of
-      [setImageData c ~dpos id ~spos ~size]  *)
 
   val exportPNG : 'a t -> string -> unit
   (** [exportPNG c filename] saves the contents of canvas [c]
