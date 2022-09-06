@@ -140,6 +140,8 @@
 ]}
  *)
 
+type point = float * float
+
 module Color : sig
 (** Color description and manipulation functions *)
 
@@ -357,18 +359,18 @@ module Path : sig
   val create : unit -> t
   (** [create ()] creates an empty path object. *)
 
-  val moveTo: t -> (float * float) -> unit
+  val moveTo: t -> point -> unit
   (** [moveTo p pos] moves the path [p]'s brush position to [pos]. *)
 
   val close: t -> unit
   (** [close p] closes the path [p]. *)
 
-  val lineTo: t -> (float * float) -> unit
+  val lineTo: t -> point -> unit
   (** [lineTo p pos] adds a straight line from the path [p]'s
       brush position to [pos]. *)
 
   val arc :
-    t -> center:(float * float) -> radius:float ->
+    t -> center:point -> radius:float ->
     theta1:float -> theta2:float -> ccw:bool -> unit
   (** [arc p ~center ~radius ~theta1 ~theta2 ~ccw] adds an arc of the given
       [radius], centered at [center], between angle [theta1] to [theta2]
@@ -378,28 +380,28 @@ module Path : sig
       of the arc by a straight line. *)
 
   val arcTo :
-    t -> p1:(float * float) -> p2:(float * float) -> radius:float -> unit
+    t -> p1:point -> p2:point -> radius:float -> unit
   (** [arcTo p ~p1 ~p2 ~radius] adds an arc of the given [radius]
       using the control points [p1] and [p2] to the path [p].
       If the path [p] is empty, this behaves as if
       [moveTo p ~p:p1] was called. *)
 
-  val quadraticCurveTo : t -> cp:(float * float) -> p:(float * float) -> unit
+  val quadraticCurveTo : t -> cp:point -> p:point -> unit
   (** [quadraticCurveTo path ~cp ~p] adds a quadratic curve from
       [path]'s brush position to [~p] with control point [~cp]. *)
 
   val bezierCurveTo :
-    t -> cp1:(float * float) -> cp2:(float * float) -> p:(float * float) -> unit
+    t -> cp1:point -> cp2:point -> p:point -> unit
   (** [bezierCurveTo path ~cp1 ~cp2 ~p] adds a bezier curve from
       [path]'s brush position to [~p] with control points [~cp1]
       and [~cp2]. *)
 
-  val rect : t -> pos:(float * float) -> size:(float * float) -> unit
+  val rect : t -> pos:point -> size:(float * float) -> unit
   (** [rect p ~pos ~size] adds the rectangle specified by [pos]
       and [size]) to the path [p] *)
 
   val ellipse :
-    t -> center:(float * float) -> radius:(float * float) ->
+    t -> center:point -> radius:(float * float) ->
     rotation:float -> theta1:float -> theta2:float -> ccw:bool -> unit
   (** [ellipse p ~center ~radius ~rotation ~theta1 ~theta2] adds an ellipse
       with the given parameters to the path [p] *)
@@ -470,20 +472,20 @@ module Canvas : sig
   (** {1 Gradient creation functions} *)
 
   val createLinearGradient :
-    'a t -> pos1:(float * float) -> pos2:(float * float) -> Gradient.t
+    'a t -> pos1:point -> pos2:point -> Gradient.t
   (** [createLinearGradient c ~pos1 ~pos2] creates a new linear
       gradient parallel to the line ([pos1][pos2]) in window
       coordinates for canvas [c] *)
 
   val createRadialGradient:
-    'a t -> center1:(float * float) -> rad1:float ->
-    center2:(float * float) -> rad2:float -> Gradient.t
+    'a t -> center1:point -> rad1:float ->
+    center2:point -> rad2:float -> Gradient.t
   (** [createRadialGradient c ~center1 ~rad1 ~center2 ~rad2] creates a new
       radial gradient between the disks with centers [center1] and [center2]
       and radi [rad1] and [rad2] in window coordinates for canvas [c] *)
 
   val createConicGradient:
-    'a t -> center:(float * float) -> angle:float -> Gradient.t
+    'a t -> center:point -> angle:float -> Gradient.t
   (** [createConicGradient c ~center ~angle] creates a new conic gradient
       with center [center] and initial angle [angle] for canvas [c] *)
 
@@ -777,19 +779,19 @@ module Canvas : sig
       and marks the subpath as closed. Does nothing if the subpath is empty
       or has a single point, or if the subpath is already closed. *)
 
-  val moveTo : 'a t -> (float * float) -> unit
+  val moveTo : 'a t -> point -> unit
   (** [moveTo c p] starts a new subpath in canvas [c] containing the
       single point [p]. If the current subpath is empty, its first
       point is set to this point, instead of creating a new subpath.
       Likewise, if the current subpath has a single point, it is
       simply replaced by the given point. *)
 
-  val lineTo : 'a t -> (float * float) -> unit
+  val lineTo : 'a t -> point -> unit
   (** [lineTo c p] adds the point [p] to the current subpath of canvas [c].
       If the current subpath is empty, this behaves just like [moveTo c ~p]. *)
 
   val arc :
-    'a t -> center:(float * float) -> radius:float ->
+    'a t -> center:point -> radius:float ->
     theta1:float -> theta2:float -> ccw:bool -> unit
   (** [arc c ~center ~radius ~theta1 ~theta2 ~ccw] adds an arc of the given
       [radius], centered at [center], between angle [theta1] to [theta2]
@@ -799,31 +801,30 @@ module Canvas : sig
       arc by a straight line. *)
 
   val arcTo :
-    'a t -> p1:(float * float) -> p2:(float * float) -> radius:float -> unit
+    'a t -> p1:point -> p2:point -> radius:float -> unit
   (** [arcTo c ~p1 ~p2 ~radius] adds an arc of the given [radius]
       using the control points [p1] and [p2] to the current
       subpath of canvas [c]. If the current subpath is empty,
       this behaves as if [moveTo c ~p:p1] was called. *)
 
   val quadraticCurveTo :
-    'a t -> cp:(float * float) -> p:(float * float) -> unit
+    'a t -> cp:point -> p:point -> unit
   (** [quadraticCurveTo c ~cp ~p] adds a quadratic Bezier curve
       using the control point [cp] and the end point [p]
       to the current subpath of canvas [c] *)
 
   val bezierCurveTo :
-    'a t -> cp1:(float * float) -> cp2:(float * float) ->
-    p:(float * float) -> unit
+    'a t -> cp1:point -> cp2:point -> p:point -> unit
   (** [bezierCurve c ~cp1 ~cp2 ~p] adds a cubic Bezier curve using
       the control points [cp1] and [cp2] and the end point [p]
       to the current subpath of canvas [c] *)
 
-  val rect : 'a t -> pos:(float * float) -> size:(float * float) -> unit
+  val rect : 'a t -> pos:point -> size:(float * float) -> unit
   (** [rect c ~pos ~size] adds the rectangle specified by [pos]
       and [size]) to the current subpath of canvas [c] *)
 
   val ellipse :
-    'a t -> center:(float * float) -> radius:(float * float) ->
+    'a t -> center:point -> radius:(float * float) ->
     rotation:float -> theta1:float -> theta2:float -> ccw:bool -> unit
   (** [ellipse c ~center ~radius ~rotation ~theta1 ~theta2] adds an ellipse
       with the given parameters to the current subpath of canvas [c] *)
@@ -858,20 +859,20 @@ module Canvas : sig
 
   (** {1 Immediate drawing} *)
 
-  val fillRect : 'a t -> pos:(float * float) -> size:(float * float) -> unit
+  val fillRect : 'a t -> pos:point -> size:(float * float) -> unit
   (** [fillRect c ~pos ~size] immediatly fills the rectangle specified by
       [pos] and [size] to the canvas [c] using the current fill color *)
 
-  val strokeRect : 'a t -> pos:(float * float) -> size:(float * float) -> unit
+  val strokeRect : 'a t -> pos:point -> size:(float * float) -> unit
   (** [strokeRect c ~pos ~size] immediatly draws the outline of
       the rectangle specified by [pos] and [size] to the canvas
       [c] using the current stroke color and line width *)
 
-  val fillText : 'a t -> string -> (float * float) -> unit
+  val fillText : 'a t -> string -> point -> unit
   (** [fillText c text pos] immediatly draws the text [text] at
       position [pos] on the canvas [c] using the current fill color *)
 
-  val strokeText : 'a t -> string -> (float * float) -> unit
+  val strokeText : 'a t -> string -> point -> unit
   (** [strokeText c text pos] immediatly draws the outline of text [text]
       at position [pos] on the canvas [c] using the current stroke color
       and line width *)

@@ -12,6 +12,8 @@ exception CanvasDestroyed
 
 let () = Callback.register_exception "canvas_destroyed" CanvasDestroyed
 
+type point = float * float
+
 module Color = struct
 
   type t = Int32.t
@@ -216,36 +218,35 @@ module Path = struct
   external close : t -> unit
     = "ml_canvas_path_close"
 
-  external moveTo : t -> (float * float) -> unit
+  external moveTo : t -> point -> unit
     = "ml_canvas_path_move_to"
 
-  external lineTo : t -> (float * float) -> unit
+  external lineTo : t -> point -> unit
     = "ml_canvas_path_line_to"
 
   external arc :
-    t -> center:(float * float) -> radius:float ->
+    t -> center:point -> radius:float ->
     theta1:float -> theta2:float -> ccw:bool -> unit
     = "ml_canvas_path_arc" "ml_canvas_path_arc_n"
 
   external arcTo :
-    t -> p1:(float * float) -> p2:(float * float) -> radius:float -> unit
+    t -> p1:point -> p2:point -> radius:float -> unit
     = "ml_canvas_path_arc_to"
 
   external quadraticCurveTo :
-    t -> cp:(float * float) -> p:(float * float) -> unit
+    t -> cp:point -> p:point -> unit
     = "ml_canvas_path_quadratic_curve_to"
 
   external bezierCurveTo :
-    t -> cp1:(float * float) -> cp2:(float * float) ->
-    p:(float * float) -> unit
+    t -> cp1:point -> cp2:point -> p:point -> unit
     = "ml_canvas_path_bezier_curve_to"
 
   external rect :
-    t -> pos:(float * float) -> size:(float * float) -> unit
+    t -> pos:point -> size:(float * float) -> unit
     = "ml_canvas_path_rect"
 
   external ellipse :
-    t -> center:(float * float) -> radius:(float * float) ->
+    t -> center:point -> radius:(float * float) ->
     rotation:float -> theta1:float -> theta2:float -> ccw:bool -> unit
     = "ml_canvas_path_ellipse" "ml_canvas_path_ellipse_n"
 
@@ -307,16 +308,16 @@ module Canvas = struct
   (* Gradients *)
 
   external createLinearGradient :
-    'a t -> pos1:(float * float) -> pos2:(float * float) -> Gradient.t
+    'a t -> pos1:point -> pos2:point -> Gradient.t
     = "ml_canvas_create_linear_gradient"
 
   external createRadialGradient :
-    'a t -> center1:(float * float) -> rad1:float ->
-    center2:(float * float) -> rad2:float -> Gradient.t
+    'a t -> center1:point -> rad1:float ->
+    center2:point -> rad2:float -> Gradient.t
     = "ml_canvas_create_radial_gradient"
 
   external createConicGradient :
-    'a t -> center:(float * float) -> angle:float -> Gradient.t
+    'a t -> center:point -> angle:float -> Gradient.t
     = "ml_canvas_create_conic_gradient"
 
   (* Patterns *)
@@ -542,36 +543,35 @@ module Canvas = struct
   external closePath : 'a t -> unit
     = "ml_canvas_close_path"
 
-  external moveTo : 'a t -> (float * float) -> unit
+  external moveTo : 'a t -> point -> unit
     = "ml_canvas_move_to"
 
-  external lineTo : 'a t -> (float * float) -> unit
+  external lineTo : 'a t -> point -> unit
     = "ml_canvas_line_to"
 
   external arc :
-    'a t -> center:(float * float) -> radius:float ->
+    'a t -> center:point -> radius:float ->
     theta1:float -> theta2:float -> ccw:bool -> unit
     = "ml_canvas_arc" "ml_canvas_arc_n"
 
   external arcTo :
-    'a t -> p1:(float * float) -> p2:(float * float) -> radius:float -> unit
+    'a t -> p1:point -> p2:point -> radius:float -> unit
     = "ml_canvas_arc_to"
 
   external quadraticCurveTo :
-    'a t -> cp:(float * float) -> p:(float * float) -> unit
+    'a t -> cp:point -> p:point -> unit
     = "ml_canvas_quadratic_curve_to"
 
   external bezierCurveTo :
-    'a t -> cp1:(float * float) -> cp2:(float * float) ->
-    p:(float * float) -> unit
+    'a t -> cp1:point -> cp2:point -> p:point -> unit
     = "ml_canvas_bezier_curve_to"
 
   external rect :
-    'a t -> pos:(float * float) -> size:(float * float) -> unit
+    'a t -> pos:point -> size:(float * float) -> unit
     = "ml_canvas_rect"
 
   external ellipse :
-    'a t -> center:(float * float) -> radius:(float * float) ->
+    'a t -> center:point -> radius:(float * float) ->
     rotation:float -> theta1:float -> theta2:float -> ccw:bool -> unit
     = "ml_canvas_ellipse" "ml_canvas_ellipse_n"
 
@@ -596,19 +596,19 @@ module Canvas = struct
   (* Immediate drawing *)
 
   external fillRect :
-    'a t -> pos:(float * float) -> size:(float * float) -> unit
+    'a t -> pos:point -> size:(float * float) -> unit
     = "ml_canvas_fill_rect"
 
   external strokeRect :
-    'a t -> pos:(float * float) -> size:(float * float) -> unit
+    'a t -> pos:point -> size:(float * float) -> unit
     = "ml_canvas_stroke_rect"
 
   external fillText :
-    'a t -> string -> (float * float) -> unit
+    'a t -> string -> point -> unit
     = "ml_canvas_fill_text"
 
   external strokeText :
-    'a t -> string -> (float * float) -> unit
+    'a t -> string -> point -> unit
     = "ml_canvas_stroke_text"
 
   external blit :
