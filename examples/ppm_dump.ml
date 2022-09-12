@@ -64,7 +64,7 @@ let () =
 
   close_out oc;
 
-  Canvas.setImageData c ~dpos:(0, 0) img ~spos:(0, 0) ~size:(300, 200);
+  Canvas.putImageData c ~dpos:(0, 0) img ~spos:(0, 0) ~size:(300, 200);
 
   Backend.run (function
 

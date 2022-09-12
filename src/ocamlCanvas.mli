@@ -329,7 +329,7 @@ module V1 : sig
 
     type t =
       (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array3.t
-    (** Image data are big arrays of dimension 3 (width, height, component),
+    (** Image data are big arrays of dimension 3 (height, width, component),
         where the components are in BGRA order *)
 
     val create : (int * int) -> t
@@ -342,12 +342,26 @@ module V1 : sig
     val getSize : t -> (int * int)
     (** [getSize id] returns the size of image data [id] *)
 
-    val get : t -> (int * int) -> Color.t
-    (** [get id pos] returns the color of the pixel
+    val fill : t -> Color.t -> unit
+    (** [fill id c] fills the image data [id] with the given color [c] *)
+
+    val sub : t -> pos:(int * int) -> size:(int * int) -> t
+    (** [sub c ~pos ~size] returns a copy of the pixel data
+        at position [pos] of size [size] in image data [id] *)
+
+    val blit :
+      dst:t -> dpos:(int * int) ->
+      src:t -> spos:(int * int) -> size:(int * int) -> unit
+    (** [blit ~dst ~dpos ~src ~spos ~size] copies the area
+        specified by [spos] and [size] from image data [src]
+        to imdate data [dst] at position [dpos] *)
+
+    val getPixel : t -> (int * int) -> Color.t
+    (** [getPixel id pos] returns the color of the pixel
         at position [pos] in image data [id] *)
 
-    val set : t -> (int * int) -> Color.t -> unit
-    (** [set id pos c] sets the color of the pixel
+    val putPixel : t -> (int * int) -> Color.t -> unit
+    (** [putPixel id pos c] sets the color of the pixel
         at position [pos] in image data [id] to color [c] *)
 
     val importPNG : t -> pos:(int * int) -> string -> unit
@@ -930,8 +944,8 @@ module V1 : sig
     (** [getPixel c pos] returns the color of the
         pixel at position [pos] in canvas [c] *)
 
-    val setPixel : 'a t -> (int * int) -> Color.t -> unit
-    (** [setPixel c pos col] sets the color of the pixel
+    val putPixel : 'a t -> (int * int) -> Color.t -> unit
+    (** [putPixel c pos col] sets the color of the pixel
         at position [pos] in canvas [c] to color [col] *)
 
     val getImageData :
@@ -939,7 +953,7 @@ module V1 : sig
     (** [getImageData c ~pos ~size] returns a copy of the pixel
         data at position [pos] of size [size] in canvas [c] *)
 
-    val setImageData :
+    val putImageData :
       'a t -> dpos:(int * int) -> ImageData.t ->
       spos:(int * int) -> size:(int * int) -> unit
     (** [setImageData c ~dpos id ~spos ~size] overwrite the pixels

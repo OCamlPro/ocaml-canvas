@@ -527,7 +527,7 @@ canvas_get_pixel(
   int32_t y);
 
 void
-canvas_set_pixel(
+canvas_put_pixel(
   canvas_t *c,
   int32_t x,
   int32_t y,
@@ -544,7 +544,7 @@ canvas_get_pixmap(
   int32_t height);
 
 void
-canvas_set_pixmap(
+canvas_put_pixmap(
   canvas_t *c,
   int32_t dx,
   int32_t dy,

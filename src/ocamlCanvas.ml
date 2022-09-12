@@ -197,29 +197,32 @@ module V1 = struct
 
     let create (width, height) =
       let a = Bigarray.Array3.create Bigarray.int8_unsigned
-                Bigarray.c_layout width height 4 in
+                Bigarray.c_layout height width 4 in
       Bigarray.Array3.fill a 0;
       a
 
     external createFromPNG : string -> t
       = "ml_canvas_image_data_create_from_png"
 
-    let getSize id =
-      (Bigarray.Array3.dim1 id, Bigarray.Array3.dim2 id)
+    external getSize : t -> (int * int)
+      = "ml_canvas_image_data_get_size"
 
-    let get id (x, y) =
-      Color.of_argb
-        (Bigarray.Array3.get id x y 3)
-        (Bigarray.Array3.get id x y 2)
-        (Bigarray.Array3.get id x y 1)
-        (Bigarray.Array3.get id x y 0)
+    external fill : t -> Color.t -> unit
+      = "ml_canvas_image_data_fill"
 
-    let set id (x, y) c =
-      let a, r, g, b = Color.to_argb c in
-      Bigarray.Array3.set id x y 3 a;
-      Bigarray.Array3.set id x y 2 r;
-      Bigarray.Array3.set id x y 1 g;
-      Bigarray.Array3.set id x y 0 b;
+    external sub : t -> pos:(int * int) -> size:(int * int) -> t
+      = "ml_canvas_image_data_sub"
+
+    external blit :
+      dst:t -> dpos:(int * int) ->
+      src:t -> spos:(int * int) -> size:(int * int) -> unit
+      = "ml_canvas_image_data_blit"
+
+    external getPixel : t -> (int * int) -> Color.t
+      = "ml_canvas_image_data_get_pixel"
+
+    external putPixel : t -> (int * int) -> Color.t -> unit
+      = "ml_canvas_image_data_put_pixel"
 
     external importPNG : t -> pos:(int * int) -> string -> unit
       = "ml_canvas_image_data_import_png"
@@ -237,7 +240,6 @@ module V1 = struct
       = "ml_canvas_gradient_add_color_stop"
 
   end
-
 
   module Pattern = struct
 
@@ -664,17 +666,17 @@ module V1 = struct
     external getPixel : 'a t -> (int * int) -> Color.t
       = "ml_canvas_get_pixel"
 
-    external setPixel : 'a t -> (int * int) -> Color.t -> unit
-      = "ml_canvas_set_pixel"
+    external putPixel : 'a t -> (int * int) -> Color.t -> unit
+      = "ml_canvas_put_pixel"
 
     external getImageData :
       'a t -> pos:(int * int) -> size:(int * int) -> ImageData.t
       = "ml_canvas_get_image_data"
 
-    external setImageData :
+    external putImageData :
       'a t -> dpos:(int * int) -> ImageData.t ->
       spos:(int * int) -> size:(int * int) -> unit
-      = "ml_canvas_set_image_data"
+      = "ml_canvas_put_image_data"
 
     external exportPNG : 'a t -> string -> unit
       = "ml_canvas_export_png"

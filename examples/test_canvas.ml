@@ -126,13 +126,13 @@ let f1 () =
             done
           done;
 
-          Canvas.setImageData c ~dpos:(x-2, y-2) id ~spos:(0, 0) ~size:(5, 5);
+          Canvas.putImageData c ~dpos:(x-2, y-2) id ~spos:(0, 0) ~size:(5, 5);
 
 (*
-          Canvas.setPixel c (x, y) Color.red;
-          Canvas.setPixel c (x+1, y) Color.red;
-          Canvas.setPixel c (x+1, y+1) Color.red;
-          Canvas.setPixel c (x, y+1) Color.red;
+          Canvas.putPixel c (x, y) Color.red;
+          Canvas.putPixel c (x+1, y) Color.red;
+          Canvas.putPixel c (x+1, y+1) Color.red;
+          Canvas.putPixel c (x, y+1) Color.red;
 *)
 
           true
@@ -408,10 +408,10 @@ Format.print_flush ();
             ~pos:(float_of_int (x - 5), float_of_int (y - 5))
             ~size:(10.0, 10.0);
 
-          Canvas.setPixel c (x, y) Color.red;
-          Canvas.setPixel c (x+1, y) Color.red;
-          Canvas.setPixel c (x+1, y+1) Color.red;
-          Canvas.setPixel c (x, y+1) Color.red;
+          Canvas.putPixel c (x, y) Color.red;
+          Canvas.putPixel c (x+1, y) Color.red;
+          Canvas.putPixel c (x+1, y+1) Color.red;
+          Canvas.putPixel c (x, y+1) Color.red;
 
           true
       | MouseMove { canvas = _c; timestamp = _; position = _ } ->
