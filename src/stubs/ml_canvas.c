@@ -142,7 +142,7 @@ ml_canvas_create_linear_gradient(
     caml_failwith("unable to create the specified linear gradient");
   }
   mlGradient = Val_gradient(gradient);
-  gradient_release(gradient); // Because Val_gradient retains it
+  gradient_release(gradient); /* Because Val_gradient retains it */
   CAMLreturn(mlGradient);
 }
 
@@ -167,7 +167,7 @@ ml_canvas_create_radial_gradient(
     caml_failwith("unable to create the specified radial gradient");
   }
   mlGradient = Val_gradient(gradient);
-  gradient_release(gradient); // Because Val_gradient retains it
+  gradient_release(gradient); /* Because Val_gradient retains it */
   CAMLreturn(mlGradient);
 }
 
@@ -187,7 +187,7 @@ ml_canvas_create_conic_gradient(
     caml_failwith("unable to create the specified conic gradient");
   }
   mlGradient = Val_gradient(gradient);
-  gradient_release(gradient); // Because Val_gradient retains it
+  gradient_release(gradient); /* Because Val_gradient retains it */
   CAMLreturn(mlGradient);
 }
 
@@ -221,7 +221,7 @@ ml_canvas_create_pattern(
     caml_failwith("unable to create the specified pattern");
   }
   mlPattern = Val_pattern(pattern);
-  pattern_release(pattern); // Because Val_pattern retains it
+  pattern_release(pattern); /* Because Val_pattern retains it */
   CAMLreturn(mlPattern);
 }
 
@@ -252,7 +252,7 @@ ml_canvas_path_create(
     caml_failwith("unable to create the specified path2d");
   }
   mlPath = Val_path2d(path2d);
-  path2d_release(path2d); // Because Val_path2d retains it
+  path2d_release(path2d); /* Because Val_path2d retains it */
   CAMLreturn(mlPath);
 }
 
@@ -534,7 +534,7 @@ ml_canvas_create_framed(
     caml_failwith("unable to create the specified framed canvas");
   }
   mlCanvas = Val_canvas(canvas);
-  canvas_release(canvas); // Because Val_canvas retains it
+  canvas_release(canvas); /* Because Val_canvas retains it */
   CAMLreturn(mlCanvas);
 }
 
@@ -554,7 +554,7 @@ ml_canvas_create_frameless(
     caml_failwith("unable to create the specified frameless canvas");
   }
   mlCanvas = Val_canvas(canvas);
-  canvas_release(canvas); // Because Val_canvas retains it
+  canvas_release(canvas); /* Because Val_canvas retains it */
   CAMLreturn(mlCanvas);
 }
 
@@ -571,7 +571,7 @@ ml_canvas_create_offscreen(
     caml_failwith("unable to create the specified offscreen canvas");
   }
   mlCanvas = Val_canvas(canvas);
-  canvas_release(canvas); // Because Val_canvas retains it
+  canvas_release(canvas); /* Because Val_canvas retains it */
   CAMLreturn(mlCanvas);
 }
 
@@ -582,8 +582,8 @@ ml_canvas_create_offscreen_from_image_data(
   CAMLparam1(mlPixmap);
   CAMLlocal1(mlCanvas);
   pixmap_t pixmap = Pixmap_val(mlPixmap);
-  // We need to duplicate the pixmap, as canvas_create_offscreen_from_pixmap
-  // steals the data pointer
+  /* We need to duplicate the pixmap, as canvas_create_offscreen_from_pixmap
+     steals the data pointer */
   pixmap = pixmap_copy(pixmap);
   if (pixmap_valid(pixmap) == false) {
     caml_failwith("unable to create a canvas from the given image data");
@@ -592,12 +592,12 @@ ml_canvas_create_offscreen_from_image_data(
   if (canvas == NULL) {
     caml_failwith("unable to create a canvas from the given image data");
   }
-  // We delete the pixmap copy we did earlier; it is safe to do so,
-  // as pixmap deletion checks if the data pointer is NULL (which
-  // is the case if canvas creation succeeds)
+  /* We delete the pixmap copy we did earlier; it is safe to do so,
+     as pixmap deletion checks if the data pointer is NULL (which
+     is the case if canvas creation succeeds) */
   pixmap_destroy(pixmap);
   mlCanvas = Val_canvas(canvas);
-  canvas_release(canvas); // Because Val_canvas retains it
+  canvas_release(canvas); /* Because Val_canvas retains it */
   CAMLreturn(mlCanvas);
 }
 
@@ -612,7 +612,7 @@ ml_canvas_create_offscreen_from_png(
     caml_failwith("unable to create a canvas from the given PNG");
   }
   mlCanvas = Val_canvas(canvas);
-  canvas_release(canvas); // Because Val_canvas retains it
+  canvas_release(canvas); /* Because Val_canvas retains it */
   CAMLreturn(mlCanvas);
 }
 
@@ -1732,20 +1732,6 @@ _ml_canvas_process_event(
     backend_stop();
     mlResult = Val_false;
   }
-
-  /* Special handling of close event */
-/*
-  if (event->type == EVENT_CLOSE) {
-    canvas_t *canvas = (canvas_t *)event->target;
-    value *mlCanvas_ptr = canvas_get_data(canvas);
-    if (mlCanvas_ptr != NULL) {
-      canvas_set_data(canvas, NULL);
-      caml_remove_generational_global_root(mlCanvas_ptr);
-      Nullify_val(*mlCanvas_ptr);
-      free(mlCanvas_ptr);
-    }
-  }
-*/
 
   CAMLreturnT(bool, Bool_val(mlResult));
 }

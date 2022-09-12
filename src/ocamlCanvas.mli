@@ -140,7 +140,73 @@
 ]}
  *)
 
-type point = float * float
+module Transform : sig
+(** Transform manipulation functions *)
+
+  type t = {
+    a : float; (** scaling/flipping, rotation *)
+    b : float; (** shearing, rotation *)
+    c : float; (** scaling/flipping, rotation *)
+    d : float; (** shearing, rotation *)
+    e : float; (** translation *)
+    f : float; (** translation *)
+  }
+  (** A type to represent transformation matrices of the form:
+ {[     a b 0
+        c d 0
+        e f 1 ]} *)
+
+  val id : t
+  (** Identity transformation *)
+
+  val create : (float * float * float * float * float * float) -> t
+  (** [create t] creates a transformation given the
+       matrix [t = (a, b, c, d, e, f)] *)
+
+  val mul : t -> t -> t
+  (** [mul t1 t2] multiplies [t1] by [t2] *)
+
+  val translate : t -> (float * float) -> t
+  (** [translate t v] composes [t] by a translation of vector [v] *)
+
+  val scale : t -> (float * float) -> t
+  (** [scale t v] composes [t] by a scaling of vector [v] *)
+
+  val shear : t -> (float * float) -> t
+  (** [shear t v] composes [t] by a shearing of vector [v] *)
+
+  val rotate : t -> float -> t
+  (** [rotate t a] composes [t] by a rotation of angle [a] around the origin *)
+
+  val inverse : t -> t
+  (** [inverse t] returns the inverse of [t] *)
+
+end
+
+module Point : sig
+(** Point manipulation functions *)
+
+  type t = (float * float)
+  (** A point is a pair of floats of the form (x, y)  *)
+
+  val translate : t -> by:(float * float) -> t
+  (** [translate p ~by] translates point [p] by the vector [by] *)
+
+  val rotate : t -> around:t -> theta:float -> t
+  (** [rotate p ~around ~theta] rotates point [p] around a center point
+      [around] by an angle [theta] *)
+
+  val transform : t -> Transform.t -> t
+  (** [transform p t] transforms point [p] by the given transform [t] *)
+
+  val barycenter : float -> t -> float -> t -> t
+  (** [barycenter a p1 b p2] compute the barycenter of
+      ([a], [p1]) and ([b], [p2]) *)
+
+  val distance : t -> t -> float
+  (** [distance p1 p2] computes the distance between [p1] and [p2] *)
+
+end
 
 module Color : sig
 (** Color description and manipulation functions *)
@@ -151,12 +217,12 @@ module Color : sig
   val of_rgb : int -> int -> int -> t
   (** [of_rgb r g b] creates a color from its [r], [g] and [b] components *)
 
+  val to_rgb : t -> int * int * int
+  (** [to_rgb c] converts a color to its [r], [g] and [b] components *)
+
   val of_argb : int -> int -> int -> int -> t
   (** [of_argb a r g b] creates a color from its
       [a], [r], [g], [b] components *)
-
-  val to_rgb : t -> int * int * int
-  (** [to_rgb c] converts a color to its [r], [g] and [b] components *)
 
   val to_argb : t -> int * int * int * int
   (** [to_argb c] converts a color to its [a], [r], [g] and [b] components *)
@@ -234,9 +300,6 @@ module Font : sig
   val light : weight
   (** Predefined `light` weight *)
 
-(*val semiLight : weight *)
-(*val book : weight *)
-
   val regular : weight
   (** Predefined `regular` weight *)
 
@@ -255,51 +318,6 @@ module Font : sig
   val black : weight
   (** Predefined `black` weight *)
 
-(*val extraBlack : weight *)
-
-end
-
-module Transform : sig
-(** Transform manipulation functions *)
-
-  type t = {
-    a : float;
-    b : float;
-    c : float;
-    d : float;
-    e : float;
-    f : float;
-  }
-  (** A type to represent transformation matrices of the form:
- {[     a b 0
-        c d 0
-        e f 1 ]} *)
-
-  val id : t
-  (** Identity transformation *)
-
-  val create : (float * float * float * float * float * float) -> t
-  (** [create t] creates a transformation given the
-       matrix [t = (a, b, c, d, e, f)] *)
-
-  val mul : t -> t -> t
-  (** [mul t1 t2] multiplies [t1] by [t2] *)
-
-  val translate : t -> (float * float) -> t
-  (** [translate t v] composes [t] by a translation of vector [v] *)
-
-  val scale : t -> (float * float) -> t
-  (** [scale t v] composes [t] by a scaling of vector [v] *)
-
-  val shear : t -> (float * float) -> t
-  (** [shear t v] composes [t] by a shearing of vector [v] *)
-
-  val rotate : t -> float -> t
-  (** [rotate t a] composes [t] by a rotation of angle [a] around the origin *)
-
-  val inverse : t -> t
-  (** [inverse t] returns the inverse of [t] *)
-
 end
 
 module ImageData : sig
@@ -310,9 +328,23 @@ module ImageData : sig
   (** Image data are big arrays of dimension 3 (width, height, component),
       where the components are in BGRA order *)
 
+  val create : (int * int) -> t
+  (** [create size] creates an empty image data of the given [size] *)
+
   val createFromPNG : string -> t
   (** [createFromPNG filename] creates an image data
       with the contents of PNG file [filename] *)
+
+  val getSize : t -> (int * int)
+  (** [getSize id] returns the size of image data [id] *)
+
+  val get : t -> (int * int) -> Color.t
+  (** [get id pos] returns the color of the pixel
+      at position [pos] in image data [id] *)
+
+  val set : t -> (int * int) -> Color.t -> unit
+  (** [set id pos c] sets the color of the pixel
+      at position [pos] in image data [id] to color [c] *)
 
   val importPNG : t -> pos:(int * int) -> string -> unit
   (** [importPNG id ~pos filename] loads the file [filename] into
@@ -343,11 +375,11 @@ module Pattern : sig
   (** An abstract type representing a pattern *)
 
   type repeat =
-    | No_Repeat
-    | Repeat_X
-    | Repeat_Y
-    | Repeat_XY
-    (** Pattern repetition *)
+    | NoRepeat
+    | RepeatX
+    | RepeatY
+    | RepeatXY (**)
+  (** Pattern repetition *)
 
 end
 
@@ -355,22 +387,23 @@ module Path : sig
 (** Path manipulation functions *)
 
   type t
+  (** An abstract type representing a path *)
 
   val create : unit -> t
   (** [create ()] creates an empty path object. *)
 
-  val moveTo: t -> point -> unit
+  val moveTo: t -> Point.t -> unit
   (** [moveTo p pos] moves the path [p]'s brush position to [pos]. *)
 
   val close: t -> unit
   (** [close p] closes the path [p]. *)
 
-  val lineTo: t -> point -> unit
+  val lineTo: t -> Point.t -> unit
   (** [lineTo p pos] adds a straight line from the path [p]'s
       brush position to [pos]. *)
 
   val arc :
-    t -> center:point -> radius:float ->
+    t -> center:Point.t -> radius:float ->
     theta1:float -> theta2:float -> ccw:bool -> unit
   (** [arc p ~center ~radius ~theta1 ~theta2 ~ccw] adds an arc of the given
       [radius], centered at [center], between angle [theta1] to [theta2]
@@ -380,28 +413,28 @@ module Path : sig
       of the arc by a straight line. *)
 
   val arcTo :
-    t -> p1:point -> p2:point -> radius:float -> unit
+    t -> p1:Point.t -> p2:Point.t -> radius:float -> unit
   (** [arcTo p ~p1 ~p2 ~radius] adds an arc of the given [radius]
       using the control points [p1] and [p2] to the path [p].
       If the path [p] is empty, this behaves as if
       [moveTo p ~p:p1] was called. *)
 
-  val quadraticCurveTo : t -> cp:point -> p:point -> unit
+  val quadraticCurveTo : t -> cp:Point.t -> p:Point.t -> unit
   (** [quadraticCurveTo path ~cp ~p] adds a quadratic curve from
       [path]'s brush position to [~p] with control point [~cp]. *)
 
   val bezierCurveTo :
-    t -> cp1:point -> cp2:point -> p:point -> unit
+    t -> cp1:Point.t -> cp2:Point.t -> p:Point.t -> unit
   (** [bezierCurveTo path ~cp1 ~cp2 ~p] adds a bezier curve from
       [path]'s brush position to [~p] with control points [~cp1]
       and [~cp2]. *)
 
-  val rect : t -> pos:point -> size:(float * float) -> unit
+  val rect : t -> pos:Point.t -> size:(float * float) -> unit
   (** [rect p ~pos ~size] adds the rectangle specified by [pos]
       and [size]) to the path [p] *)
 
   val ellipse :
-    t -> center:point -> radius:(float * float) ->
+    t -> center:Point.t -> radius:(float * float) ->
     rotation:float -> theta1:float -> theta2:float -> ccw:bool -> unit
   (** [ellipse p ~center ~radius ~rotation ~theta1 ~theta2] adds an ellipse
       with the given parameters to the path [p] *)
@@ -421,23 +454,23 @@ module Canvas : sig
   type 'a t
   (** An abstract type representing a canvas *)
 
-  type style =
-    | Color of Color.t
-    | Gradient of Gradient.t
-    | Pattern of Pattern.t
-    (** A type to represent stroke and fill styles *)
-
   type line_join =
     | Round
     | Miter
-    | Bevel
-    (** An enum type for representing line join types *)
+    | Bevel (**)
+  (** An enum type for representing line join types *)
 
   type line_cap =
     | Butt
     | Square
-    | RoundCap
-    (** An enum type for representing line cap types *)
+    | RoundCap (**)
+  (** An enum type for representing line cap types *)
+
+  type style =
+    | Color of Color.t
+    | Gradient of Gradient.t
+    | Pattern of Pattern.t (**)
+  (** A type to represent stroke and fill styles *)
 
   type composite_op =
     | SourceOver
@@ -465,32 +498,33 @@ module Canvas : sig
     | Hue
     | Saturation
     | Color
-    | Luminosity
-    (** A type to represent blending and compositing operations *)
+    | Luminosity (**)
+  (** A type to represent blending and compositing operations *)
 
 
   (** {1 Gradient creation functions} *)
 
   val createLinearGradient :
-    'a t -> pos1:point -> pos2:point -> Gradient.t
+    'a t -> pos1:Point.t -> pos2:Point.t -> Gradient.t
   (** [createLinearGradient c ~pos1 ~pos2] creates a new linear
       gradient parallel to the line ([pos1][pos2]) in window
       coordinates for canvas [c] *)
 
   val createRadialGradient:
-    'a t -> center1:point -> rad1:float ->
-    center2:point -> rad2:float -> Gradient.t
+    'a t -> center1:Point.t -> rad1:float ->
+    center2:Point.t -> rad2:float -> Gradient.t
   (** [createRadialGradient c ~center1 ~rad1 ~center2 ~rad2] creates a new
       radial gradient between the disks with centers [center1] and [center2]
       and radi [rad1] and [rad2] in window coordinates for canvas [c] *)
 
   val createConicGradient:
-    'a t -> center:point -> angle:float -> Gradient.t
+    'a t -> center:Point.t -> angle:float -> Gradient.t
   (** [createConicGradient c ~center ~angle] creates a new conic gradient
       with center [center] and initial angle [angle] for canvas [c] *)
 
 
   (** {1 Pattern creation function} *)
+
   val createPattern :
     'a t -> ImageData.t -> Pattern.repeat -> Pattern.t
   (** [createPattern img rep] creates a pattern of [rep] using [img]
@@ -779,19 +813,19 @@ module Canvas : sig
       and marks the subpath as closed. Does nothing if the subpath is empty
       or has a single point, or if the subpath is already closed. *)
 
-  val moveTo : 'a t -> point -> unit
+  val moveTo : 'a t -> Point.t -> unit
   (** [moveTo c p] starts a new subpath in canvas [c] containing the
       single point [p]. If the current subpath is empty, its first
       point is set to this point, instead of creating a new subpath.
       Likewise, if the current subpath has a single point, it is
       simply replaced by the given point. *)
 
-  val lineTo : 'a t -> point -> unit
+  val lineTo : 'a t -> Point.t -> unit
   (** [lineTo c p] adds the point [p] to the current subpath of canvas [c].
       If the current subpath is empty, this behaves just like [moveTo c ~p]. *)
 
   val arc :
-    'a t -> center:point -> radius:float ->
+    'a t -> center:Point.t -> radius:float ->
     theta1:float -> theta2:float -> ccw:bool -> unit
   (** [arc c ~center ~radius ~theta1 ~theta2 ~ccw] adds an arc of the given
       [radius], centered at [center], between angle [theta1] to [theta2]
@@ -801,30 +835,30 @@ module Canvas : sig
       arc by a straight line. *)
 
   val arcTo :
-    'a t -> p1:point -> p2:point -> radius:float -> unit
+    'a t -> p1:Point.t -> p2:Point.t -> radius:float -> unit
   (** [arcTo c ~p1 ~p2 ~radius] adds an arc of the given [radius]
       using the control points [p1] and [p2] to the current
       subpath of canvas [c]. If the current subpath is empty,
       this behaves as if [moveTo c ~p:p1] was called. *)
 
   val quadraticCurveTo :
-    'a t -> cp:point -> p:point -> unit
+    'a t -> cp:Point.t -> p:Point.t -> unit
   (** [quadraticCurveTo c ~cp ~p] adds a quadratic Bezier curve
       using the control point [cp] and the end point [p]
       to the current subpath of canvas [c] *)
 
   val bezierCurveTo :
-    'a t -> cp1:point -> cp2:point -> p:point -> unit
+    'a t -> cp1:Point.t -> cp2:Point.t -> p:Point.t -> unit
   (** [bezierCurve c ~cp1 ~cp2 ~p] adds a cubic Bezier curve using
       the control points [cp1] and [cp2] and the end point [p]
       to the current subpath of canvas [c] *)
 
-  val rect : 'a t -> pos:point -> size:(float * float) -> unit
+  val rect : 'a t -> pos:Point.t -> size:(float * float) -> unit
   (** [rect c ~pos ~size] adds the rectangle specified by [pos]
       and [size]) to the current subpath of canvas [c] *)
 
   val ellipse :
-    'a t -> center:point -> radius:(float * float) ->
+    'a t -> center:Point.t -> radius:(float * float) ->
     rotation:float -> theta1:float -> theta2:float -> ccw:bool -> unit
   (** [ellipse c ~center ~radius ~rotation ~theta1 ~theta2] adds an ellipse
       with the given parameters to the current subpath of canvas [c] *)
@@ -859,20 +893,20 @@ module Canvas : sig
 
   (** {1 Immediate drawing} *)
 
-  val fillRect : 'a t -> pos:point -> size:(float * float) -> unit
+  val fillRect : 'a t -> pos:Point.t -> size:(float * float) -> unit
   (** [fillRect c ~pos ~size] immediatly fills the rectangle specified by
       [pos] and [size] to the canvas [c] using the current fill color *)
 
-  val strokeRect : 'a t -> pos:point -> size:(float * float) -> unit
+  val strokeRect : 'a t -> pos:Point.t -> size:(float * float) -> unit
   (** [strokeRect c ~pos ~size] immediatly draws the outline of
       the rectangle specified by [pos] and [size] to the canvas
       [c] using the current stroke color and line width *)
 
-  val fillText : 'a t -> string -> point -> unit
+  val fillText : 'a t -> string -> Point.t -> unit
   (** [fillText c text pos] immediatly draws the text [text] at
       position [pos] on the canvas [c] using the current fill color *)
 
-  val strokeText : 'a t -> string -> point -> unit
+  val strokeText : 'a t -> string -> Point.t -> unit
   (** [strokeText c text pos] immediatly draws the outline of text [text]
       at position [pos] on the canvas [c] using the current stroke color
       and line width *)
@@ -918,9 +952,6 @@ module Canvas : sig
       canvas [c] at position [pos] *)
 
 end
-
-
-
 
 module Event : sig
 (** Event descriptions *)
@@ -1172,7 +1203,7 @@ module Event : sig
     | ButtonRight
     | ButtonWheelUp
     | ButtonWheelDown (**)
-    (** A mouse button *)
+  (** A mouse button *)
 
   type button_action_event = {
     canvas: [`Onscreen] Canvas.t;
@@ -1217,14 +1248,14 @@ module Event : sig
     | MouseMove of mouse_move_event
     (** Occurs when the user moves the mouse cursor *)
 
-    val int_of_key : key -> int
+  val int_of_key : key -> int
   (** [int_of_key k] returns a platform-independent integer representation
       of key [k]. This integer corresponds to the key code as defined
       by the USB standard for keybords.
       @see <https://www.usb.org/sites/default/files/documents/hut1_12v2.pdf>
       https://www.usb.org/sites/default/files/documents/hut1_12v2.pdf *)
 
-    val key_of_int : int -> key
+  val key_of_int : int -> key
   (** [key_of_int i] returns the key corresponding to the
       platform-independent integer [i]. *)
 
@@ -1246,7 +1277,8 @@ module Backend : sig
     win32_backends: [`Win32] backend_type list;
     osx_backends: [`OSX] backend_type list;
     unix_backends: [`Unix] backend_type list;
-  } (** List of available backends per OS *)
+  }
+  (** List of available backends per OS *)
 
   val default_options : options
   (** The default options to use for backend initialization *)

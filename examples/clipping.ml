@@ -37,7 +37,7 @@ let () =
   Canvas.save c;
   Canvas.restore c;
   let dragonImage = ImageData.createFromPNG "assets/dragon.png" in
-  let pattern = Canvas.createPattern c dragonImage Repeat_XY in
+  let pattern = Canvas.createPattern c dragonImage RepeatXY in
   Canvas.setFillPattern c pattern;
   Canvas.scale c (0.1, 0.1);
   Canvas.rotate c (0. -. 0.3);
