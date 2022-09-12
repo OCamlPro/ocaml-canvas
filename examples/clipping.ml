@@ -8,7 +8,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open OcamlCanvas
+open OcamlCanvas.V1
 
 let pi = acos(-1.)
 
@@ -16,7 +16,7 @@ let () =
 
   Backend.(init default_options);
 
-  let c = Canvas.createFramed "Compositions"
+  let c = Canvas.createFramed "Clipping"
             ~pos:(300, 200) ~size:(300, 300) in
   Canvas.save c;
   Canvas.scale c (2.0, 2.0);
@@ -46,7 +46,6 @@ let () =
   Canvas.restore c;
   Canvas.restore c;
   Canvas.fillRect c ~pos:(0.,0.) ~size:(3000., 3000.);
-
 
   Backend.run (function
 

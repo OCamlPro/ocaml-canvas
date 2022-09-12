@@ -8,7 +8,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open OcamlCanvas
+open OcamlCanvas.V1
 
 let pi = acos(-1.)
 
@@ -16,9 +16,9 @@ let () =
 
   Backend.(init default_options);
 
-  let c = Canvas.createFramed "Hello world"
+  let c = Canvas.createFramed "Aim with mouse"
             ~pos:(300, 50) ~size:(800, 600) in
-  
+
   Canvas.setShadowBlur c 2.;
   Canvas.setShadowColor c (Color.of_argb 128 0 0 0);
   Canvas.setShadowOffset c (2., 2.);
@@ -47,10 +47,12 @@ let () =
         b := float_of_int y;
         let g = 100. and v = 600. in
         let t = 0. -. (g *. !a *. !a) /. (v *. v) in
-        tan_alpha :=  ( (0. -. !a) +. Float.sqrt (!a *. !a -. 4. *. t *. (!b +. t -. 600.)) ) /. (2. *. t);
+        tan_alpha :=
+          ((0. -. !a) +.
+             Float.sqrt (!a *. !a -. 4. *. t *. (!b +. t -. 600.))) /.
+            (2. *. t);
         true;
 
-    
     | Event.Frame { canvas = _; timestamp = _ } ->
         t := !t +. 1.;
         Canvas.setLineDashOffset c !t;
@@ -58,11 +60,15 @@ let () =
         Canvas.clearPath c;
         Canvas.moveTo c (0.,600.);
         let alpha = Float.atan(!tan_alpha) in
-        let cos_a = Float.cos(alpha) and sin_a = Float.sin(alpha) in 
+        let cos_a = Float.cos(alpha) and sin_a = Float.sin(alpha) in
         let n = 10 in
         for i = 1 to n do
-          let x_1 = (float_of_int i) *. !a /. (float_of_int n) and g = 100. and v = 600. in
-          let y_1 = (0. -. sin_a) *. (x_1 /. cos_a) +. g *. (x_1 *. x_1) /. (cos_a *. cos_a *. v *. v) +. 600. in
+          let x_1 = (float_of_int i) *. !a /. (float_of_int n)
+          and g = 100.
+          and v = 600. in
+          let y_1 =
+            (0. -. sin_a) *. (x_1 /. cos_a) +.
+              g *. (x_1 *. x_1) /. (cos_a *. cos_a *. v *. v) +. 600. in
           Canvas.lineTo c (x_1, y_1);
         done;
         Canvas.stroke c;

@@ -8,7 +8,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open OcamlCanvas
+open OcamlCanvas.V1
 
 let pi = acos(-1.)
 
@@ -17,7 +17,6 @@ let arc c (x, y) t1 t2 r ccw =
   Canvas.moveTo c (x, y);
   Canvas.arc c ~center:(x, y) ~radius:r ~theta1:t1 ~theta2:t2 ~ccw;
   Canvas.fill c ~nonzero:false
-
 
 let () =
 
