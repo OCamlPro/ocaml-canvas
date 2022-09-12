@@ -8,11 +8,88 @@
 (*                                                                        *)
 (**************************************************************************)
 
-exception CanvasDestroyed
+module Transform = struct
 
-let () = Callback.register_exception "canvas_destroyed" CanvasDestroyed
+  type t = {
+    a : float;
+    b : float;
+    c : float;
+    d : float;
+    e : float;
+    f : float;
+  }
 
-type point = float * float
+  let id = { a = 1.0; b = 0.0;
+             c = 0.0; d = 1.0;
+             e = 0.0; f = 0.0 }
+
+  let create (a, b, c, d, e, f) =
+    { a; b; c; d; e; f }
+
+  let mul t1 t2 =
+    { a = t1.a *. t2.a +. t1.c *. t2.b;
+      b = t1.b *. t2.a +. t1.d *. t2.b;
+      c = t1.a *. t2.c +. t1.c *. t2.d;
+      d = t1.b *. t2.c +. t1.d *. t2.d;
+      e = t1.e +. t1.a *. t2.e +. t1.c *. t2.f;
+      f = t1.f +. t1.b *. t2.e +. t1.d *. t2.f }
+
+  let translate t (x, y) =
+    { t with
+      e = x *. t.a +. y *. t.c;
+      f = x *. t.b +. y *. t.d }
+
+  let scale t (x,y) =
+    { t with
+      a = t.a *. x; b = t.b *. x;
+      c = t.c *. y; d = t.d *. y }
+
+  let shear t (x, y) =
+    { t with
+      a = t.a +. t.c *. y; b = t.b +. t.d *. y;
+      c = t.c +. t.a *. x; d = t.d +. t.b *. x }
+
+  let rotate t a =
+    let cos_a = cos (-. a) in
+    let sin_a = sin (-. a) in
+    { t with
+      a = t.a *. cos_a -. t.c *. sin_a;
+      b = t.b *. cos_a -. t.d *. sin_a;
+      c = t.c *. cos_a +. t.a *. sin_a;
+      d = t.d *. cos_a +. t.b *. sin_a }
+
+  let inverse t =
+    let invdet = 1.0 /. (t.a *. t.d -. t.b *. t.c) in
+    { a =    t.d *. invdet; b = -. t.b *. invdet;
+      c = -. t.c *. invdet; d =    t.a *. invdet;
+      e = (t.c *. t.f -. t.d *. t.e) *. invdet;
+      f = (t.b *. t.e -. t.a *. t.f) *. invdet }
+
+end
+
+module Point = struct
+
+  type t = (float * float)
+
+  let translate (x, y) ~by:(a, b) =
+    (x +. a, y +. b)
+
+  let rotate (x, y) ~around:(cx, cy) ~theta =
+    ((x -. cx) *. (cos (-. theta)) +. (y -. cy) *. (sin (-. theta)) +. cx,
+     (y -. cy) *. (cos (-. theta)) -. (x -. cx) *. (sin (-. theta)) +. cy)
+
+  let transform (x, y) (t: Transform.t) =
+    (x *. t.a +. y *. t.c +. t.e,
+     x *. t.b +. y *. t.d +. t.f)
+
+  let barycenter a (x1, y1) b (x2, y2) =
+    (a *. x1 +. b *. x2) /. (a +. b),
+    (a *. y1 +. b *. y2) /. (a +. b)
+
+  let distance (x1, y1) (x2, y2) =
+    sqrt ((x2 -. x1) ** 2.0 +. (y2 -. y1) ** 2.0)
+
+end
 
 module Color = struct
 
@@ -27,15 +104,15 @@ module Color = struct
     Int32.add 0xFF000000l
       (Int32.of_int (clip_8 r lsl 16 + clip_8 g lsl 8 + clip_8 b))
 
-  let of_argb a r g b =
-    Int32.add
-      (Int32.shift_left (Int32.of_int (clip_8 a)) 24)
-      (Int32.of_int (clip_8 r lsl 16 + clip_8 g lsl 8 + clip_8 b))
-
   let to_rgb c =
     Int32.(to_int (logand (shift_right_logical c 16) 0xFFl)),
     Int32.(to_int (logand (shift_right_logical c 8) 0xFFl)),
     Int32.(to_int (logand c 0xFFl))
+
+  let of_argb a r g b =
+    Int32.add
+      (Int32.shift_left (Int32.of_int (clip_8 a)) 24)
+      (Int32.of_int (clip_8 r lsl 16 + clip_8 g lsl 8 + clip_8 b))
 
   let to_argb c =
     Int32.(to_int (shift_right_logical c 24)),
@@ -111,72 +188,36 @@ module Font = struct
 
 end
 
-module Transform = struct
-
-  type t = {
-    a : float;
-    b : float;
-    c : float;
-    d : float;
-    e : float;
-    f : float;
-  }
-
-  let id = { a = 1.0; b = 0.0;
-             c = 0.0; d = 1.0;
-             e = 0.0; f = 0.0 }
-
-  let create (a, b, c, d, e, f) =
-    { a; b; c; d; e; f }
-
-  let mul t1 t2 =
-    { a = t1.a *. t2.a +. t1.c *. t2.b;
-      b = t1.b *. t2.a +. t1.d *. t2.b;
-      c = t1.a *. t2.c +. t1.c *. t2.d;
-      d = t1.b *. t2.c +. t1.d *. t2.d;
-      e = t1.e +. t1.a *. t2.e +. t1.c *. t2.f;
-      f = t1.f +. t1.b *. t2.e +. t1.d *. t2.f }
-
-  let translate t (x, y) =
-    { t with
-      e = x *. t.a +. y *. t.c;
-      f = x *. t.b +. y *. t.d }
-
-  let scale t (x,y) =
-    { t with
-      a = t.a *. x; b = t.b *. x;
-      c = t.c *. y; d = t.d *. y }
-
-  let shear t (x, y) =
-    { t with
-      a = t.a +. t.c *. y; b = t.b +. t.d *. y;
-      c = t.c +. t.a *. x; d = t.d +. t.b *. x }
-
-  let rotate t a =
-    let cos_a = cos (-. a) in
-    let sin_a = sin (-. a) in
-    { t with
-      a = t.a *. cos_a -. t.c *. sin_a;
-      b = t.b *. cos_a -. t.d *. sin_a;
-      c = t.c *. cos_a +. t.a *. sin_a;
-      d = t.d *. cos_a +. t.b *. sin_a }
-
-  let inverse t =
-    let invdet = 1.0 /. (t.a *. t.d -. t.b *. t.c) in
-    { a =    t.d *. invdet; b = -. t.b *. invdet;
-      c = -. t.c *. invdet; d =    t.a *. invdet;
-      e = (t.c *. t.f -. t.d *. t.e) *. invdet;
-      f = (t.b *. t.e -. t.a *. t.f) *. invdet }
-
-end
-
 module ImageData = struct
 
   type t =
     (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array3.t
 
+  let create (width, height) =
+    let a = Bigarray.Array3.create Bigarray.int8_unsigned
+              Bigarray.c_layout width height 4 in
+    Bigarray.Array3.fill a 0;
+    a
+
   external createFromPNG : string -> t
     = "ml_canvas_image_data_create_from_png"
+
+  let getSize id =
+    (Bigarray.Array3.dim1 id, Bigarray.Array3.dim2 id)
+
+  let get id (x, y) =
+    Color.of_argb
+      (Bigarray.Array3.get id x y 3)
+      (Bigarray.Array3.get id x y 2)
+      (Bigarray.Array3.get id x y 1)
+      (Bigarray.Array3.get id x y 0)
+
+  let set id (x, y) c =
+    let a, r, g, b = Color.to_argb c in
+    Bigarray.Array3.set id x y 3 a;
+    Bigarray.Array3.set id x y 2 r;
+    Bigarray.Array3.set id x y 1 g;
+    Bigarray.Array3.set id x y 0 b;
 
   external importPNG : t -> pos:(int * int) -> string -> unit
     = "ml_canvas_image_data_import_png"
@@ -201,10 +242,10 @@ module Pattern = struct
   type t
 
   type repeat =
-    | No_Repeat
-    | Repeat_X
-    | Repeat_Y
-    | Repeat_XY
+    | NoRepeat
+    | RepeatX
+    | RepeatY
+    | RepeatXY
 
 end
 
@@ -218,35 +259,35 @@ module Path = struct
   external close : t -> unit
     = "ml_canvas_path_close"
 
-  external moveTo : t -> point -> unit
+  external moveTo : t -> Point.t -> unit
     = "ml_canvas_path_move_to"
 
-  external lineTo : t -> point -> unit
+  external lineTo : t -> Point.t -> unit
     = "ml_canvas_path_line_to"
 
   external arc :
-    t -> center:point -> radius:float ->
+    t -> center:Point.t -> radius:float ->
     theta1:float -> theta2:float -> ccw:bool -> unit
     = "ml_canvas_path_arc" "ml_canvas_path_arc_n"
 
   external arcTo :
-    t -> p1:point -> p2:point -> radius:float -> unit
+    t -> p1:Point.t -> p2:Point.t -> radius:float -> unit
     = "ml_canvas_path_arc_to"
 
   external quadraticCurveTo :
-    t -> cp:point -> p:point -> unit
+    t -> cp:Point.t -> p:Point.t -> unit
     = "ml_canvas_path_quadratic_curve_to"
 
   external bezierCurveTo :
-    t -> cp1:point -> cp2:point -> p:point -> unit
+    t -> cp1:Point.t -> cp2:Point.t -> p:Point.t -> unit
     = "ml_canvas_path_bezier_curve_to"
 
   external rect :
-    t -> pos:point -> size:(float * float) -> unit
+    t -> pos:Point.t -> size:(float * float) -> unit
     = "ml_canvas_path_rect"
 
   external ellipse :
-    t -> center:point -> radius:(float * float) ->
+    t -> center:Point.t -> radius:(float * float) ->
     rotation:float -> theta1:float -> theta2:float -> ccw:bool -> unit
     = "ml_canvas_path_ellipse" "ml_canvas_path_ellipse_n"
 
@@ -261,6 +302,16 @@ end
 module Canvas = struct
 
   type 'a t
+
+  type line_join =
+    | Round
+    | Miter
+    | Bevel
+
+  type line_cap =
+    | Butt
+    | Square
+    | RoundCap
 
   type style =
     | Color of Color.t
@@ -295,29 +346,19 @@ module Canvas = struct
     | Color
     | Luminosity
 
-  type line_join =
-    | Round
-    | Miter
-    | Bevel
-
-  type line_cap =
-    | Butt
-    | Square
-    | RoundCap
-
   (* Gradients *)
 
   external createLinearGradient :
-    'a t -> pos1:point -> pos2:point -> Gradient.t
+    'a t -> pos1:Point.t -> pos2:Point.t -> Gradient.t
     = "ml_canvas_create_linear_gradient"
 
   external createRadialGradient :
-    'a t -> center1:point -> rad1:float ->
-    center2:point -> rad2:float -> Gradient.t
+    'a t -> center1:Point.t -> rad1:float ->
+    center2:Point.t -> rad2:float -> Gradient.t
     = "ml_canvas_create_radial_gradient"
 
   external createConicGradient :
-    'a t -> center:point -> angle:float -> Gradient.t
+    'a t -> center:Point.t -> angle:float -> Gradient.t
     = "ml_canvas_create_conic_gradient"
 
   (* Patterns *)
@@ -543,35 +584,35 @@ module Canvas = struct
   external closePath : 'a t -> unit
     = "ml_canvas_close_path"
 
-  external moveTo : 'a t -> point -> unit
+  external moveTo : 'a t -> Point.t -> unit
     = "ml_canvas_move_to"
 
-  external lineTo : 'a t -> point -> unit
+  external lineTo : 'a t -> Point.t -> unit
     = "ml_canvas_line_to"
 
   external arc :
-    'a t -> center:point -> radius:float ->
+    'a t -> center:Point.t -> radius:float ->
     theta1:float -> theta2:float -> ccw:bool -> unit
     = "ml_canvas_arc" "ml_canvas_arc_n"
 
   external arcTo :
-    'a t -> p1:point -> p2:point -> radius:float -> unit
+    'a t -> p1:Point.t -> p2:Point.t -> radius:float -> unit
     = "ml_canvas_arc_to"
 
   external quadraticCurveTo :
-    'a t -> cp:point -> p:point -> unit
+    'a t -> cp:Point.t -> p:Point.t -> unit
     = "ml_canvas_quadratic_curve_to"
 
   external bezierCurveTo :
-    'a t -> cp1:point -> cp2:point -> p:point -> unit
+    'a t -> cp1:Point.t -> cp2:Point.t -> p:Point.t -> unit
     = "ml_canvas_bezier_curve_to"
 
   external rect :
-    'a t -> pos:point -> size:(float * float) -> unit
+    'a t -> pos:Point.t -> size:(float * float) -> unit
     = "ml_canvas_rect"
 
   external ellipse :
-    'a t -> center:point -> radius:(float * float) ->
+    'a t -> center:Point.t -> radius:(float * float) ->
     rotation:float -> theta1:float -> theta2:float -> ccw:bool -> unit
     = "ml_canvas_ellipse" "ml_canvas_ellipse_n"
 
@@ -596,19 +637,19 @@ module Canvas = struct
   (* Immediate drawing *)
 
   external fillRect :
-    'a t -> pos:point -> size:(float * float) -> unit
+    'a t -> pos:Point.t -> size:(float * float) -> unit
     = "ml_canvas_fill_rect"
 
   external strokeRect :
-    'a t -> pos:point -> size:(float * float) -> unit
+    'a t -> pos:Point.t -> size:(float * float) -> unit
     = "ml_canvas_stroke_rect"
 
   external fillText :
-    'a t -> string -> point -> unit
+    'a t -> string -> Point.t -> unit
     = "ml_canvas_fill_text"
 
   external strokeText :
-    'a t -> string -> point -> unit
+    'a t -> string -> Point.t -> unit
     = "ml_canvas_stroke_text"
 
   external blit :
@@ -896,15 +937,13 @@ module Event = struct
     | ButtonAction of button_action_event
     | MouseMove of mouse_move_event
 
-    external int_of_key : key -> int
-      = "ml_canvas_int_of_key"
+  external int_of_key : key -> int
+    = "ml_canvas_int_of_key"
 
-    external key_of_int : int -> key
-      = "ml_canvas_key_of_int"
+  external key_of_int : int -> key
+    = "ml_canvas_key_of_int"
 
 end
-
-
 
 module Backend = struct
 
