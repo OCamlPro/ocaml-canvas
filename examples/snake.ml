@@ -8,7 +8,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open OcamlCanvas
+open OcamlCanvas.V1
 
 let buildBackground c =
   Canvas.setFillColor c Color.black;
@@ -77,6 +77,11 @@ let () =
           let (x, _y) = !currentDirection in
           if (x = 0.0) then currentDirection := (1.0, 0.0);
           true
+      | Event.KeyAction { canvas = _; timestamp = _;
+                          key; char = _; flags = _; state = Down } ->
+          if key = Event.KeyEscape then
+            Backend.stop ();
+          true
       | Frame { canvas = c; timestamp = _ } ->
           r := !r +. 1.0 /. 60.0;
           buildBackground c;
@@ -85,7 +90,7 @@ let () =
             (snake := !foodLocation :: !snake;
              foodLocation := (2.0 +. float_of_int (Random.int 47),
                               2.0 +. float_of_int (Random.int 47)));
-          if !r > 0.033 then
+          if !r > 0.066 then
             (r := 0.0;
              snake := moveSnakeDirection !snake !currentDirection);
           if snakeHitSelf !snake || snakeHitWall !snake then

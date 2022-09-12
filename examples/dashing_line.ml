@@ -8,7 +8,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open OcamlCanvas
+open OcamlCanvas.V1
 
 let pi = acos(-1.)
 
@@ -16,7 +16,7 @@ let () =
 
   Backend.(init default_options);
 
-  let c = Canvas.createFramed "Hello world"
+  let c = Canvas.createFramed "Dashing line"
             ~pos:(300, 50) ~size:(400, 650) in
 
   Canvas.setFillColor c Color.white;
@@ -30,7 +30,6 @@ let () =
   let b = Canvas.getLineDash c in
   Array.set b 0 40.0;
   Canvas.setLineDash c (b);
-  
 
   Canvas.setStrokeColor c Color.black;
   Canvas.setLineWidth c 2.0;
@@ -53,7 +52,7 @@ let () =
         if key = Event.KeyEscape then
           Backend.stop ();
         true
-    
+
     | Event.Frame { canvas = _; timestamp = _ } ->
         r := !r +. 1.0;
         Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(400.0, 650.0);

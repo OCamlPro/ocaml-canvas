@@ -8,7 +8,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open OcamlCanvas
+open OcamlCanvas.V1
 
 let pi = acos(-1.)
 
@@ -16,7 +16,7 @@ let () =
 
   Backend.(init default_options);
 
-  let c = Canvas.createFramed "Hello world"
+  let c = Canvas.createFramed "PPM Dump"
             ~pos:(300, 200) ~size:(300, 200) in
 
   Canvas.setFillColor c Color.orange;

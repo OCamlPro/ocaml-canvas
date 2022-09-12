@@ -8,7 +8,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open OcamlCanvas
+open OcamlCanvas.V1
 
 let pi = acos(-1.)
 
@@ -16,7 +16,7 @@ let () =
 
   Backend.(init default_options);
 
-  let c = Canvas.createFramed "Hello world"
+  let c = Canvas.createFramed "Thick lines"
             ~pos:(300, 50) ~size:(400, 650) in
 
   Canvas.setFillColor c Color.white;
@@ -76,33 +76,33 @@ let () =
   Canvas.stroke c;
 
 
-  
+
   Canvas.setLineWidth c 20.0;
   Canvas.setLineCap c Canvas.Butt;
   Canvas.setTransform c (1.0,0.0,0.0,1.0,0.0,0.0);
   Canvas.setLineJoin c Canvas.Round;
-  
+
   Canvas.clearPath c;
   Canvas.moveTo c (100.0, 325.0);
   Canvas.lineTo c (200.0, 275.0);
   Canvas.lineTo c (300.0, 320.0);
   Canvas.stroke c;
 
-  
+
   Canvas.setLineCap c Canvas.Butt;
   Canvas.setTransform c (1.0,0.0,0.0,1.0,0.0,0.0);
   Canvas.setLineJoin c Canvas.Bevel;
-  
+
   Canvas.clearPath c;
   Canvas.moveTo c (100.0, 375.0);
   Canvas.lineTo c (200.0, 325.0);
   Canvas.lineTo c (300.0, 375.0);
   Canvas.stroke c;
-  
+
   Canvas.setLineCap c Canvas.Butt;
   Canvas.setTransform c (1.0,0.0,0.0,1.0,0.0,0.0);
   Canvas.setLineJoin c Canvas.Round;
-  
+
   Canvas.clearPath c;
   Canvas.moveTo c (200.0, 375.0);
   Canvas.lineTo c (100.0, 425.0);
@@ -120,7 +120,7 @@ let () =
   Canvas.setTransform c (1.0,0.0,-1.0,1.0,0.0,0.0);
   Canvas.stroke c;
 
-  let ex = Path.create () in 
+  let ex = Path.create () in
   Canvas.clearPath c;
   Path.moveTo ex (300.0, 595.0);
   Path.lineTo ex (200.0, 535.0);
@@ -128,7 +128,7 @@ let () =
   Path.close ex;
   Canvas.setTransform c (1.0,0.0,0.1,1.0,0.0,0.0);
   Canvas.strokePath c ex;
-  
+
 
 
   Backend.run (function
@@ -138,7 +138,7 @@ let () =
         if key = Event.KeyEscape then
           Backend.stop ();
         true
-    
+
     | Event.Frame { canvas = _; timestamp = _ } ->
         true
 

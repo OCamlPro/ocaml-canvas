@@ -8,7 +8,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open OcamlCanvas
+open OcamlCanvas.V1
 open Float
 
 let interpInt x1 x2 t =
@@ -22,7 +22,7 @@ let interpColor c1 c2 t =
 let hsv_to_rgb h s v =
   let c = v *. s in
   let m = v -. c in
-  let x = c *. (1.0 -. abs( ( (rem (h /. 60.0) 2.0) -. 1.0))) in
+  let x = c *. (1.0 -. abs(((rem (h /. 60.0) 2.0) -. 1.0))) in
   let r, g, b = match h with
     | a when a < 60.0 -> c, x , 0.0
     | a when a < 120.0 -> x, c, 0.0
@@ -45,6 +45,11 @@ let () =
   Canvas.show c;
   let r = ref (-1.0) in
   Backend.run (function
+      | Event.KeyAction { canvas = _; timestamp = _;
+                          key; char = _; flags = _; state = Down } ->
+          if key = Event.KeyEscape then
+            Backend.stop ();
+          true
       | Frame { canvas = c; timestamp = _ } ->
           r := !r +. 1. /. 60.;
           Canvas.setFillColor c (hsv_to_rgb (!r *. 36.0)  1.0 1.0);
