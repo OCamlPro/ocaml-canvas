@@ -527,9 +527,12 @@ function ml_canvas_create_framed(title, pos, size) {
 
   var frame = document.createElement("div");
   frame.id = "f" + id;
+  frame.style.width = width + "px";
+  frame.style.height = height + 30 + "px";
   frame.style.position = "absolute";
   frame.style.left = x + "px";
   frame.style.top = y + "px";
+  frame.style.border = "1px solid black";
 
   var header = document.createElement("canvas");
   header.id = "h" + id;
@@ -594,10 +597,13 @@ function ml_canvas_create_frameless(pos, size) {
 
   var frame = document.createElement("div");
   frame.id = "f" + id;
+  frame.style.width = width + "px";
+  frame.style.height = height + 30 + "px";
   frame.style.visibility = "hidden";
   frame.style.position = "absolute";
   frame.style.left = x + "px";
   frame.style.top = y + "px";
+  frame.style.border = "1px solid black";
 
   var surface = document.createElement("canvas");
   surface.id = "s" + id;
@@ -1257,9 +1263,17 @@ function ml_canvas_get_image_data(canvas, pos, size) {
   var width = size[1];
   var height = size[2];
   var image = canvas.ctxt.getImageData(pos[1], pos[2], width, height);
-  var ta = new window.Uint8Array(image.data.buffer);
+  var sta = new window.Uint8Array(image.data.buffer);
+  var dta = new window.Uint8Array(sta.length);
+  // Convert from RGNA to BGRA
+  for (var i = 0; i < sta.length; i += 4) {
+    dta[i+0] = sta[i+2];
+    dta[i+1] = sta[i+1];
+    dta[i+2] = sta[i+0];
+    dta[i+3] = sta[i+3];
+  }
   return caml_ba_create_unsafe(3 /* Uint8Array */, 0 /* c_layout */,
-                               [height, width, 4], ta);
+                               [height, width, 4], dta);
 }
 
 //Provides: ml_canvas_put_image_data

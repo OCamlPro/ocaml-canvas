@@ -447,12 +447,10 @@ module V1 = struct
       = "ml_canvas_restore"
 
     (* Transformations *)
-    external setTransform :
-      'kind t -> (float * float * float * float * float * float) -> unit
+    external setTransform : 'kind t -> Transform.t -> unit
       = "ml_canvas_set_transform"
 
-    external transform :
-      'kind t -> (float * float * float * float * float * float) -> unit
+    external transform : 'kind t -> Transform.t -> unit
       = "ml_canvas_transform"
 
     external translate : 'kind t -> (float * float) -> unit

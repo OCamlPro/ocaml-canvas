@@ -492,38 +492,28 @@ canvas_restore(
 
 /* Transform */
 
-// getTransform (not compatible with IE) ? -> keep a copy
-
 void
 canvas_set_transform(
   canvas_t *canvas,
-  double a,
-  double b,
-  double c,
-  double d,
-  double e,
-  double f)
+  const transform_t *transform)
 {
   assert(canvas != NULL);
   assert(canvas->state != NULL);
+  assert(transform != NULL);
 
-  transform_set(canvas->state->transform, a, b, c, d, e, f);
+  *canvas->state->transform = *transform;
 }
 
 void
 canvas_transform(
   canvas_t *canvas,
-  double a,
-  double b,
-  double c,
-  double d,
-  double e,
-  double f)
+  const transform_t *transform)
 {
   assert(canvas != NULL);
   assert(canvas->state != NULL);
+  assert(transform != NULL);
 
-  transform_mul(canvas->state->transform, a, b, c, d, e, f);
+  transform_mul(canvas->state->transform, transform);
 }
 
 void

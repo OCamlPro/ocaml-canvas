@@ -81,7 +81,7 @@ let f1 () =
                     key; char; flags = _; state = Down } ->
 
           Canvas.save c;
-          Canvas.setTransform c (1.0, 0.0, 0.0, 1.0, 0.0, 0.0);
+          Canvas.setTransform c Transform.id;
           Canvas.setFillColor c (Color.of_string "White");
           Canvas.fillRect c ~pos:(80.0, 70.0) ~size:(50.0, 50.0);
           Canvas.setFillColor c (Color.of_string "Black");

@@ -20,6 +20,7 @@
 #include "pixmap.h"
 #include "font_desc.h"
 #include "gradient.h"
+#include "transform.h"
 #include "path2d.h"
 #include "draw_style.h"
 #include "polygonize.h"
@@ -144,22 +145,12 @@ canvas_restore(
 void
 canvas_set_transform(
   canvas_t *canvas,
-  double a,
-  double b,
-  double c,
-  double d,
-  double e,
-  double f);
+  const transform_t *transform);
 
 void
 canvas_transform(
   canvas_t *canvas,
-  double a,
-  double b,
-  double c,
-  double d,
-  double e,
-  double f);
+  const transform_t *transform);
 
 void
 canvas_translate(
