@@ -92,7 +92,7 @@ transform_set(
    e' f' 1   e f 1   e+a*e'+c*f'  f+b*e'+d*f' 1
 */
 void
-transform_mul(
+transform_mul_direct(
   transform_t *t,
   double a,
   double b,
@@ -112,6 +112,30 @@ transform_mul(
   t->a = aa; t->b = bb;
   t->c = cc; t->d = dd;
   t->e = ee; t->f = ff;
+}
+
+/*
+   a' b' 0   a b 0   a*a'+c*b'    b*a'+d*b'   0
+   c' d' 0 * c d 0 = a*c'+c*d'    b*c'+d*d'   0
+   e' f' 1   e f 1   e+a*e'+c*f'  f+b*e'+d*f' 1
+*/
+void
+transform_mul(
+  transform_t *t1,
+  const transform_t *t2)
+{
+  assert(t1 != NULL);
+  assert(t2 != NULL);
+
+  double aa = t1->a * t2->a + t1->c * t2->b;
+  double bb = t1->b * t2->a + t1->d * t2->b;
+  double cc = t1->a * t2->c + t1->c * t2->d;
+  double dd = t1->b * t2->c + t1->d * t2->d;
+  double ee = t1->e + t1->a * t2->e + t1->c * t2->f;
+  double ff = t1->f + t1->b * t2->e + t1->d * t2->f;
+  t1->a = aa; t1->b = bb;
+  t1->c = cc; t1->d = dd;
+  t1->e = ee; t1->f = ff;
 }
 
 /*

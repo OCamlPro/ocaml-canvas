@@ -55,7 +55,7 @@ transform_set(
   double f);
 
 void
-transform_mul(
+transform_mul_direct(
   transform_t *t,
   double a,
   double b,
@@ -63,6 +63,11 @@ transform_mul(
   double d,
   double e,
   double f);
+
+void
+transform_mul(
+  transform_t *t1,
+  const transform_t *t2);
 
 void
 transform_translate(

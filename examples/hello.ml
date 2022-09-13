@@ -57,7 +57,7 @@ let () =
   let c3 = Canvas.createOffscreenFromPNG "assets/frog.png" in
   let size = Canvas.getSize c3 in
   Canvas.save c;
-  Canvas.setTransform c (1.0, 0.0, 0.0, 1.0, 0.0, 0.0);
+  Canvas.setTransform c Transform.id;
   Canvas.scale c (0.25, 0.25);
   Canvas.blit ~dst:c ~dpos:(750, 400) ~src:c3 ~spos:(0, 0) ~size;
   Canvas.restore c;

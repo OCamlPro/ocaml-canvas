@@ -63,23 +63,23 @@ let () =
   Canvas.clearPath c;
   Canvas.moveTo c (100.0, 200.0);
   Canvas.lineTo c (300.0, 200.0);
-  Canvas.setTransform c (1.0,0.0,1.0,1.0,0.0,0.0);
+  Canvas.setTransform c (Transform.create (1.0, 0.0, 1.0, 1.0, 0.0, 0.0));
   Canvas.stroke c;
 
   Canvas.setLineCap c Canvas.RoundCap;
-  Canvas.setTransform c (1.0,0.0,0.0,1.0,0.0,0.0);
+  Canvas.setTransform c Transform.id;
 
   Canvas.clearPath c;
   Canvas.moveTo c (100.0, 250.0);
   Canvas.lineTo c (300.0, 250.0);
-  Canvas.setTransform c (1.0,0.0,-1.0,1.0,0.0,0.0);
+  Canvas.setTransform c (Transform.create (1.0, 0.0, -1.0, 1.0, 0.0, 0.0));
   Canvas.stroke c;
 
 
 
   Canvas.setLineWidth c 20.0;
   Canvas.setLineCap c Canvas.Butt;
-  Canvas.setTransform c (1.0,0.0,0.0,1.0,0.0,0.0);
+  Canvas.setTransform c Transform.id;
   Canvas.setLineJoin c Canvas.Round;
 
   Canvas.clearPath c;
@@ -90,7 +90,7 @@ let () =
 
 
   Canvas.setLineCap c Canvas.Butt;
-  Canvas.setTransform c (1.0,0.0,0.0,1.0,0.0,0.0);
+  Canvas.setTransform c Transform.id;
   Canvas.setLineJoin c Canvas.Bevel;
 
   Canvas.clearPath c;
@@ -100,7 +100,7 @@ let () =
   Canvas.stroke c;
 
   Canvas.setLineCap c Canvas.Butt;
-  Canvas.setTransform c (1.0,0.0,0.0,1.0,0.0,0.0);
+  Canvas.setTransform c Transform.id;
   Canvas.setLineJoin c Canvas.Round;
 
   Canvas.clearPath c;
@@ -110,14 +110,14 @@ let () =
   Canvas.closePath c;
   Canvas.stroke c;
 
-  Canvas.setTransform c (1.0,0.0,0.0,1.0,0.0,0.0);
+  Canvas.setTransform c Transform.id;
 
   Canvas.clearPath c;
   Canvas.moveTo c (100.0, 505.0);
   Canvas.lineTo c (200.0, 455.0);
   Canvas.lineTo c (300.0, 505.0);
   Canvas.closePath c;
-  Canvas.setTransform c (1.0,0.0,-1.0,1.0,0.0,0.0);
+  Canvas.setTransform c (Transform.create (1.0, 0.0, -1.0, 1.0, 0.0, 0.0));
   Canvas.stroke c;
 
   let ex = Path.create () in
@@ -126,7 +126,7 @@ let () =
   Path.lineTo ex (200.0, 535.0);
   Path.lineTo ex (100.0, 595.0);
   Path.close ex;
-  Canvas.setTransform c (1.0,0.0,0.1,1.0,0.0,0.0);
+  Canvas.setTransform c (Transform.create (1.0, 0.0, 0.1, 1.0, 0.0, 0.0));
   Canvas.strokePath c ex;
 
   Backend.run (fun state -> function

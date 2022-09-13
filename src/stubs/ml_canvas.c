@@ -811,32 +811,24 @@ ml_canvas_set_position(
 CAMLprim value
 ml_canvas_set_transform(
   value mlCanvas,
-  value mlTrans)
+  value mlTransform)
 {
-  CAMLparam2(mlCanvas, mlTrans);
+  CAMLparam2(mlCanvas, mlTransform);
+  transform_t transform = Transform_val(mlTransform);
   canvas_set_transform(Canvas_val(mlCanvas),
-                       Double_val(Field(mlTrans, 0)),
-                       Double_val(Field(mlTrans, 1)),
-                       Double_val(Field(mlTrans, 2)),
-                       Double_val(Field(mlTrans, 3)),
-                       Double_val(Field(mlTrans, 4)),
-                       Double_val(Field(mlTrans, 5)));
+                       &transform);
   CAMLreturn(Val_unit);
 }
 
 CAMLprim value
 ml_canvas_transform(
   value mlCanvas,
-  value mlTrans)
+  value mlTransform)
 {
-  CAMLparam2(mlCanvas, mlTrans);
+  CAMLparam2(mlCanvas, mlTransform);
+  transform_t transform = Transform_val(mlTransform);
   canvas_transform(Canvas_val(mlCanvas),
-                   Double_val(Field(mlTrans, 0)),
-                   Double_val(Field(mlTrans, 1)),
-                   Double_val(Field(mlTrans, 2)),
-                   Double_val(Field(mlTrans, 3)),
-                   Double_val(Field(mlTrans, 4)),
-                   Double_val(Field(mlTrans, 5)));
+                   &transform);
   CAMLreturn(Val_unit);
 }
 

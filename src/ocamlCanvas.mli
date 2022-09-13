@@ -659,16 +659,14 @@ module V1 : sig
 
     (** {1 Transformations} *)
 
-    val setTransform :
-      'kind t -> (float * float * float * float * float * float) -> unit
+    val setTransform : 'kind t -> Transform.t -> unit
     (** [setTransform c t] sets the current transformation matrix of canvas [c].
-        The matrix [t = (a, b, c, d, e, f)] is of the following form:
+        The matrix [t = { a, b, c, d, e, f }] is of the following form:
  {[     a b 0
         c d 0
         e f 1 ]} *)
 
-    val transform :
-      'kind t -> (float * float * float * float * float * float) -> unit
+    val transform : 'kind t -> Transform.t -> unit
     (** [transform c t] apply the given arbitrary transformation
         to the current transformation matrix of canvas [c] *)
 
