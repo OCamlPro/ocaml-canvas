@@ -43,26 +43,24 @@ let () =
   Canvas.stroke c;
   Canvas.show c;
 
-  let r = ref 0.0 in
-
-  Backend.run (function
+  Backend.run (fun state -> function
 
     | Event.KeyAction { canvas = _; timestamp = _;
                         key; char = _; flags = _; state = Down } ->
         if key = Event.KeyEscape then
           Backend.stop ();
-        true
+        state, true
 
     | Event.Frame { canvas = _; timestamp = _ } ->
-        r := !r +. 1.0;
+        let state = state +. 1.0 in
         Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(400.0, 650.0);
-        Canvas.setLineDashOffset c !r;
+        Canvas.setLineDashOffset c state;
         Canvas.stroke c;
-        true
+        state, true
 
     | _ ->
-        false
+        state, false
 
-    ) (function () ->
+    ) (function _state ->
          Printf.printf "Goodbye !\n"
-    )
+    ) 0.0

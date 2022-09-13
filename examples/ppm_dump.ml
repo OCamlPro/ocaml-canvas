@@ -66,13 +66,13 @@ let () =
 
   Canvas.putImageData c ~dpos:(0, 0) img ~spos:(0, 0) ~size:(300, 200);
 
-  Backend.run (function
+  Backend.run (fun state -> function
 
     | Event.KeyAction { canvas = _; timestamp = _;
                         key; char = _; flags = _; state = Down } ->
         if key = Event.KeyEscape then
           Backend.stop ();
-        true
+        state, true
 
     | Event.ButtonAction { canvas = _; timestamp = _;
                            position = (x, y); button = _; state = Down } ->
@@ -81,14 +81,14 @@ let () =
         Canvas.arc c ~center:(float_of_int x, float_of_int y)
           ~radius:5.0 ~theta1:0.0 ~theta2:(pi *. 2.0) ~ccw:false;
         Canvas.fill c ~nonzero:false;
-        true
+        state, true
 
     | Event.Frame { canvas = _; timestamp = _ } ->
-        true
+        state, true
 
     | _ ->
-        false
+        state, false
 
-    ) (function () ->
+    ) (function _state ->
          Printf.printf "Goodbye !\n"
-    )
+    ) ()

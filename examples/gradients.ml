@@ -37,29 +37,31 @@ let hsv_to_rgb h s v =
     (int_of_float ((b +. m) *. 255.0))
 
 let () =
+
   Backend.(init default_options);
+
   let c =
     Canvas.createFramed "test" ~pos:(960 - 640, 540 - 360) ~size:(1280, 720) in
   Canvas.setFillColor c Color.white;
   Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(1280.0, 720.0);
   Canvas.show c;
-  let r = ref (-1.0) in
-  Backend.run (function
+
+  Backend.run (fun state -> function
       | Event.KeyAction { canvas = _; timestamp = _;
                           key; char = _; flags = _; state = Down } ->
           if key = Event.KeyEscape then
             Backend.stop ();
-          true
+          state, true
       | Frame { canvas = c; timestamp = _ } ->
-          r := !r +. 1. /. 60.;
-          Canvas.setFillColor c (hsv_to_rgb (!r *. 36.0)  1.0 1.0);
-          Canvas.fillRect c ~pos:(128.0 *. !r, 0.0) ~size:(128.0, 360.0);
+          let state = state +. 1. /. 60. in
+          Canvas.setFillColor c (hsv_to_rgb (state *. 36.0)  1.0 1.0);
+          Canvas.fillRect c ~pos:(128.0 *. state, 0.0) ~size:(128.0, 360.0);
           Canvas.setFillColor c
-            (interpColor Color.black Color.white (!r *. 0.1));
-          Canvas.fillRect c ~pos:(128.0 *. !r, 360.0) ~size:(128.0, 360.0);
-          true
+            (interpColor Color.black Color.white (state *. 0.1));
+          Canvas.fillRect c ~pos:(128.0 *. state, 360.0) ~size:(128.0, 360.0);
+          state, true
       | _ ->
-          false
-    ) (function () ->
+          state, false
+    ) (function _state ->
       Printf.printf "Goodbye !\n"
-    )
+    ) (-1.0)

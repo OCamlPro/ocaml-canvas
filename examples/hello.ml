@@ -62,13 +62,13 @@ let () =
   Canvas.blit ~dst:c ~dpos:(750, 400) ~src:c3 ~spos:(0, 0) ~size;
   Canvas.restore c;
 
-  Backend.run (function
+  Backend.run (fun state -> function
 
     | Event.KeyAction { canvas = _; timestamp = _;
                         key; char = _; flags = _; state = Down } ->
         if key = Event.KeyEscape then
           Backend.stop ();
-        true
+        state, true
 
     | Event.ButtonAction { canvas = c; timestamp = _;
                            position = (x, y); button = _; state = Down } ->
@@ -77,18 +77,18 @@ let () =
         Canvas.arc c ~center:(float_of_int x, float_of_int y)
           ~radius:5.0 ~theta1:0.0 ~theta2:(pi *. 2.0) ~ccw:false;
         Canvas.fill c ~nonzero:false;
-        true
+        state, true
 
     | Event.CanvasClosed { canvas = _; timestamp = _ } ->
         Backend.stop ();
-        true
+        state, true
 
     | Event.Frame { canvas = _; timestamp = _ } ->
-        true
+        Int64.add state Int64.one, true
 
     | _ ->
-        false
+        state, false
 
-    ) (function () ->
-         Printf.printf "Goodbye !\n"
-    )
+    ) (function state ->
+         Printf.printf "Displayed %Ld frames. Goodbye !\n" state
+    ) 0L

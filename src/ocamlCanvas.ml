@@ -305,7 +305,7 @@ module V1 = struct
 
   module Canvas = struct
 
-    type 'a t
+    type 'kind t
 
     type line_join =
       | Round
@@ -353,30 +353,30 @@ module V1 = struct
     (* Gradients *)
 
     external createLinearGradient :
-      'a t -> pos1:Point.t -> pos2:Point.t -> Gradient.t
+      'kind t -> pos1:Point.t -> pos2:Point.t -> Gradient.t
       = "ml_canvas_create_linear_gradient"
 
     external createRadialGradient :
-      'a t -> center1:Point.t -> rad1:float ->
+      'kind t -> center1:Point.t -> rad1:float ->
       center2:Point.t -> rad2:float -> Gradient.t
       = "ml_canvas_create_radial_gradient"
 
     external createConicGradient :
-      'a t -> center:Point.t -> angle:float -> Gradient.t
+      'kind t -> center:Point.t -> angle:float -> Gradient.t
       = "ml_canvas_create_conic_gradient"
 
     (* Patterns *)
 
     external createPattern :
-      'a t -> ImageData.t -> Pattern.repeat -> Pattern.t
+      'kind t -> ImageData.t -> Pattern.repeat -> Pattern.t
       = "ml_canvas_create_pattern"
 
     (* Comparison *)
 
-    external hash : 'a t -> int
+    external hash : 'kind t -> int
       = "ml_canvas_hash"
 
-    external compare : 'a t -> 'b t -> int
+    external compare : 'kind1 t -> 'kind2 t -> int
       = "ml_canvas_compare"
 
     let equal c1 c2 = compare c1 c2 = 0
@@ -388,8 +388,8 @@ module V1 = struct
     let (<=) c1 c2 = compare c1 c2 <= 0
     let (>=) c1 c2 = compare c1 c2 >= 0
 
-    external (==) : 'a t -> 'b t -> bool = "%eq"
-    external (!=) : 'a t -> 'b t -> bool = "%noteq"
+    external (==) : 'kind1 t -> 'kind2 t -> bool = "%eq"
+    external (!=) : 'kind1 t -> 'kind2 t -> bool = "%noteq"
 
     (* Creation *)
 
@@ -423,13 +423,13 @@ module V1 = struct
 
     (* Configuration *)
 
-    external getId : 'a t -> int
+    external getId : 'kind t -> int
       = "ml_canvas_get_id"
 
-    external getSize : 'a t -> (int * int)
+    external getSize : 'kind t -> (int * int)
       = "ml_canvas_get_size"
 
-    external setSize : 'a t -> (int * int) -> unit
+    external setSize : 'kind t -> (int * int) -> unit
       = "ml_canvas_set_size"
 
     external getPosition : [< `Onscreen] t -> (int * int)
@@ -440,248 +440,244 @@ module V1 = struct
 
     (* State *)
 
-    external save : 'a t -> unit
+    external save : 'kind t -> unit
       = "ml_canvas_save"
 
-    external restore : 'a t -> unit
+    external restore : 'kind t -> unit
       = "ml_canvas_restore"
 
     (* Transformations *)
     external setTransform :
-      'a t -> (float * float * float * float * float * float) -> unit
+      'kind t -> (float * float * float * float * float * float) -> unit
       = "ml_canvas_set_transform"
 
     external transform :
-      'a t -> (float * float * float * float * float * float) -> unit
+      'kind t -> (float * float * float * float * float * float) -> unit
       = "ml_canvas_transform"
 
-    external translate : 'a t -> (float * float) -> unit
+    external translate : 'kind t -> (float * float) -> unit
       = "ml_canvas_translate"
 
-    external scale : 'a t -> (float * float) -> unit
+    external scale : 'kind t -> (float * float) -> unit
       = "ml_canvas_scale"
 
-    external shear : 'a t -> (float * float) -> unit
+    external shear : 'kind t -> (float * float) -> unit
       = "ml_canvas_shear"
 
-    external rotate : 'a t -> float -> unit
+    external rotate : 'kind t -> float -> unit
       = "ml_canvas_rotate"
 
     (* Style / config *)
 
-    external getLineWidth : 'a t -> float
+    external getLineWidth : 'kind t -> float
       = "ml_canvas_get_line_width"
 
-    external setLineWidth : 'a t -> float -> unit
+    external setLineWidth : 'kind t -> float -> unit
       = "ml_canvas_set_line_width"
 
-    external getLineJoin : 'a t -> line_join
+    external getLineJoin : 'kind t -> line_join
       = "ml_canvas_get_line_join"
 
-    external setLineJoin : 'a t -> line_join -> unit
+    external setLineJoin : 'kind t -> line_join -> unit
       = "ml_canvas_set_line_join"
 
-    external getLineCap : 'a t -> line_cap
+    external getLineCap : 'kind t -> line_cap
       = "ml_canvas_get_line_cap"
 
-    external setLineCap : 'a t -> line_cap -> unit
+    external setLineCap : 'kind t -> line_cap -> unit
       = "ml_canvas_set_line_cap"
 
-    external getMiterLimit : 'a t -> float
+    external getMiterLimit : 'kind t -> float
       = "ml_canvas_get_miter_limit"
 
-    external setMiterLimit : 'a t -> float -> unit
+    external setMiterLimit : 'kind t -> float -> unit
       = "ml_canvas_set_miter_limit"
 
-    external getLineDashOffset : 'a t -> float
+    external getLineDashOffset : 'kind t -> float
       = "ml_canvas_get_line_dash_offset"
 
-    external setLineDashOffset : 'a t -> float -> unit
+    external setLineDashOffset : 'kind t -> float -> unit
       = "ml_canvas_set_line_dash_offset"
 
-    external getLineDash : 'a t -> float array
+    external getLineDash : 'kind t -> float array
       = "ml_canvas_get_line_dash"
 
-    external setLineDash : 'a t -> float array -> unit
+    external setLineDash : 'kind t -> float array -> unit
       = "ml_canvas_set_line_dash"
 
-    external getStrokeColor : 'a t -> Color.t
+    external getStrokeColor : 'kind t -> Color.t
       = "ml_canvas_get_stroke_color"
 
-    external setStrokeColor : 'a t -> Color.t -> unit
+    external setStrokeColor : 'kind t -> Color.t -> unit
       = "ml_canvas_set_stroke_color"
 
-    external setStrokeGradient : 'a t -> Gradient.t -> unit
+    external setStrokeGradient : 'kind t -> Gradient.t -> unit
       = "ml_canvas_set_stroke_gradient"
 
-    external setStrokePattern : 'a t -> Pattern.t -> unit
+    external setStrokePattern : 'kind t -> Pattern.t -> unit
       = "ml_canvas_set_stroke_pattern"
 
-    external getStrokeStyle : 'a t -> style
+    external getStrokeStyle : 'kind t -> style
       = "ml_canvas_get_stroke_style"
 
-    external setStrokeStyle : 'a t -> style -> unit
+    external setStrokeStyle : 'kind t -> style -> unit
       = "ml_canvas_set_stroke_style"
 
-    external getFillColor : 'a t -> Color.t
+    external getFillColor : 'kind t -> Color.t
       = "ml_canvas_get_fill_color"
 
-    external setFillColor : 'a t -> Color.t -> unit
+    external setFillColor : 'kind t -> Color.t -> unit
       = "ml_canvas_set_fill_color"
 
-    external setFillGradient : 'a t -> Gradient.t -> unit
+    external setFillGradient : 'kind t -> Gradient.t -> unit
       = "ml_canvas_set_fill_gradient"
 
-    external setFillPattern : 'a t -> Pattern.t -> unit
+    external setFillPattern : 'kind t -> Pattern.t -> unit
       = "ml_canvas_set_fill_pattern"
 
-    external getFillStyle : 'a t -> style
+    external getFillStyle : 'kind t -> style
       = "ml_canvas_get_fill_style"
 
-    external setFillStyle : 'a t -> style -> unit
+    external setFillStyle : 'kind t -> style -> unit
       = "ml_canvas_set_fill_style"
 
-    external getGlobalAlpha : 'a t -> float
+    external getGlobalAlpha : 'kind t -> float
       = "ml_canvas_get_global_alpha"
 
-    external setGlobalAlpha : 'a t -> float -> unit
+    external setGlobalAlpha : 'kind t -> float -> unit
       = "ml_canvas_set_global_alpha"
 
-    external getGlobalCompositeOperation : 'a t -> composite_op
+    external getGlobalCompositeOperation : 'kind t -> composite_op
       = "ml_canvas_get_global_composite_operation"
 
-    external setGlobalCompositeOperation : 'a t -> composite_op -> unit
+    external setGlobalCompositeOperation : 'kind t -> composite_op -> unit
       = "ml_canvas_set_global_composite_operation"
 
-    external getShadowColor : 'a t -> Color.t
+    external getShadowColor : 'kind t -> Color.t
       = "ml_canvas_get_shadow_color"
 
-    external setShadowColor : 'a t -> Color.t -> unit
+    external setShadowColor : 'kind t -> Color.t -> unit
       = "ml_canvas_set_shadow_color"
 
-    external getShadowBlur : 'a t -> float
+    external getShadowBlur : 'kind t -> float
       = "ml_canvas_get_shadow_blur"
 
-    external setShadowBlur : 'a t -> float -> unit
+    external setShadowBlur : 'kind t -> float -> unit
       = "ml_canvas_set_shadow_blur"
 
-    external getShadowOffset : 'a t -> (float * float)
+    external getShadowOffset : 'kind t -> (float * float)
       = "ml_canvas_get_shadow_offset"
 
-    external setShadowOffset : 'a t -> (float * float) -> unit
+    external setShadowOffset : 'kind t -> (float * float) -> unit
       = "ml_canvas_set_shadow_offset"
 
     external setFont :
-      'a t -> string -> size:Font.size -> slant:Font.slant ->
+      'kind t -> string -> size:Font.size -> slant:Font.slant ->
       weight:Font.weight -> unit
-      = "ml_canvas_set_font"
-
-    external setFont_ :
-      'a t -> string -> Font.size -> Font.slant -> Font.weight -> unit
       = "ml_canvas_set_font"
 
     (* Paths *)
 
-    external clearPath : 'a t -> unit
+    external clearPath : 'kind t -> unit
       = "ml_canvas_clear_path"
 
-    external closePath : 'a t -> unit
+    external closePath : 'kind t -> unit
       = "ml_canvas_close_path"
 
-    external moveTo : 'a t -> Point.t -> unit
+    external moveTo : 'kind t -> Point.t -> unit
       = "ml_canvas_move_to"
 
-    external lineTo : 'a t -> Point.t -> unit
+    external lineTo : 'kind t -> Point.t -> unit
       = "ml_canvas_line_to"
 
     external arc :
-      'a t -> center:Point.t -> radius:float ->
+      'kind t -> center:Point.t -> radius:float ->
       theta1:float -> theta2:float -> ccw:bool -> unit
       = "ml_canvas_arc" "ml_canvas_arc_n"
 
     external arcTo :
-      'a t -> p1:Point.t -> p2:Point.t -> radius:float -> unit
+      'kind t -> p1:Point.t -> p2:Point.t -> radius:float -> unit
       = "ml_canvas_arc_to"
 
     external quadraticCurveTo :
-      'a t -> cp:Point.t -> p:Point.t -> unit
+      'kind t -> cp:Point.t -> p:Point.t -> unit
       = "ml_canvas_quadratic_curve_to"
 
     external bezierCurveTo :
-      'a t -> cp1:Point.t -> cp2:Point.t -> p:Point.t -> unit
+      'kind t -> cp1:Point.t -> cp2:Point.t -> p:Point.t -> unit
       = "ml_canvas_bezier_curve_to"
 
     external rect :
-      'a t -> pos:Point.t -> size:(float * float) -> unit
+      'kind t -> pos:Point.t -> size:(float * float) -> unit
       = "ml_canvas_rect"
 
     external ellipse :
-      'a t -> center:Point.t -> radius:(float * float) ->
+      'kind t -> center:Point.t -> radius:(float * float) ->
       rotation:float -> theta1:float -> theta2:float -> ccw:bool -> unit
       = "ml_canvas_ellipse" "ml_canvas_ellipse_n"
 
-    external fill : 'a t -> nonzero:bool -> unit
+    external fill : 'kind t -> nonzero:bool -> unit
       = "ml_canvas_fill"
 
-    external fillPath : 'a t -> Path.t -> nonzero:bool -> unit
+    external fillPath : 'kind t -> Path.t -> nonzero:bool -> unit
       = "ml_canvas_fill_path"
 
-    external stroke : 'a t -> unit
+    external stroke : 'kind t -> unit
       = "ml_canvas_stroke"
 
-    external strokePath : 'a t -> Path.t -> unit
+    external strokePath : 'kind t -> Path.t -> unit
       = "ml_canvas_stroke_path"
 
-    external clip : 'a t -> nonzero:bool -> unit
+    external clip : 'kind t -> nonzero:bool -> unit
       = "ml_canvas_clip"
 
-    external clipPath : 'a t -> Path.t -> nonzero:bool -> unit
+    external clipPath : 'kind t -> Path.t -> nonzero:bool -> unit
       = "ml_canvas_clip_path"
 
     (* Immediate drawing *)
 
     external fillRect :
-      'a t -> pos:Point.t -> size:(float * float) -> unit
+      'kind t -> pos:Point.t -> size:(float * float) -> unit
       = "ml_canvas_fill_rect"
 
     external strokeRect :
-      'a t -> pos:Point.t -> size:(float * float) -> unit
+      'kind t -> pos:Point.t -> size:(float * float) -> unit
       = "ml_canvas_stroke_rect"
 
     external fillText :
-      'a t -> string -> Point.t -> unit
+      'kind t -> string -> Point.t -> unit
       = "ml_canvas_fill_text"
 
     external strokeText :
-      'a t -> string -> Point.t -> unit
+      'kind t -> string -> Point.t -> unit
       = "ml_canvas_stroke_text"
 
     external blit :
-      dst:'a t -> dpos:(int * int) ->
-      src:'b t -> spos:(int * int) -> size:(int * int) -> unit
+      dst:'kind1 t -> dpos:(int * int) ->
+      src:'kind2 t -> spos:(int * int) -> size:(int * int) -> unit
       = "ml_canvas_blit"
 
     (* Direct pixel access *)
 
-    external getPixel : 'a t -> (int * int) -> Color.t
+    external getPixel : 'kind t -> (int * int) -> Color.t
       = "ml_canvas_get_pixel"
 
-    external putPixel : 'a t -> (int * int) -> Color.t -> unit
+    external putPixel : 'kind t -> (int * int) -> Color.t -> unit
       = "ml_canvas_put_pixel"
 
     external getImageData :
-      'a t -> pos:(int * int) -> size:(int * int) -> ImageData.t
+      'kind t -> pos:(int * int) -> size:(int * int) -> ImageData.t
       = "ml_canvas_get_image_data"
 
     external putImageData :
-      'a t -> dpos:(int * int) -> ImageData.t ->
+      'kind t -> dpos:(int * int) -> ImageData.t ->
       spos:(int * int) -> size:(int * int) -> unit
       = "ml_canvas_put_image_data"
 
-    external exportPNG : 'a t -> string -> unit
+    external exportPNG : 'kind t -> string -> unit
       = "ml_canvas_export_png"
 
-    external importPNG : 'a t -> pos:(int * int) -> string -> unit
+    external importPNG : 'kind t -> pos:(int * int) -> string -> unit
       = "ml_canvas_import_png"
 
   end
@@ -975,13 +971,15 @@ module V1 = struct
     external init : options -> unit
       = "ml_canvas_init"
 
-    external run : (Event.t-> bool) -> (unit -> 'a) -> 'b
+    external run :
+      ('state -> Event.t -> 'state * bool) ->
+      ('state -> 'dummy1) -> 'state -> 'dummy2
       = "ml_canvas_run"
 
     external stop : unit -> unit
       = "ml_canvas_stop"
 
-    external getCanvas : int -> 'a Canvas.t option
+    external getCanvas : int -> 'kind Canvas.t option
       = "ml_canvas_get_canvas"
 
   end

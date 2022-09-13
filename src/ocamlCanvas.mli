@@ -469,7 +469,7 @@ module V1 : sig
   module Canvas : sig
   (** Canvas manipulation functions *)
 
-    type 'a t
+    type 'kind t
     (** An abstract type representing a canvas *)
 
     type line_join =
@@ -523,20 +523,20 @@ module V1 : sig
     (** {1 Gradient creation functions} *)
 
     val createLinearGradient :
-      'a t -> pos1:Point.t -> pos2:Point.t -> Gradient.t
+      'kind t -> pos1:Point.t -> pos2:Point.t -> Gradient.t
     (** [createLinearGradient c ~pos1 ~pos2] creates a new
         linear gradient parallel to the line ([pos1][pos2])
         in window coordinates for canvas [c] *)
 
     val createRadialGradient:
-      'a t -> center1:Point.t -> rad1:float ->
+      'kind t -> center1:Point.t -> rad1:float ->
       center2:Point.t -> rad2:float -> Gradient.t
     (** [createRadialGradient c ~center1 ~rad1 ~center2 ~rad2] creates a new
         radial gradient between the disks with centers [center1] and [center2]
         and radi [rad1] and [rad2] in window coordinates for canvas [c] *)
 
     val createConicGradient:
-      'a t -> center:Point.t -> angle:float -> Gradient.t
+      'kind t -> center:Point.t -> angle:float -> Gradient.t
     (** [createConicGradient c ~center ~angle] creates a new conic gradient
         with center [center] and initial angle [angle] for canvas [c] *)
 
@@ -544,7 +544,7 @@ module V1 : sig
     (** {1 Pattern creation function} *)
 
     val createPattern :
-      'a t -> ImageData.t -> Pattern.repeat -> Pattern.t
+      'kind t -> ImageData.t -> Pattern.repeat -> Pattern.t
     (** [createPattern img rep] creates a pattern
         of [rep] using [img] as source *)
 
@@ -555,38 +555,38 @@ module V1 : sig
         of canvas, the usual comparison functions are provided.
         These functions simply operate on the canvas' unique ids. *)
 
-    val hash : 'a t -> int
+    val hash : 'kind t -> int
     (** [hash c] returns a unique integer value for canvas [c], which
         happens to be the same as the unique canvas id [getId c] *)
 
-    val compare : 'a t -> 'b t -> int
+    val compare : 'kind1 t -> 'kind2 t -> int
     (** [compare c1 c2] is equivalent to [compare (getId c1) (getId c2)] *)
 
-    val equal : 'a t -> 'b t -> bool
+    val equal : 'kind1 t -> 'kind2 t -> bool
     (** [equal c1 c2] is equivalent to [equal (getId c1) (getId c2)] *)
 
-    val (=) : 'a t -> 'b t -> bool
+    val (=) : 'kind1 t -> 'kind2 t -> bool
     (** [c1 = c2] is equivalent to [(getId c1) = (getId c2)] *)
 
-    val (<>) : 'a t -> 'b t -> bool
+    val (<>) : 'kind1 t -> 'kind2 t -> bool
     (** [c1 <> c2] is equivalent to [(getId c1) <> (getId c2)] *)
 
-    val (<) : 'a t -> 'b t -> bool
+    val (<) : 'kind1 t -> 'kind2 t -> bool
     (** [c1 < c2] is equivalent to [(getId c1) < (getId c2)] *)
 
-    val (>) : 'a t -> 'b t -> bool
+    val (>) : 'kind1 t -> 'kind2 t -> bool
     (** [c1 > c2] is equivalent to [(getId c1) > (getId c2)] *)
 
-    val (<=) : 'a t -> 'b t -> bool
+    val (<=) : 'kind1 t -> 'kind2 t -> bool
     (** [c1 <= c2] is equivalent to [(getId c1) <= (getId c2)] *)
 
-    val (>=) : 'a t -> 'b t -> bool
+    val (>=) : 'kind1 t -> 'kind2 t -> bool
     (** [c1 >= c2] is equivalent to [(getId c1) >= (getId c2)] *)
 
-    val (==) : 'a t -> 'b t -> bool
+    val (==) : 'kind1 t -> 'kind2 t -> bool
     (** [c1 == c2] test for physical equality of canvas [c1] and [c2] *)
 
-    val (!=) : 'a t -> 'b t -> bool
+    val (!=) : 'kind1 t -> 'kind2 t -> bool
     (** [c1 != c2] test for physical inequality of canvas [c1] and [c2] *)
 
 
@@ -631,14 +631,14 @@ module V1 : sig
 
     (** {1 Configuration} *)
 
-    val getId : 'a t -> int
+    val getId : 'kind t -> int
     (** [getId c] returns the unique id of canvas [c],
         or 0 if the canvas has been destroyed *)
 
-    val getSize : 'a t -> (int * int)
+    val getSize : 'kind t -> (int * int)
     (** [getSize c] returns the size of canvas [c] *)
 
-    val setSize : 'a t -> (int * int) -> unit
+    val setSize : 'kind t -> (int * int) -> unit
     (** [setSize c size] sets the size of canvas [c] *)
 
     val getPosition : [< `Onscreen] t -> (int * int)
@@ -650,17 +650,17 @@ module V1 : sig
 
     (** {1 State} *)
 
-    val save : 'a t -> unit
+    val save : 'kind t -> unit
     (** [save c] pushes the current state of canvas [c] onto the state stack *)
 
-    val restore : 'a t -> unit
+    val restore : 'kind t -> unit
     (** [restore c] pops the current state of canvas [c] from the state stack *)
 
 
     (** {1 Transformations} *)
 
     val setTransform :
-      'a t -> (float * float * float * float * float * float) -> unit
+      'kind t -> (float * float * float * float * float * float) -> unit
     (** [setTransform c t] sets the current transformation matrix of canvas [c].
         The matrix [t = (a, b, c, d, e, f)] is of the following form:
  {[     a b 0
@@ -668,150 +668,150 @@ module V1 : sig
         e f 1 ]} *)
 
     val transform :
-      'a t -> (float * float * float * float * float * float) -> unit
+      'kind t -> (float * float * float * float * float * float) -> unit
     (** [transform c t] apply the given arbitrary transformation
         to the current transformation matrix of canvas [c] *)
 
-    val translate : 'a t -> (float * float) -> unit
+    val translate : 'kind t -> (float * float) -> unit
     (** [translate c vec] apply the given translation transform
         to the current transformation matrix of canvas [c] *)
 
-    val scale : 'a t -> (float * float) -> unit
+    val scale : 'kind t -> (float * float) -> unit
     (** [scale c vec] apply the given scale transform
         to the current transformation matrix of canvas [c] *)
 
-    val shear : 'a t -> (float * float) -> unit
+    val shear : 'kind t -> (float * float) -> unit
     (** [shear c vec] apply the given shear transform
         to the current transformation matrix of canvas [c] *)
 
-    val rotate : 'a t -> float -> unit
+    val rotate : 'kind t -> float -> unit
     (** [rotate c theta] apply the given rotation transform
         to the current transformation matrix of canvas [c] *)
 
 
     (** {1 Style} *)
 
-    val getLineWidth : 'a t -> float
+    val getLineWidth : 'kind t -> float
     (** [getLineWidth c] returns the current line width of canvas [c] *)
 
-    val setLineWidth : 'a t -> float -> unit
+    val setLineWidth : 'kind t -> float -> unit
     (** [setLineWidth c w] sets the current line width of canvas [c] to [w] *)
 
-    val getLineJoin : 'a t -> line_join
+    val getLineJoin : 'kind t -> line_join
     (** [getLineJoin c] returns the current line join type of canvas [c] *)
 
-    val setLineJoin : 'a t -> line_join -> unit
+    val setLineJoin : 'kind t -> line_join -> unit
     (** [setLineJoin c j] sets the current line join type of canvas[c] to [j] *)
 
-    val getLineCap : 'a t -> line_cap
+    val getLineCap : 'kind t -> line_cap
     (** [getLineJoin c] returns the current line cap type of canvas [c] *)
 
-    val setLineCap : 'a t -> line_cap -> unit
+    val setLineCap : 'kind t -> line_cap -> unit
     (** [setLineJoin c j] sets the current line cap type of canvas[c] to [j] *)
 
-    val getMiterLimit : 'a t -> float
+    val getMiterLimit : 'kind t -> float
     (** [getMiterLimit c] returns the current miter limit of canvas [c] *)
 
-    val setMiterLimit : 'a t -> float -> unit
+    val setMiterLimit : 'kind t -> float -> unit
     (** [getMiterLimit c m] sets the current miter limit of canvas [c] to [m] *)
 
-    val getLineDashOffset : 'a t -> float
+    val getLineDashOffset : 'kind t -> float
     (** [getLineDashOffset c] returns the current line offset of [c] *)
 
-    val setLineDashOffset : 'a t -> float -> unit
+    val setLineDashOffset : 'kind t -> float -> unit
     (** [setLineDashOffset c t] sets the current line offset of [c] to [t] *)
 
-    val getLineDash : 'a t -> float array
+    val getLineDash : 'kind t -> float array
     (** [getLineDash c t] returns the current line dash pattern of [c] *)
 
-    val setLineDash : 'a t -> float array -> unit
+    val setLineDash : 'kind t -> float array -> unit
     (** [setLineDash c t] sets the current line dash pattern of [c] to [t] *)
 
-    val getStrokeColor : 'a t -> Color.t
+    val getStrokeColor : 'kind t -> Color.t
     (** [getStrokeColor c] returns the current stroke color of canvas [c] *)
 
-    val setStrokeColor : 'a t -> Color.t -> unit
+    val setStrokeColor : 'kind t -> Color.t -> unit
     (** [setStrokeColor c col] sets the current
         stroke color of canvas [c] to [col] *)
 
-    val setStrokeGradient : 'a t -> Gradient.t -> unit
+    val setStrokeGradient : 'kind t -> Gradient.t -> unit
     (** [setStrokeGradient c grad] sets the current stroke
         style of canvas [c] to the gradient [grad] *)
 
-    val setStrokePattern : 'a t -> Pattern.t -> unit
+    val setStrokePattern : 'kind t -> Pattern.t -> unit
     (** [setStrokePattern c pat] sets the current stroke
         style of canvas [c] to the pattern [pat] *)
 
-    val getStrokeStyle : 'a t -> style
+    val getStrokeStyle : 'kind t -> style
     (** [getStrokeStyle c] returns the current stroke style of canvas [c] *)
 
-    val setStrokeStyle : 'a t -> style -> unit
+    val setStrokeStyle : 'kind t -> style -> unit
     (** [setStrokeStyle c style] sets the current stroke
         style of canvas [c] to style [style] *)
 
-    val getFillColor : 'a t -> Color.t
+    val getFillColor : 'kind t -> Color.t
     (** [getFillColor c] returns the current fill color of canvas [c] *)
 
-    val setFillColor : 'a t -> Color.t -> unit
+    val setFillColor : 'kind t -> Color.t -> unit
     (** [setFillColor c col] sets the current
         fill color of canvas [c] to [col] *)
 
-    val setFillGradient : 'a t -> Gradient.t -> unit
+    val setFillGradient : 'kind t -> Gradient.t -> unit
     (** [setFillGradient c grad] sets the current fill
         style of canvas [c] to the gradient [grad] *)
 
-    val setFillPattern : 'a t -> Pattern.t -> unit
+    val setFillPattern : 'kind t -> Pattern.t -> unit
     (** [setFillPattern c pat] sets the current fill
         style of canvas [c] to the pattern [pat] *)
 
-    val getFillStyle : 'a t -> style
+    val getFillStyle : 'kind t -> style
     (** [getFillStyle c] return the current fill style of canvas [c] *)
 
-    val setFillStyle : 'a t -> style -> unit
+    val setFillStyle : 'kind t -> style -> unit
     (** [setFillStyle c style] sets the current
         fill style of canvas [c] to style [style] *)
 
-    val getGlobalAlpha : 'a t -> float
+    val getGlobalAlpha : 'kind t -> float
     (** [getGlobalAlpha c] returns the current global alpha of canvas [c] *)
 
-    val setGlobalAlpha : 'a t -> float -> unit
+    val setGlobalAlpha : 'kind t -> float -> unit
     (** [setGlobalAlpha c a] sets the global alpha value of canvas[c] to [a] *)
 
-    val getGlobalCompositeOperation : 'a t -> composite_op
+    val getGlobalCompositeOperation : 'kind t -> composite_op
     (** [getGlobalCompositeOperation c] returns the global
         composite or blending operation of canvas[c] *)
 
-    val setGlobalCompositeOperation : 'a t -> composite_op -> unit
+    val setGlobalCompositeOperation : 'kind t -> composite_op -> unit
     (** [setGlobalCompositeOperation c o] sets the global
         composite or blending operation of canvas[c] to [o] *)
 
     val getShadowColor :
-      'a t -> Color.t
+      'kind t -> Color.t
     (** [setShadowColor c] returns the canvas [c]'s shadow color *)
 
     val setShadowColor :
-      'a t -> Color.t -> unit
+      'kind t -> Color.t -> unit
     (** [setShadowColor c col] sets the canvas [c]'s shadow color to [col] *)
 
     val getShadowBlur :
-      'a t -> float
+      'kind t -> float
     (** [setShadowBlur c] returns the shadow blur radius of canvas [c]  *)
 
     val setShadowBlur :
-      'a t -> float -> unit
+      'kind t -> float -> unit
     (** [setShadowBlur c b] sets the shadow blur radius of canvas [c] to [b] *)
 
     val getShadowOffset :
-      'a t -> (float * float)
+      'kind t -> (float * float)
     (** [setShadowOffset c] returns the offset of the shadows drawn in [c] *)
 
     val setShadowOffset :
-      'a t -> (float * float) -> unit
+      'kind t -> (float * float) -> unit
     (** [setShadowOffset c o] sets the offset
         of the shadows drawn in [c] to [o] *)
 
     val setFont :
-      'a t -> string -> size:Font.size ->
+      'kind t -> string -> size:Font.size ->
       slant:Font.slant -> weight:Font.weight -> unit
     (** [setFont c family ~size ~slant ~weight] sets the current
         font of canvas [c] to the one specified by the given
@@ -820,28 +820,28 @@ module V1 : sig
 
     (** {1 Path} *)
 
-    val clearPath : 'a t -> unit
+    val clearPath : 'kind t -> unit
     (** [clearPath c] resets the path of canvas [c] *)
 
-    val closePath : 'a t -> unit
+    val closePath : 'kind t -> unit
     (** [closePath c] closes the current subpath of canvas [c], i.e. adds a
         line from the last point in the current subpath to the first point,
         and marks the subpath as closed. Does nothing if the subpath is empty
         or has a single point, or if the subpath is already closed. *)
 
-    val moveTo : 'a t -> Point.t -> unit
+    val moveTo : 'kind t -> Point.t -> unit
     (** [moveTo c p] starts a new subpath in canvas [c] containing the
         single point [p]. If the current subpath is empty, its first
         point is set to this point, instead of creating a new subpath.
         Likewise, if the current subpath has a single point, it is
         simply replaced by the given point. *)
 
-    val lineTo : 'a t -> Point.t -> unit
+    val lineTo : 'kind t -> Point.t -> unit
     (** [lineTo c p] adds the point [p] to the current subpath of canvas [c].
         If the current subpath is empty, this behaves just like [moveTo c ~p].*)
 
     val arc :
-      'a t -> center:Point.t -> radius:float ->
+      'kind t -> center:Point.t -> radius:float ->
       theta1:float -> theta2:float -> ccw:bool -> unit
     (** [arc c ~center ~radius ~theta1 ~theta2 ~ccw] adds an arc of the given
         [radius], centered at [center], between angle [theta1] to [theta2]
@@ -851,30 +851,30 @@ module V1 : sig
         arc by a straight line. *)
 
     val arcTo :
-      'a t -> p1:Point.t -> p2:Point.t -> radius:float -> unit
+      'kind t -> p1:Point.t -> p2:Point.t -> radius:float -> unit
     (** [arcTo c ~p1 ~p2 ~radius] adds an arc of the given [radius]
         using the control points [p1] and [p2] to the current
         subpath of canvas [c]. If the current subpath is empty,
         this behaves as if [moveTo c ~p:p1] was called. *)
 
     val quadraticCurveTo :
-      'a t -> cp:Point.t -> p:Point.t -> unit
+      'kind t -> cp:Point.t -> p:Point.t -> unit
     (** [quadraticCurveTo c ~cp ~p] adds a quadratic Bezier curve
         using the control point [cp] and the end point [p]
         to the current subpath of canvas [c] *)
 
     val bezierCurveTo :
-      'a t -> cp1:Point.t -> cp2:Point.t -> p:Point.t -> unit
+      'kind t -> cp1:Point.t -> cp2:Point.t -> p:Point.t -> unit
     (** [bezierCurve c ~cp1 ~cp2 ~p] adds a cubic Bezier curve using
         the control points [cp1] and [cp2] and the end point [p]
         to the current subpath of canvas [c] *)
 
-    val rect : 'a t -> pos:Point.t -> size:(float * float) -> unit
+    val rect : 'kind t -> pos:Point.t -> size:(float * float) -> unit
     (** [rect c ~pos ~size] adds the rectangle specified by [pos]
         and [size]) to the current subpath of canvas [c] *)
 
     val ellipse :
-      'a t -> center:Point.t -> radius:(float * float) ->
+      'kind t -> center:Point.t -> radius:(float * float) ->
       rotation:float -> theta1:float -> theta2:float -> ccw:bool -> unit
     (** [ellipse c ~center ~radius ~rotation ~theta1 ~theta2] adds an ellipse
         with the given parameters to the current subpath of canvas [c] *)
@@ -882,54 +882,54 @@ module V1 : sig
 
     (** {1 Path stroking and filling} *)
 
-    val fill : 'a t -> nonzero:bool -> unit
+    val fill : 'kind t -> nonzero:bool -> unit
     (** [fill c ~nonzero] fills the current subpath of canvas [c]
         using the current fill color and the specified fill rule *)
 
-    val fillPath : 'a t -> Path.t -> nonzero:bool -> unit
+    val fillPath : 'kind t -> Path.t -> nonzero:bool -> unit
     (** [fillPath c p ~nonzero] fills the path [p] on canvas [c]
         using the current fill style and the specified fill rule *)
 
-    val stroke : 'a t -> unit
+    val stroke : 'kind t -> unit
     (** [stroke c] draws the outline of the current subpath of
         canvas [c] using the current stroke color and line width *)
 
-    val strokePath : 'a t -> Path.t -> unit
+    val strokePath : 'kind t -> Path.t -> unit
     (** [strokePath c p] draws the outline of the path [p] on
         canvas [c] using the current stroke style and line width *)
 
-    val clip : 'a t -> nonzero:bool -> unit
+    val clip : 'kind t -> nonzero:bool -> unit
     (** [clipPath c p ~nonzero] intersects the current subpath of [c]
         on canvas [c]'s clip region using the specified fill rule *)
 
-    val clipPath : 'a t -> Path.t -> nonzero:bool -> unit
+    val clipPath : 'kind t -> Path.t -> nonzero:bool -> unit
     (** [clipPath c p ~nonzero] intersects the filled path [p] on
         canvas [c]'s clip region using the specified fill rule *)
 
 
     (** {1 Immediate drawing} *)
 
-    val fillRect : 'a t -> pos:Point.t -> size:(float * float) -> unit
+    val fillRect : 'kind t -> pos:Point.t -> size:(float * float) -> unit
     (** [fillRect c ~pos ~size] immediatly fills the rectangle specified by
         [pos] and [size] to the canvas [c] using the current fill color *)
 
-    val strokeRect : 'a t -> pos:Point.t -> size:(float * float) -> unit
+    val strokeRect : 'kind t -> pos:Point.t -> size:(float * float) -> unit
     (** [strokeRect c ~pos ~size] immediatly draws the outline of
         the rectangle specified by [pos] and [size] to the canvas
         [c] using the current stroke color and line width *)
 
-    val fillText : 'a t -> string -> Point.t -> unit
+    val fillText : 'kind t -> string -> Point.t -> unit
     (** [fillText c text pos] immediatly draws the text [text] at
         position [pos] on the canvas [c] using the current fill color *)
 
-    val strokeText : 'a t -> string -> Point.t -> unit
+    val strokeText : 'kind t -> string -> Point.t -> unit
     (** [strokeText c text pos] immediatly draws the outline of text [text]
         at position [pos] on the canvas [c] using the current stroke color
         and line width *)
 
     val blit :
-      dst:'a t -> dpos:(int * int) ->
-      src:'b t -> spos:(int * int) -> size:(int * int) -> unit
+      dst:'kind1 t -> dpos:(int * int) ->
+      src:'kind2 t -> spos:(int * int) -> size:(int * int) -> unit
     (** [blit ~dst ~dpos ~src ~spos ~size] copies the area specified by [spos]
         and [size] from canvas [src] to canvas [dst] at position [dpos] *)
 
@@ -940,31 +940,31 @@ module V1 : sig
         be slow and are not meant for updating the contents of a canvas in
         real-time. Better use them on offscreen canvas during loading phases. *)
 
-    val getPixel : 'a t -> (int * int) -> Color.t
+    val getPixel : 'kind t -> (int * int) -> Color.t
     (** [getPixel c pos] returns the color of the
         pixel at position [pos] in canvas [c] *)
 
-    val putPixel : 'a t -> (int * int) -> Color.t -> unit
+    val putPixel : 'kind t -> (int * int) -> Color.t -> unit
     (** [putPixel c pos col] sets the color of the pixel
         at position [pos] in canvas [c] to color [col] *)
 
     val getImageData :
-      'a t -> pos:(int * int) -> size:(int * int) -> ImageData.t
+      'kind t -> pos:(int * int) -> size:(int * int) -> ImageData.t
     (** [getImageData c ~pos ~size] returns a copy of the pixel
         data at position [pos] of size [size] in canvas [c] *)
 
     val putImageData :
-      'a t -> dpos:(int * int) -> ImageData.t ->
+      'kind t -> dpos:(int * int) -> ImageData.t ->
       spos:(int * int) -> size:(int * int) -> unit
     (** [setImageData c ~dpos id ~spos ~size] overwrite the pixels
         at position [dpos] in canvas [c] with the provided pixel
         data starting at position [spos] and of size [size] *)
 
-    val exportPNG : 'a t -> string -> unit
+    val exportPNG : 'kind t -> string -> unit
     (** [exportPNG c filename] saves the contents of
         canvas [c] to a file with name [filename] *)
 
-    val importPNG : 'a t -> pos:(int * int) -> string -> unit
+    val importPNG : 'kind t -> pos:(int * int) -> string -> unit
     (** [importPNG c ~pos filename] loads the file
         [filename] into canvas [c] at position [pos] *)
 
@@ -1303,20 +1303,34 @@ module V1 : sig
     val init : options -> unit
     (** [init o] initializes the backend with the specified options *)
 
-    val run : (Event.t-> bool) -> (unit -> 'a) -> 'b
-    (** [run h k] executes the backend event loop, calling [h] when an event
-        occur, and calling [k] when the event loop terminates. The call to
-        [run] MUST be the last instruction of your program (to avoid different
-        behaviors between the native and javascript backends). If you need
-        to perform additional stuff when the program terminates, DO use
-        the [k] function: it is meant for that. Note that calling [run]
-        within the event handler function [h] will just be ignored
-        (but this should not be done). However, [run] may be called
-        in the [k] function, if needed. *)
+    val run :
+      ('state -> Event.t -> 'state * bool) ->
+      ('state -> 'dummy1) -> 'state -> 'dummy2
+    (** [run h k s] executes the backend event loop, calling the event handler
+        function [h] when an event occurs, and calling the continuation
+        function [k] when the event loop terminates, passing the given
+        state [s] to these functions as needed. The event handler function
+        should return the new state, and a boolean indicating whether the
+        event was actually handled. The backend uses this information to
+        determine whether further actions need to be performed (eg. presenting
+        the contents of a canvas when returning true in a frame event), or
+        whether a default action should be performed (as of now, no default
+        action is performed, but this may change in the future). Simply put,
+        just return true in events you actually handle, and false otherwise.
+        Note that the call to [run] MUST be the last instruction in your
+        program (to avoid different behaviors between the native and javascript
+        backends). If you need to perform additional stuff when the program
+        terminates, yout MUST use the [k] function: it is meant for that.
+        Note that calling [run] from the event handler function [h] will
+        just be ignored (though this should not be done). However, [run]
+        may be called from the [k] function, if needed. *)
 
     val stop : unit -> unit
-    (** [stop ()] stops the currently running event loop, if any.
-        This should be called within an event handler function. *)
+    (** [stop ()] requests termination of the currently running event
+        loop, if any. It should be called from an event handler function.
+        Actual termination of the event loop will occur at the end of
+        the current iteration of the event loop, so after calling [stop]
+        an event handler should proceed normally until it returns. *)
 
     val getCanvas : int -> 'a Canvas.t option
     (** [getCanvas i] returns the canvas that has id [i], if it exists *)
