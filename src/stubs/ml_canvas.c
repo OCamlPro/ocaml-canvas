@@ -1801,6 +1801,7 @@ ml_canvas_init(
 }
 
 static value _ml_canvas_mlException = Val_unit;
+static value _ml_canvas_mlState = Val_unit;
 static value _ml_canvas_mlProcessEvent = Val_unit;
 
 static bool
@@ -1815,17 +1816,22 @@ _ml_canvas_process_event(
     CAMLreturnT(bool, false);
   }
 
-  mlResult = caml_callback_exn(_ml_canvas_mlProcessEvent, Val_event(event));
+  mlResult = caml_callback2_exn(_ml_canvas_mlProcessEvent,
+                                _ml_canvas_mlState,
+                                Val_event(event));
 
   /* If an exception was raised, save for later */
   if (Is_exception_result(mlResult)) {
     mlResult = Extract_exception(mlResult);
-    /* Only remember the first exception */
+    /* Only remember the first exception (shouldn't have more anyways) */
     if (_ml_canvas_mlException == Val_unit) {
       caml_modify_generational_global_root(&_ml_canvas_mlException, mlResult);
     }
     backend_stop();
     mlResult = Val_false;
+  } else {
+    _ml_canvas_mlState = Field(mlResult, 0);
+    mlResult = Field(mlResult, 1);
   }
 
   CAMLreturnT(bool, Bool_val(mlResult));
@@ -1834,9 +1840,10 @@ _ml_canvas_process_event(
 CAMLprim value
 ml_canvas_run(
   value mlProcessEvent,
-  value mlContinuation)
+  value mlContinuation,
+  value mlState)
 {
-  CAMLparam2(mlProcessEvent,mlContinuation);
+  CAMLparam3(mlProcessEvent, mlContinuation, mlState);
   CAMLlocal1(mlResult);
 
   /* If already running, ignore */
@@ -1844,12 +1851,14 @@ ml_canvas_run(
     CAMLreturn(Val_unit);
   }
 
+  _ml_canvas_mlProcessEvent = mlProcessEvent;
   caml_register_generational_global_root(&_ml_canvas_mlProcessEvent);
-  caml_modify_generational_global_root(&_ml_canvas_mlProcessEvent,
-                                       mlProcessEvent);
 
+  _ml_canvas_mlState = mlState;
+  caml_register_global_root(&_ml_canvas_mlState);
+
+  _ml_canvas_mlException = Val_unit;
   caml_register_generational_global_root(&_ml_canvas_mlException);
-  caml_modify_generational_global_root(&_ml_canvas_mlException, Val_unit);
 
   event_listener_t event_listener = {
     .process_event = _ml_canvas_process_event,
@@ -1858,18 +1867,22 @@ ml_canvas_run(
   backend_run(&event_listener);
 
   mlResult = _ml_canvas_mlException;
-  caml_modify_generational_global_root(&_ml_canvas_mlException, Val_unit);
-  caml_remove_global_root(&_ml_canvas_mlException);
+  caml_remove_generational_global_root(&_ml_canvas_mlException);
+  _ml_canvas_mlException = Val_unit;
 
-  caml_modify_generational_global_root(&_ml_canvas_mlProcessEvent, Val_unit);
-  caml_remove_global_root(&_ml_canvas_mlProcessEvent);
+  mlState = _ml_canvas_mlState;
+  caml_remove_global_root(&_ml_canvas_mlState);
+  _ml_canvas_mlState = Val_unit;
+
+  caml_remove_generational_global_root(&_ml_canvas_mlProcessEvent);
+  _ml_canvas_mlProcessEvent = Val_unit;
 
   /* If an exception was raised, re-raise */
   if (mlResult != Val_unit) {
     caml_raise(mlResult);
   }
 
-  mlResult = caml_callback_exn(mlContinuation, Val_unit);
+  mlResult = caml_callback_exn(mlContinuation, mlState);
   if (Is_exception_result(mlResult)) {
     mlResult = Extract_exception(mlResult);
     caml_raise(mlResult);

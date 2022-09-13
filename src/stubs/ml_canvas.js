@@ -40,31 +40,27 @@ function _make_key_event(e, state) {
 }
 
 //Provides: _key_down_handler
-//Requires: _focus,_make_key_event,_ml_canvas_mlEventListener,KEY_STATE
+//Requires: _focus,_make_key_event,_ml_canvas_process_event,KEY_STATE
 function _key_down_handler(e) {
   if (_focus !== null) {
     var evt = _make_key_event(e, KEY_STATE.DOWN);
-    if (_ml_canvas_mlEventListener !== null) {
-      _ml_canvas_mlEventListener(evt);
-    }
+    _ml_canvas_process_event(evt);
   }
   return false;
 }
 
 //Provides: _key_up_handler
-//Requires: _focus,_make_key_event,_ml_canvas_mlEventListener,KEY_STATE
+//Requires: _focus,_make_key_event,_ml_canvas_process_event,KEY_STATE
 function _key_up_handler(e) {
   if (_focus !== null) {
     var evt = _make_key_event(e, KEY_STATE.UP);
-    if (_ml_canvas_mlEventListener !== null) {
-      _ml_canvas_mlEventListener(evt);
-    }
+    _ml_canvas_process_event(evt);
   }
   return false;
 }
 
 //Provides: _header_down_handler
-//Requires: _focus,_move,ml_canvas_destroy,_ml_canvas_mlEventListener,EVENT_TAG
+//Requires: _focus,_move,ml_canvas_destroy,_ml_canvas_process_event,EVENT_TAG
 //Requires: caml_int64_of_float
 function _header_down_handler(e) {
   if (e.target !== null) {
@@ -75,9 +71,7 @@ function _header_down_handler(e) {
       var evt = [ EVENT_TAG.CANVAS_CLOSED,
                   [ 0, e.target.canvas,
                     caml_int64_of_float(e.timeStamp * 1000.0) ] ];
-      if (_ml_canvas_mlEventListener !== null) {
-        _ml_canvas_mlEventListener(evt);
-      }
+      _ml_canvas_process_event(evt);
       ml_canvas_destroy(e.target.canvas);
       _focus = null;
       return false;
@@ -92,7 +86,7 @@ function _header_down_handler(e) {
 }
 
 //Provides: _surface_down_handler
-//Requires: _focus,_ml_canvas_mlEventListener,EVENT_TAG
+//Requires: _focus,_ml_canvas_process_event,EVENT_TAG
 //Requires: caml_int64_of_float
 function _surface_down_handler(e) {
   if (e.target !== null) {
@@ -102,32 +96,28 @@ function _surface_down_handler(e) {
                 [ 0, e.target.canvas,
                   caml_int64_of_float(e.timeStamp * 1000.0),
                   [ 0, e.offsetX, e.offsetY ], e.button + 1, 1 ] ];
-    if (_ml_canvas_mlEventListener !== null) {
-      _ml_canvas_mlEventListener(evt);
-    }
+    _ml_canvas_process_event(evt);
   }
   return false;
 }
 
 //Provides: _up_handler
-//Requires: _move,_ml_canvas_mlEventListener,EVENT_TAG
+//Requires: _move,_ml_canvas_process_event,EVENT_TAG
 //Requires: caml_int64_of_float
 function _up_handler(e) {
   _move.moving = false;
-    if (e.target.canvas !== undefined) {
-        var evt = [ EVENT_TAG.BUTTON_ACTION,
-                    [ 0, e.target.canvas,
-                      caml_int64_of_float(e.timeStamp * 1000.0),
-                      [ 0, e.offsetX, e.offsetY ], e.button + 1, 0 ] ];
-        if (_ml_canvas_mlEventListener !== null) {
-          _ml_canvas_mlEventListener(evt);
-        }
-    }
+  if (e.target.canvas !== undefined) {
+    var evt = [ EVENT_TAG.BUTTON_ACTION,
+                [ 0, e.target.canvas,
+                  caml_int64_of_float(e.timeStamp * 1000.0),
+                  [ 0, e.offsetX, e.offsetY ], e.button + 1, 0 ] ];
+    _ml_canvas_process_event(evt);
+  }
   return false; // = prevent default behavior
 }
 
 //Provides: _move_handler
-//Requires: _move,_ml_canvas_mlEventListener,EVENT_TAG
+//Requires: _move,_ml_canvas_process_event,EVENT_TAG
 //Requires: caml_int64_of_float
 function _move_handler(e) {
   if (_move.moving) {
@@ -147,15 +137,13 @@ function _move_handler(e) {
                 [ 0, e.target.canvas,
                   caml_int64_of_float(e.timeStamp * 1000.0),
                   [ 0, e.offsetX, e.offsetY ] ] ];
-    if (_ml_canvas_mlEventListener !== null) {
-      _ml_canvas_mlEventListener(evt);
-    }
+    _ml_canvas_process_event(evt);
   }
   return false;
 }
 
 //Provides: _frame_handler
-//Requires: _ml_canvas_mlEventListener,EVENT_TAG
+//Requires: _ml_canvas_process_event,EVENT_TAG
 //Requires: caml_int64_of_float
 function _frame_handler(timestamp) {
 
@@ -165,9 +153,7 @@ function _frame_handler(timestamp) {
     var evt = [ EVENT_TAG.FRAME,
                 [ 0, surfaces[i].canvas,
                   caml_int64_of_float(timestamp * 1000.0) ] ];
-    if (_ml_canvas_mlEventListener !== null) {
-      _ml_canvas_mlEventListener(evt);
-    }
+    _ml_canvas_process_event(evt);
   }
 
   window.requestAnimationFrame(_frame_handler);
@@ -1382,28 +1368,53 @@ function ml_canvas_init(mlOptions) {
   return _ml_canvas_initialized;
 }
 
-//Provides: _ml_canvas_mlEventListener
-var _ml_canvas_mlEventListener = null;
+//Provides: _ml_canvas_mlProcessEvent
+var _ml_canvas_mlProcessEvent = null;
 
 //Provides: _ml_canvas_mlContinuation
 var _ml_canvas_mlContinuation = null;
 
+//Provides: _ml_canvas_mlState
+var _ml_canvas_mlState = null;
+
+//Provides: _ml_canvas_process_event
+//Requires: _ml_canvas_mlProcessEvent,_ml_canvas_mlContinuation,_ml_canvas_mlState,ml_canvas_stop
+function _ml_canvas_process_event(mlEvent) {
+  if (_ml_canvas_mlProcessEvent === null) {
+    return false;
+  }
+  try {
+    var mlResult = _ml_canvas_mlProcessEvent(_ml_canvas_mlState, mlEvent);
+    _ml_canvas_mlState = mlResult[1];
+    return mlResult[2];
+  } catch (exn) {
+    //_ml_canvas_mlException = exn;
+    ml_canvas_stop();
+    return false;
+  }
+}
+
 //Provides: ml_canvas_run
-//Requires: _ml_canvas_mlEventListener,_ml_canvas_mlContinuation
-function ml_canvas_run(mlEventListener, mlContinuation) {
-  if (_ml_canvas_mlEventListener !== null) {
+//Requires: _ml_canvas_mlProcessEvent,_ml_canvas_mlContinuation,_ml_canvas_mlState
+function ml_canvas_run(mlProcessEvent, mlContinuation, mlState) {
+  if (_ml_canvas_mlProcessEvent !== null) {
     return;
   }
-  _ml_canvas_mlEventListener = mlEventListener;
+  _ml_canvas_mlProcessEvent = mlProcessEvent;
   _ml_canvas_mlContinuation = mlContinuation;
+  _ml_canvas_mlState = mlState;
 }
 
 //Provides: ml_canvas_stop
-//Requires: _ml_canvas_mlEventListener,_ml_canvas_mlContinuation
+//Requires: _ml_canvas_mlProcessEvent,_ml_canvas_mlContinuation,_ml_canvas_mlState
 function ml_canvas_stop() {
-  _ml_canvas_mlEventListener = null;
+  _ml_canvas_mlProcessEvent = null;
   if (_ml_canvas_mlContinuation !== null) {
-    _ml_canvas_mlContinuation();
+    try {
+      _ml_canvas_mlContinuation(_ml_canvas_mlState);
+    } catch (exn) {
+      // do nothing
+    }
     _ml_canvas_mlContinuation = null;
   }
 }

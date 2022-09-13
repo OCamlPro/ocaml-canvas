@@ -21,6 +21,7 @@ let () =
   Canvas.save c;
   Canvas.scale c (2.0, 2.0);
   Canvas.rotate c 0.3;
+
   let square = Path.create () in
   Path.rect square ~pos:(50., 50.) ~size:(50. ,50.);
   Canvas.clipPath c square ~nonzero:false;
@@ -36,6 +37,7 @@ let () =
   Canvas.clip c ~nonzero:false;
   Canvas.save c;
   Canvas.restore c;
+
   let dragonImage = ImageData.createFromPNG "assets/dragon.png" in
   let pattern = Canvas.createPattern c dragonImage RepeatXY in
   Canvas.setFillPattern c pattern;
@@ -47,20 +49,20 @@ let () =
   Canvas.restore c;
   Canvas.fillRect c ~pos:(0.,0.) ~size:(3000., 3000.);
 
-  Backend.run (function
+  Backend.run (fun state -> function
 
     | Event.KeyAction { canvas = _; timestamp = _;
                         key; char = _; flags = _; state = Down } ->
         if key = Event.KeyEscape then
           Backend.stop ();
-        true
+        state, true
 
     | Event.Frame { canvas = _; timestamp = _ } ->
-        true
+        state, true
 
     | _ ->
-        false
+        state, false
 
-    ) (function () ->
+    ) (function _state ->
          Printf.printf "Goodbye !\n"
-    )
+    ) ()

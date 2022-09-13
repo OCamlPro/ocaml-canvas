@@ -138,24 +138,24 @@ let () =
 
   Canvas.show c;
 
-  Backend.run (function
+  Backend.run (fun state -> function
 
     | Event.KeyAction { canvas = _; timestamp = _;
                         key; char = _; flags = _; state = Down } ->
         if key = Event.KeyEscape then
           Backend.stop ();
-        true
+        state, true
 
     | Event.CanvasClosed { canvas = _; timestamp = _ } ->
         Backend.stop ();
-        true
+        state, true
 
     | Event.Frame { canvas = _; timestamp = _ } ->
-        true
+        state, true
 
     | _ ->
-        false
+        state, false
 
-    ) (function () ->
+    ) (function _state ->
          Printf.printf "Goodbye !\n"
-    )
+    ) ()

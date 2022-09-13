@@ -32,51 +32,52 @@ let () =
   Canvas.setLineDash c (a);
 
   Canvas.show c;
-  let a = ref 0. and b = ref 0. and tan_alpha = ref 0. and t = ref 0.  in
-  Backend.run (function
+
+  Backend.run (fun state -> function
 
     | Event.KeyAction { canvas = _; timestamp = _;
                         key; char = _; flags = _; state = Down } ->
         if key = Event.KeyEscape then
           Backend.stop ();
-        true
+        state, true
 
     | Event.MouseMove { canvas = _; timestamp = _;
                         position = (x,y)} ->
-        a := float_of_int x;
-        b := float_of_int y;
+        let _a, _b, _tan_alpha, old_t = state in
+        let a = float_of_int x in
+        let b = float_of_int y in
         let g = 100. and v = 600. in
-        let t = 0. -. (g *. !a *. !a) /. (v *. v) in
-        tan_alpha :=
-          ((0. -. !a) +.
-             Float.sqrt (!a *. !a -. 4. *. t *. (!b +. t -. 600.))) /.
-            (2. *. t);
-        true;
+        let t = -. (g *. a *. a) /. (v *. v) in
+        let tan_alpha =
+          (-. a +.
+             Float.sqrt (a *. a -. 4. *. t *. (b +. t -. 600.))) /.
+            (2. *. t) in
+        (a, b, tan_alpha, old_t), true
 
     | Event.Frame { canvas = _; timestamp = _ } ->
-        t := !t +. 1.;
-        Canvas.setLineDashOffset c !t;
+        let a, b, tan_alpha, t = state in
+        let t = t +. 1. in
+        Canvas.setLineDashOffset c t;
         Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(800.0, 600.0);
         Canvas.clearPath c;
         Canvas.moveTo c (0.,600.);
-        let alpha = Float.atan(!tan_alpha) in
-        let cos_a = Float.cos(alpha) and sin_a = Float.sin(alpha) in
+        let alpha = Float.atan tan_alpha in
+        let cos_a = Float.cos alpha and sin_a = Float.sin alpha in
         let n = 10 in
         for i = 1 to n do
-          let x_1 = (float_of_int i) *. !a /. (float_of_int n)
-          and g = 100.
-          and v = 600. in
+          let x_1 = (float_of_int i) *. a /. (float_of_int n)
+          and g = 100. and v = 600. in
           let y_1 =
-            (0. -. sin_a) *. (x_1 /. cos_a) +.
+            (-. sin_a) *. (x_1 /. cos_a) +.
               g *. (x_1 *. x_1) /. (cos_a *. cos_a *. v *. v) +. 600. in
           Canvas.lineTo c (x_1, y_1);
         done;
         Canvas.stroke c;
-        true
+        (a, b, tan_alpha, t), true
 
     | _ ->
-        false
+        state, false
 
-    ) (function () ->
+    ) (function _state ->
          Printf.printf "Goodbye !\n"
-    )
+    ) (0.0, 0.0, 0.0, 0.0)

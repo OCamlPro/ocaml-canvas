@@ -76,7 +76,7 @@ let f1 () =
 
   let _c = create_canvas "Orange" 50 90 200 200 in
 
-  Backend.run (function
+  Backend.run (fun state -> function
       | KeyAction { canvas = c; timestamp = _;
                     key; char; flags = _; state = Down } ->
 
@@ -95,7 +95,7 @@ let f1 () =
           if key = Event.KeyEscape then
             Backend.stop ();
 
-          true
+         state, true
 
       | ButtonAction { canvas = c; timestamp = _;
                        position = (x, y); button = b; state = Down } ->
@@ -135,7 +135,7 @@ let f1 () =
           Canvas.putPixel c (x, y+1) Color.red;
 *)
 
-          true
+          state, true
 
       | Frame { canvas = c; timestamp = _ } ->
           Canvas.rotate c 0.01;
@@ -145,13 +145,13 @@ let f1 () =
             ~theta1:0.0 ~theta2:1.5 ~ccw:false;
           Canvas.fill c ~nonzero:false;
 
-          true
+          state, true
 
       | _ ->
-        false
-    ) (function () ->
+        state, false
+    ) (function _state ->
          Printf.printf "Done with main loop\n"
-    )
+    ) ()
 
 
 
@@ -175,47 +175,37 @@ let f2 () =
   Canvas.fillRect c2 ~pos:(0.0, 0.0) ~size:(200.0, 200.0);
   Canvas.show c2;
 
-  let c1_color = ref (Color.of_string "red") in
-  let c2_color = ref (Color.of_string "green") in
-
-  Backend.run (function
+  Backend.run (fun state -> function
       | Event.CanvasResized { canvas = _; timestamp = _; size = _ } ->
-          true
+          state, true
       | CanvasMoved { canvas = _; timestamp = _; position = _ } ->
-          false
+          state, false
       | CanvasFocused { canvas = _; timestamp = _; focus = _ } ->
-          false
+          state, false
       | CanvasClosed { canvas = _; timestamp = _ } ->
-          false
+          state, false
       | KeyAction { canvas = _; timestamp = _;
                     key = _; char = _; flags = _; state = _ } ->
-          false
+          state, false
       | ButtonAction { canvas = _; timestamp = _;
                        position = _; button = _; state = _ } ->
-          true
+          state, true
       | MouseMove { canvas = _; timestamp = _; position = (_x, _y) } ->
-          true
+          state, true
       | Frame { canvas = c; timestamp = _ } ->
-          let color =
+          let color, state =
             if (*Canvas.*)(c == c1) then
-              (c1_color :=
-                 Color.of_int (
-                   (Color.to_int !c1_color) + 1); !c1_color)
-            else (c2_color :=
-                    Color.of_int (
-                      (Color.to_int !c2_color) + 1); !c2_color)
+              let color = Color.of_int ((Color.to_int (fst state)) + 1) in
+              color, (color, snd state)
+            else
+              let color = Color.of_int ((Color.to_int (snd state)) + 1) in
+              color, (fst state, color)
           in
-
           Canvas.setFillColor c color;
           Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(200.0, 200.0);
-
-          true
-    ) (function () -> ())
-
-
-
-
-
+          state, true
+    ) (function _state -> ())
+    (Color.of_string "red", Color.of_string "green")
 
 
 
@@ -318,7 +308,7 @@ let f3 () =
 
 (* add canvas created event *)
 (* about to destroy *)
-  Backend.run (function
+  Backend.run (fun state -> function
       | Event.CanvasResized { canvas = c; timestamp = _;
                               size = (width, _height) } ->
 Printf.printf "Canvas resized %d\n" width;
@@ -335,12 +325,12 @@ Format.print_flush ();
           let width, height = Canvas.getSize c in
           Canvas.fillRect c ~pos:(0.0, 0.0)
             ~size:(float_of_int width, float_of_int height);
-          true;
+          state, true;
 
       | CanvasMoved { canvas = _c; timestamp = _; position = (x, y) } ->
       Printf.printf "Canvas moved %d, %d\n" x y;
       Format.print_flush ();
-          false
+          state, false
 
       | CanvasFocused { canvas = c; timestamp = _; focus } ->
         Printf.printf "Focus\n";
@@ -356,29 +346,29 @@ Format.print_flush ();
           Printf.printf "Focus %s on %s\n"
             (if focus = In then "in" else "out") name;
           Format.print_flush ();
-          false
+          state, false
       | CanvasClosed { canvas = _c; timestamp = _ } ->
         Printf.printf "Close\n";
         Format.print_flush (); (*
           let _ = create_canvas "Cyan" (50, 50) (100, 100) in *)
-          false
+          state, false
       | KeyAction { canvas = _; timestamp = _;
-                    key; char; flags; state } ->
+                    key; char; flags; state = key_state } ->
           Printf.printf "Key_down : %04X (%04X) (shift=%b) (alt=%b) (ctrl=%b) (dead=%b) (%s)\n"
             (Event.int_of_key key) (Uchar.to_int char)
             flags.flag_shift flags.flag_alt flags.flag_control flags.flag_dead
-            (if state = Up then "up" else "down");
+            (if key_state = Up then "up" else "down");
             Format.print_flush ();
 
           if key = Event.KeyQ then
             Backend.stop ();
 
-          false
+          state, false
       | ButtonAction { canvas = _; timestamp = _;
                        position = (x, y); button = _; state = Up } ->
       Printf.printf "Button_up at %d %d\n" x y;
       Format.print_flush ();
-          false
+          state, false
       | ButtonAction { canvas = c; timestamp = _;
                        position = (x, y); button = b; state = Down } ->
         Printf.printf "Buton\n";
@@ -413,14 +403,14 @@ Format.print_flush ();
           Canvas.putPixel c (x+1, y+1) Color.red;
           Canvas.putPixel c (x, y+1) Color.red;
 
-          true
+          state, true
       | MouseMove { canvas = _c; timestamp = _; position = _ } ->
 (*        Printf.printf "Mouse\n";
         Format.print_flush (); *)
 (*
           Printf.printf "Mouse move at %d %d\n" x y;
           Format.print_flush (); *)
-          false
+          state, false
       | Frame { canvas = c; timestamp = _ } ->
 
         (* Printf.printf "Frame\n";
@@ -447,21 +437,21 @@ Format.print_flush ();
       Canvas.fillRect c ~pos:(20.0, 20.0) ~size:(10.0, 10.0);
 *)
 
-          true
-    ) (function () ->
+          state, true
+    ) (function _state ->
       Printf.printf "We're done\n";
       Format.print_flush ();
-      Backend.run (function
+      Backend.run (fun state -> function
           | KeyAction { canvas = _c; timestamp = _;
                         key = _; char = _; flags = _; state = Down } ->
             Backend.stop ();
-            true
-          | _ -> false
-        ) (function () ->
+            state, true
+          | _ -> state, false
+        ) (function _state ->
           Printf.printf "We're REALLY done\n"
-        )
+        ) ()
 
-    )
+    ) ()
 
 
 
@@ -514,30 +504,26 @@ let f4 () =
   (*let _c = create_canvas "Red" 1900 30 500 500 in *)
   let _c = create_canvas "Red" 190 30 500 500 in
 
-  let _rot = ref 0.0 in
-
-let _done = ref false in
-
-  Backend.run (function
+  Backend.run (fun state -> function
       | Event.CanvasResized { canvas = _; timestamp = _; size = _ } ->
-          true
+          state, true
       | CanvasMoved { canvas = _; timestamp = _; position = _ } ->
-          false
+          state, false
       | CanvasFocused { canvas = _; timestamp = _; focus = _ } ->
-          false
+          state, false
       | CanvasClosed { canvas = _; timestamp = _ } ->
-          false
+          state, false
       | KeyAction { canvas = _; timestamp = _;
                     key = _; char = _; flags = _; state = _ } ->
-          false
+          state, false
       | ButtonAction { canvas = _; timestamp = _;
                        position = _; button = _; state = Up } ->
-          false
+          state, false
       | ButtonAction { canvas = _; timestamp = _;
                        position = _; button = _; state = Down } ->
-          false
+          state, false
       | MouseMove { canvas = _; timestamp = _; position = _ } ->
-          false
+          state, false
       | Frame { canvas = c; timestamp = _ } ->
           Canvas.setLineWidth c 20.0;
 
@@ -550,7 +536,9 @@ let _done = ref false in
 
           Canvas.clearPath c;
 
-if not !_done then begin
+          let state =
+            if state then true
+            else begin
 
 (*
           Canvas.moveTo c (-100.0, -100.0);
@@ -594,8 +582,9 @@ if not !_done then begin
 
           Canvas.fill c ~nonzero:true;
 
-_done := true;
-end;
+          true
+            end
+          in
 
 
 (*
@@ -702,8 +691,8 @@ end;
 
 (*          Canvas.fill c ~nonzero:false; *)
 
-          true
-    ) (function () -> ())
+          state, true
+    ) (function _state -> ()) false
 
 
 
