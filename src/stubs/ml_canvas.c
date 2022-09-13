@@ -76,6 +76,101 @@ ml_canvas_image_data_create_from_png(
 }
 
 CAMLprim value
+ml_canvas_image_data_get_size(
+  value mlPixmap)
+{
+  CAMLparam1(mlPixmap);
+  CAMLlocal1(mlResult);
+  pixmap_t pixmap = Pixmap_val(mlPixmap);
+  mlResult = caml_alloc_tuple(2);
+  Store_field(mlResult, 0, Val_int32_clip(pixmap.width));
+  Store_field(mlResult, 1, Val_int32_clip(pixmap.height));
+  CAMLreturn(mlResult);
+}
+
+CAMLprim value
+ml_canvas_image_data_fill(
+  value mlPixmap,
+  value mlColor)
+{
+  CAMLparam2(mlPixmap, mlColor);
+  pixmap_t pixmap = Pixmap_val(mlPixmap);
+  color_t_ color = color_of_int(Int32_val(mlColor));
+  for (int32_t i = 0; i < pixmap.height * pixmap.width; ++i) {
+    pixmap.data[i] = color;
+  }
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
+ml_canvas_image_data_sub(
+  value mlPixmap,
+  value mlPos,
+  value mlSize)
+{
+  CAMLparam3(mlPixmap, mlPos, mlSize);
+  int32_t sx = Int32_val_clip(Field(mlPos, 0));
+  int32_t sy = Int32_val_clip(Field(mlPos, 1));
+  int32_t width = Int32_val_clip(Field(mlSize, 0));
+  int32_t height = Int32_val_clip(Field(mlSize, 1));
+  pixmap_t src_pixmap = Pixmap_val(mlPixmap);
+  pixmap_t dst_pixmap = pixmap(width, height, NULL);
+  if (pixmap_valid(dst_pixmap) == false) {
+    caml_failwith("unable to extract sub image data");
+  }
+  pixmap_blit(&dst_pixmap, 0, 0, &src_pixmap, sx, sy, width, height);
+  CAMLreturn(Val_pixmap(&dst_pixmap));
+}
+
+CAMLprim value
+ml_canvas_image_data_blit(
+  value mlDstPixmap,
+  value mlDPos,
+  value mlSrcPixmap,
+  value mlSPos,
+  value mlSize)
+{
+  CAMLparam5(mlDstPixmap, mlDPos, mlSrcPixmap, mlSPos, mlSize);
+  pixmap_t dst_pixmap = Pixmap_val(mlDstPixmap);
+  pixmap_t src_pixmap = Pixmap_val(mlSrcPixmap);
+  pixmap_blit(&dst_pixmap,
+              Int32_val_clip(Field(mlDPos, 0)),
+              Int32_val_clip(Field(mlDPos, 1)),
+              &src_pixmap,
+              Int32_val_clip(Field(mlSPos, 0)),
+              Int32_val_clip(Field(mlSPos, 1)),
+              Int32_val_clip(Field(mlSize, 0)),
+              Int32_val_clip(Field(mlSize, 1)));
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
+ml_canvas_image_data_get_pixel(
+  value mlPixmap,
+  value mlPos)
+{
+  CAMLparam2(mlPixmap, mlPos);
+  pixmap_t pixmap = Pixmap_val(mlPixmap);
+  CAMLreturn(caml_copy_int32(color_to_int(
+             pixmap_at(pixmap, Int32_val_clip(Field(mlPos, 1)),
+                               Int32_val_clip(Field(mlPos, 0))))));
+}
+
+CAMLprim value
+ml_canvas_image_data_put_pixel(
+  value mlPixmap,
+  value mlPos,
+  value mlColor)
+{
+  CAMLparam3(mlPixmap, mlPos, mlColor);
+  pixmap_t pixmap = Pixmap_val(mlPixmap);
+  pixmap_at(pixmap, Int32_val_clip(Field(mlPos, 1)),
+                    Int32_val_clip(Field(mlPos, 0))) =
+    color_of_int(Int32_val(mlColor));
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value
 ml_canvas_image_data_import_png(
   value mlPixmap,
   value mlDPos,
@@ -1541,13 +1636,13 @@ ml_canvas_get_pixel(
 }
 
 CAMLprim value
-ml_canvas_set_pixel(
+ml_canvas_put_pixel(
   value mlCanvas,
   value mlPos,
   value mlColor)
 {
   CAMLparam3(mlCanvas, mlPos, mlColor);
-  canvas_set_pixel(Canvas_val(mlCanvas),
+  canvas_put_pixel(Canvas_val(mlCanvas),
                    Int32_val_clip(Field(mlPos, 0)),
                    Int32_val_clip(Field(mlPos, 1)),
                    color_of_int(Int32_val(mlColor)));
@@ -1576,7 +1671,7 @@ ml_canvas_get_image_data(
 }
 
 CAMLprim value
-ml_canvas_set_image_data(
+ml_canvas_put_image_data(
   value mlCanvas,
   value mlDPos,
   value mlPixmap,
@@ -1585,7 +1680,7 @@ ml_canvas_set_image_data(
 {
   CAMLparam5(mlCanvas, mlDPos, mlPixmap, mlSPos, mlSize);
   pixmap_t pixmap = Pixmap_val(mlPixmap);
-  canvas_set_pixmap(Canvas_val(mlCanvas),
+  canvas_put_pixmap(Canvas_val(mlCanvas),
                     Int32_val_clip(Field(mlDPos, 0)),
                     Int32_val_clip(Field(mlDPos, 1)),
                     &pixmap,

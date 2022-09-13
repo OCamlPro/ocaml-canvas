@@ -24,7 +24,8 @@ var _move = {
 }
 
 //Provides: _make_key_event
-//Requires: _focus,caml_int64_of_float,keyname_to_keycode,Val_key_code,Val_key_state,EVENT_TAG
+//Requires: _focus,keyname_to_keycode,Val_key_code,Val_key_state,EVENT_TAG
+//Requires: caml_int64_of_float
 function _make_key_event(e, state) {
   var char = e.key.length === 1 ? e.key.charCodeAt(0) : 0;
   var flags = [ 0, e.shiftKey, e.altKey, e.ctrlKey, e.metaKey,
@@ -36,11 +37,6 @@ function _make_key_event(e, state) {
                 Val_key_code(keyname_to_keycode(e.code)),
                 char, flags, Val_key_state(state) ] ];
   return evt;
-/*
-  e.isComposing
-  e.location
-  e.getModifierState()
-*/
 }
 
 //Provides: _key_down_handler
@@ -68,7 +64,8 @@ function _key_up_handler(e) {
 }
 
 //Provides: _header_down_handler
-//Requires: _focus,_move,ml_canvas_destroy,_ml_canvas_mlEventListener,caml_int64_of_float,EVENT_TAG
+//Requires: _focus,_move,ml_canvas_destroy,_ml_canvas_mlEventListener,EVENT_TAG
+//Requires: caml_int64_of_float
 function _header_down_handler(e) {
   if (e.target !== null) {
     _focus = e.target.canvas;
@@ -95,7 +92,8 @@ function _header_down_handler(e) {
 }
 
 //Provides: _surface_down_handler
-//Requires: _focus,_ml_canvas_mlEventListener,caml_int64_of_float,EVENT_TAG
+//Requires: _focus,_ml_canvas_mlEventListener,EVENT_TAG
+//Requires: caml_int64_of_float
 function _surface_down_handler(e) {
   if (e.target !== null) {
     _focus = e.target.canvas;
@@ -112,7 +110,8 @@ function _surface_down_handler(e) {
 }
 
 //Provides: _up_handler
-//Requires: _move,_ml_canvas_mlEventListener,caml_int64_of_float,EVENT_TAG
+//Requires: _move,_ml_canvas_mlEventListener,EVENT_TAG
+//Requires: caml_int64_of_float
 function _up_handler(e) {
   _move.moving = false;
     if (e.target.canvas !== undefined) {
@@ -128,7 +127,8 @@ function _up_handler(e) {
 }
 
 //Provides: _move_handler
-//Requires: _move,_ml_canvas_mlEventListener,caml_int64_of_float,EVENT_TAG
+//Requires: _move,_ml_canvas_mlEventListener,EVENT_TAG
+//Requires: caml_int64_of_float
 function _move_handler(e) {
   if (_move.moving) {
     var new_x = e.pageX;
@@ -155,7 +155,8 @@ function _move_handler(e) {
 }
 
 //Provides: _frame_handler
-//Requires: _ml_canvas_mlEventListener,caml_int64_of_float,EVENT_TAG
+//Requires: _ml_canvas_mlEventListener,EVENT_TAG
+//Requires: caml_int64_of_float
 function _frame_handler(timestamp) {
 
   var surfaces = document.getElementsByTagName("canvas");
@@ -185,24 +186,40 @@ function _ml_canvas_ba_of_img(img) {
   var ctxt = surface.getContext("2d");
   ctxt.drawImage(img, 0, 0);
   var image = ctxt.getImageData(0, 0, img.width, img.height);
-  var ta = new window.Uint8Array(image.data.buffer);
+  var sta = new window.Uint8Array(image.data.buffer);
+  var dta = new window.Uint8Array(sta.length);
+  // Convert from RGBA to BGRA
+  for (var i = 0; i < sta.length; i += 4) {
+    dta[i+0] = sta[i+2];
+    dta[i+1] = sta[i+1];
+    dta[i+2] = sta[i+0];
+    dta[i+3] = sta[i+3];
+  }
   return caml_ba_create_unsafe(3 /* Uint8Array */, 0 /* c_layout */,
-                               [img.height, img.width, 4], ta);
+                               [img.height, img.width, 4], dta);
 }
 
 //Provides: _ml_canvas_surface_of_ba
-//Requires: caml_ba_to_typed_array,caml_ba_dim_1,caml_ba_dim_2
+//Requires: caml_ba_dim,caml_ba_to_typed_array
 function _ml_canvas_surface_of_ba(data) {
   var surface = document.createElement("canvas");
-  surface.width = caml_ba_dim_2(data);
-  surface.height = caml_ba_dim_1(data);
+  surface.width = caml_ba_dim(data, 1);
+  surface.height = caml_ba_dim(data, 0);
   var ctxt = surface.getContext("2d");
-  var ta = new window.Uint8ClampedArray(caml_ba_to_typed_array(data).buffer);
+  var sta = new window.Uint8Array(caml_ba_to_typed_array(data).buffer);
+  var dta = new window.Uint8ClampedArray(sta.length);
+  // Convert from BGRA to RGBA
+  for (var i = 0; i < sta.length; i += 4) {
+    dta[i+0] = sta[i+2];
+    dta[i+1] = sta[i+1];
+    dta[i+2] = sta[i+0];
+    dta[i+3] = sta[i+3];
+  }
   if (window.ImageData === undefined) {
     var image = ctxt.createImageData(surface.width, surface.height);
-    image.data.set(ta);
+    image.data.set(dta);
   } else {
-    var image = new window.ImageData(ta, surface.width, surface.height);
+    var image = new window.ImageData(dta, surface.width, surface.height);
   }
   ctxt.putImageData(image, 0, 0);
   return surface;
@@ -218,9 +235,119 @@ function ml_canvas_image_data_create_from_png(filename) {
   return _ml_canvas_ba_of_img(img);
 }
 
+//Provides: ml_canvas_image_data_get_size
+//Requires: caml_ba_dim
+function ml_canvas_image_data_get_size(data) {
+  return [ 0, caml_ba_dim(data, 1), caml_ba_dim(data, 0) ];
+}
+
+//Provides: ml_canvas_image_data_fill
+//Requires: caml_ba_to_typed_array
+function ml_canvas_image_data_fill(data, color) {
+  var ta = new window.Uint32Array(caml_ba_to_typed_array(data).buffer);
+  for (var i = 0; i < ta.length; i++) {
+    ta[i] = color;
+  }
+  return 0;
+}
+
+//Provides: _ml_canvas_adjust_blit_info
+function _ml_canvas_adjust_blit_info(dwidth, dheight, dx, dy,
+                                     swidth, sheight, sx, sy, width, height) {
+  if (dx < 0) { sx -= dx; width  += dx; dx = 0; }
+  if (dy < 0) { sy -= dy; height += dy; dy = 0; }
+  if (sx < 0) { dx -= sx; width  += sx; sx = 0; }
+  if (sy < 0) { dy -= sy; height += sy; sy = 0; }
+  if (dx + width  > dwidth)  { width  = dwidth  - dx; }
+  if (dy + height > dheight) { height = dheight - dy; }
+  if (sx + width  > swidth)  { width  = swidth  - sx; }
+  if (sy + height > sheight) { height = sheight - sy; }
+  return [dx, dy, sx, sy, width, height];
+}
+
+//Provides: ml_canvas_image_data_sub
+//Requires: _ml_canvas_adjust_blit_info
+//Requires: caml_ba_dim,caml_ba_to_typed_array,caml_ba_create_unsafe
+function ml_canvas_image_data_sub(src_data, spos, size) {
+  var dwidth = size[1];
+  var dheight = size[2];
+  var swidth = caml_ba_dim(src_data, 1);
+  var sheight = caml_ba_dim(src_data, 0);
+  var ta = new window.Uint8Array(dwidth * dheight * 4);
+  var dst_data = caml_ba_create_unsafe(3 /* Uint8Array */, 0 /* c_layout */,
+                                       [dheight, dwidth, 4], ta);
+  var blit_info =
+    _ml_canvas_adjust_blit_info(dwidth, dheight, 0, 0,
+                                swidth, sheight, spos[1], spos[2],
+                                dwidth, dheight);
+  var dx = blit_info[0];
+  var dy = blit_info[1];
+  var sx = blit_info[2];
+  var sy = blit_info[3];
+  var width = blit_info[4];
+  var height = blit_info[5];
+  if ((width > 0) && (height > 0)) {
+    var dta = new window.Uint32Array(caml_ba_to_typed_array(dst_data).buffer);
+    var sta = new window.Uint32Array(caml_ba_to_typed_array(src_data).buffer);
+    for (var y = 0; y < height; ++y) {
+      for (var x = 0; x < width; ++x) {
+        dta[(dy + y) * dwidth + (dx + x)] =
+          sta[(sy + y) * swidth + (sx + x)];
+      }
+    }
+  }
+  return dst_data;
+}
+
+//Provides: ml_canvas_image_data_blit
+//Requires: _ml_canvas_adjust_blit_info
+//Requires: caml_ba_dim,caml_ba_to_typed_array
+function ml_canvas_image_data_blit(dst_data, dpos, src_data, spos, size) {
+  var dwidth = caml_ba_dim(dst_data, 1);
+  var dheight = caml_ba_dim(dst_data, 0);
+  var swidth = caml_ba_dim(src_data, 1);
+  var sheight = caml_ba_dim(src_data, 0);
+  var blit_info =
+    _ml_canvas_adjust_blit_info(dwidth, dheight, dpos[1], dpos[2],
+                                swidth, sheight, spos[1], spos[2],
+                                size[1], size[2]);
+  var dx = blit_info[0];
+  var dy = blit_info[1];
+  var sx = blit_info[2];
+  var sy = blit_info[3];
+  var width = blit_info[4];
+  var height = blit_info[5];
+  if ((width > 0) && (height > 0)) {
+    var dta = new window.Uint32Array(caml_ba_to_typed_array(dst_data).buffer);
+    var sta = new window.Uint32Array(caml_ba_to_typed_array(src_data).buffer);
+    for (var y = 0; y < height; ++y) {
+      for (var x = 0; x < width; ++x) {
+        dta[(dy + y) * dwidth + (dx + x)] =
+          sta[(sy + y) * swidth + (sx + x)];
+      }
+    }
+  }
+  return 0;
+}
+
+//Provides: ml_canvas_image_data_get_pixel
+//Requires: caml_ba_dim,caml_ba_to_typed_array
+function ml_canvas_image_data_get_pixel(data, pos) {
+  var ta = new window.Uint32Array(caml_ba_to_typed_array(data).buffer);
+  return ta[pos[2] * caml_ba_dim(data, 1) + pos[1]]
+}
+
+//Provides: ml_canvas_image_data_put_pixel
+//Requires: caml_ba_dim,caml_ba_to_typed_array
+function ml_canvas_image_data_put_pixel(data, pos, color) {
+  var ta = new window.Uint32Array(caml_ba_to_typed_array(data).buffer);
+  ta[pos[2] * caml_ba_dim(data, 1) + pos[1]] = color;
+  return 0;
+}
+
 //Provides: ml_canvas_image_data_import_png
 //Requires: _ml_canvas_surface_of_ba,_ml_canvas_image_of_png_file
-//Requires: caml_ba_to_typed_array,caml_ba_dim_1,caml_ba_dim_2
+//Requires: caml_ba_to_typed_array
 function ml_canvas_image_data_import_png(data, pos, filename) {
   var surface = _ml_canvas_surface_of_ba(data);
   var img = _ml_canvas_image_of_png_file(filename);
@@ -237,7 +364,8 @@ function ml_canvas_image_data_import_png(data, pos, filename) {
 }
 
 //Provides: ml_canvas_image_data_export_png
-//Requires: _ml_canvas_surface_of_ba,caml_create_file
+//Requires: _ml_canvas_surface_of_ba
+//Requires: caml_create_file
 function ml_canvas_image_data_export_png(data, filename) {
   var surface = _ml_canvas_surface_of_ba(data);
   if (surface !== null) {
@@ -296,7 +424,8 @@ function ml_canvas_path_rect(path, pos, size) {
 }
 
 //Provides: ml_canvas_path_ellipse
-function ml_canvas_path_ellipse(path, p, radius, rotation, theta1, theta2, ccw) {
+function ml_canvas_path_ellipse(path, p, radius, rotation,
+                                theta1, theta2, ccw) {
   path.ellipse(p[1], p[2], radius[1], radius[2],
                rotation, theta1, theta2, ccw);
 }
@@ -492,9 +621,12 @@ function ml_canvas_create_frameless(pos, size) {
 
   var ctxt = surface.getContext("2d");
   ctxt.globalAlpha = 1.0;
-  ctxt.lineWidth = 2.0;
+  ctxt.lineWidth = 1.0;
   ctxt.fillStyle = "white";
   ctxt.strokeStyle = "black";
+
+  // Onscreen canvas are filled with white by default
+  ctxt.fillRect(0, 0, width, height);
 
   surface.onmousedown = _surface_down_handler;
   frame.oncontextmenu = function() { return false; }
@@ -558,20 +690,29 @@ function ml_canvas_create_offscreen(size) {
 }
 
 //Provides: ml_canvas_create_offscreen_from_image_data
-//Requires: ml_canvas_create_offscreen,caml_ba_to_typed_array,caml_ba_dim_1,caml_ba_dim_2
+//Requires: ml_canvas_create_offscreen
+//Requires: caml_ba_to_typed_array,caml_ba_dim
 function ml_canvas_create_offscreen_from_image_data(data) {
-  var width = caml_ba_dim_2(data);
-  var height = caml_ba_dim_1(data);
+  var width = caml_ba_dim(data, 1);
+  var height = caml_ba_dim(data, 0);
   var canvas = ml_canvas_create_offscreen([ 0, width, height ])
   if (canvas === null) {
     return null;
   }
-  var ta = new window.Uint8ClampedArray(caml_ba_to_typed_array(data).buffer);
+  var sta = new window.Uint8Array(caml_ba_to_typed_array(data).buffer);
+  var dta = new window.Uint8ClampedArray(sta.length);
+  // Convert from BGRA to RGBA
+  for (var i = 0; i < sta.length; i += 4) {
+    dta[i+0] = sta[i+2];
+    dta[i+1] = sta[i+1];
+    dta[i+2] = sta[i+0];
+    dta[i+3] = sta[i+3];
+  }
   if (window.ImageData === undefined) {
     var image = canvas.ctxt.createImageData(width, height);
-    image.data.set(ta);
+    image.data.set(dta);
   } else {
-    var image = new window.ImageData(ta, width, height);
+    var image = new window.ImageData(dta, width, height);
   }
   canvas.ctxt.putImageData(image, 0, 0);
   return canvas;
@@ -1033,7 +1174,7 @@ function ml_canvas_fill_path(canvas, path, nonzero) {
   if (nonzero) {
     canvas.ctxt.fill(path, "nonzero");
   } else {
-    canvas.ctxt.fill(path);
+    canvas.ctxt.fill(path); // "evenodd"
   }
 }
 
@@ -1061,7 +1202,7 @@ function ml_canvas_clip_path(canvas, path, nonzero) {
   if (nonzero) {
     canvas.ctxt.clip(path, "nonzero");
   } else {
-    canvas.ctxt.clip(path);
+    canvas.ctxt.clip(path); // "evenodd"
   }
 }
 
@@ -1079,58 +1220,16 @@ function ml_canvas_stroke_rect(canvas, pos, size) {
   canvas.ctxt.strokeRect(pos[1], pos[2], size[1], size[2]);
 }
 
-/*
-//Provides: init_font_avail
-function init_font_avail() {
-  var width;
-  var body = document.body;
-
-  var container = document.createElement('span');
-  container.innerHTML = Array(100).join('wi');
-  container.style.cssText = [
-    'position:absolute',
-    'width:auto',
-    'font-size:128px',
-    'left:-99999px'
-  ].join(' !important;');
-
-  var getWidth = function (fontFamily) {
-    container.style.fontFamily = fontFamily;
-
-    body.appendChild(container);
-    width = container.clientWidth;
-    body.removeChild(container);
-
-    return width;
-  };
-
-  // Pre compute the widths of monospace, serif & sans-serif
-  // to improve performance.
-  var monoWidth  = getWidth('monospace');
-  var serifWidth = getWidth('serif');
-  var sansWidth  = getWidth('sans-serif');
-
-  window.isFontAvailable = function (font) {
-    return monoWidth !== getWidth(font + ',monospace') ||
-      sansWidth !== getWidth(font + ',sans-serif') ||
-      serifWidth !== getWidth(font + ',serif');
-  };
-}
-*/
 
 //Provides: ml_canvas_fill_text
 //Requires: caml_jsstring_of_string
 function ml_canvas_fill_text(canvas, text, pos) {
-//init_font_avail();
-//window.console.log(window.isFontAvailable("ComicSansMS"));
   canvas.ctxt.fillText(caml_jsstring_of_string(text), pos[1], pos[2]);
 }
 
 //Provides: ml_canvas_stroke_text
 //Requires: caml_jsstring_of_string
 function ml_canvas_stroke_text(canvas, text, pos) {
-//init_font_avail();
-//window.console.log(window.isFontAvailable("ComicSansMS"));
   canvas.ctxt.strokeText(caml_jsstring_of_string(text), pos[1], pos[2]);
 }
 
@@ -1156,8 +1255,8 @@ function ml_canvas_get_pixel(canvas, pos) {
 
 }
 
-//Provides: ml_canvas_set_pixel
-function ml_canvas_set_pixel(canvas, pos, color) {
+//Provides: ml_canvas_put_pixel
+function ml_canvas_put_pixel(canvas, pos, color) {
   var image = canvas.ctxt.createImageData(1, 1);
   image.data[3] = (color & 0xFF000000) >>> 24; // A
   image.data[0] = (color & 0x00FF0000) >>> 16; // R
@@ -1177,17 +1276,25 @@ function ml_canvas_get_image_data(canvas, pos, size) {
                                [height, width, 4], ta);
 }
 
-//Provides: ml_canvas_set_image_data
-//Requires: caml_ba_to_typed_array,caml_ba_dim_1,caml_ba_dim_2
-function ml_canvas_set_image_data(canvas, dpos, data, spos, size) {
-  var ta = new window.Uint8ClampedArray(caml_ba_to_typed_array(data).buffer);
+//Provides: ml_canvas_put_image_data
+//Requires: caml_ba_to_typed_array,caml_ba_dim
+function ml_canvas_put_image_data(canvas, dpos, data, spos, size) {
+  var sta = new window.Uint8Array(caml_ba_to_typed_array(data).buffer);
+  var dta = new window.Uint8ClampedArray(sta.length);
+  // Convert from BGRA to RGBA
+  for (var i = 0; i < sta.length; i += 4) {
+    dta[i+0] = sta[i+2];
+    dta[i+1] = sta[i+1];
+    dta[i+2] = sta[i+0];
+    dta[i+3] = sta[i+3];
+  }
   if (window.ImageData === undefined) {
     var image =
-      canvas.ctxt.createImageData(caml_ba_dim_2(data), caml_ba_dim_1(data));
-    image.data.set(ta);
+      canvas.ctxt.createImageData(caml_ba_dim(data, 1), caml_ba_dim(data, 0));
+    image.data.set(dta);
   } else {
     var image =
-      new window.ImageData(ta, caml_ba_dim_2(data), caml_ba_dim_1(data));
+      new window.ImageData(dta, caml_ba_dim(data, 1), caml_ba_dim(data, 0));
   }
   canvas.ctxt.putImageData(image, dpos[1], dpos[2],
                            spos[1], spos[2], size[1], size[2]);
@@ -1219,6 +1326,8 @@ function _ml_canvas_image_of_png_file(filename) {
   }
   var data = window.btoa(caml_read_file_content(filename));
   var img = new window.Image();
+  img.loading = 'eager';
+  img.decoding = 'sync';
   img.src = 'data:image/png;base64,' + data;
   return img;
 }
@@ -1247,7 +1356,8 @@ function ml_canvas_key_of_int(keycode) {
 var _ml_canvas_initialized = false;
 
 //Provides: ml_canvas_init
-//Requires: _key_down_handler,_key_up_handler,_up_handler,_move_handler,_frame_handler,_ml_canvas_initialized,caml_list_to_js_array
+//Requires: _key_down_handler,_key_up_handler,_up_handler,_move_handler,_frame_handler,_ml_canvas_initialized
+//Requires: caml_list_to_js_array
 function ml_canvas_init(mlOptions) {
   if (_ml_canvas_initialized) {
     return false;

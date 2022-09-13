@@ -1228,7 +1228,8 @@ Val_pixmap(
   CAMLparam0();
   CAMLlocal1(mlImageData);
   intnat dims[CAML_BA_MAX_NUM_DIMS] = { (intnat)pixmap->height,
-                                        (intnat)pixmap->width, 4 };
+                                        (intnat)pixmap->width,
+                                        COLOR_SIZE };
   mlImageData =
     caml_ba_alloc(CAML_BA_UINT8 | CAML_BA_C_LAYOUT | CAML_BA_MANAGED,
                   3, (void *)pixmap->data, dims);
@@ -1249,7 +1250,7 @@ Pixmap_val(
   intnat width = Caml_ba_array_val(mlPixmap)->dim[1];
   intnat bpp = Caml_ba_array_val(mlPixmap)->dim[2];
 
-  if (bpp != 4) {
+  if (bpp != COLOR_SIZE) {
     caml_invalid_argument("Image data third dimension must be 4");
   }
 
