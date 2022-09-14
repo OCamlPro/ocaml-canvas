@@ -163,6 +163,21 @@ function _frame_handler(timestamp) {
 
 /* Image Data (aka Pixmaps) */
 
+//Provides: _ml_canvas_image_of_png_file
+//Requires: caml_read_file_content
+function _ml_canvas_image_of_png_file(filename) {
+  var file = caml_read_file_content(filename);
+  if (file === null) {
+    return null;
+  }
+  var data = window.btoa(caml_read_file_content(filename));
+  var img = new window.Image();
+  img.loading = 'eager';
+  img.decoding = 'sync';
+  img.src = 'data:image/png;base64,' + data;
+  return [ img.decode(), img ];
+}
+
 //Provides: _ml_canvas_ba_of_img
 //Requires: caml_ba_create_unsafe
 function _ml_canvas_ba_of_img(img) {
@@ -212,13 +227,22 @@ function _ml_canvas_surface_of_ba(data) {
 }
 
 //Provides: ml_canvas_image_data_create_from_png
-//Requires: _ml_canvas_image_of_png_file,_ml_canvas_ba_of_img
+//Requires: _ml_canvas_image_of_png_file,_ml_canvas_ba_of_img,PROMISE_TAG,RESOLUTION_TAG
+//Requires: caml_named_value
 function ml_canvas_image_data_create_from_png(filename) {
   var img = _ml_canvas_image_of_png_file(filename);
   if (img === null) {
-    return null;
+    return [ 0, [ PROMISE_TAG.REJECTED, 0 ] ];
   }
-  return _ml_canvas_ba_of_img(img);
+  var resolve = caml_named_value("ml_canvas_promise_resolve");
+  var ml_promise = [ 0, [ PROMISE_TAG.PENDING, 0, 0 ] ];
+  img[0].then(function (__img) {
+    var ba = _ml_canvas_ba_of_img(img[1]);
+    resolve(ml_promise, [ RESOLUTION_TAG.FULFILL, ba ]);
+  }, function (__err) {
+    resolve(ml_promise, [ RESOLUTION_TAG.REJECT, 0 ]);
+  });
+  return ml_promise;
 }
 
 //Provides: ml_canvas_image_data_get_size
@@ -332,21 +356,30 @@ function ml_canvas_image_data_put_pixel(data, pos, color) {
 }
 
 //Provides: ml_canvas_image_data_import_png
-//Requires: _ml_canvas_surface_of_ba,_ml_canvas_image_of_png_file
-//Requires: caml_ba_to_typed_array
+//Requires: _ml_canvas_surface_of_ba,_ml_canvas_image_of_png_file,PROMISE_TAG,RESOLUTION_TAG
+//Requires: caml_ba_to_typed_array,caml_named_value
 function ml_canvas_image_data_import_png(data, pos, filename) {
-  var surface = _ml_canvas_surface_of_ba(data);
   var img = _ml_canvas_image_of_png_file(filename);
-  if ((surface !== null) && (img !== null)) {
+  var surface = _ml_canvas_surface_of_ba(data);
+  if ((img === null) || (surface === null)) {
+    return [ 0, [ PROMISE_TAG.REJECTED, 0 ] ];;
+  }
+  var resolve = caml_named_value("ml_canvas_promise_resolve");
+  var ml_promise = [ 0, [ PROMISE_TAG.PENDING, 0, 0 ] ];
+  img[0].then(function (__img) {
     var ctxt = surface.getContext("2d");
-    ctxt.drawImage(img, pos[1], pos[2]);
+    ctxt.drawImage(img[1], pos[1], pos[2]);
     var image = ctxt.getImageData(0, 0, surface.width, surface.height);
     var sta = new window.Uint8Array(image.data.buffer);
     var dta = caml_ba_to_typed_array(data);
     for (var i = 0; i < dta.length; i++) {
       dta[i] = sta[i];
     }
-  }
+    resolve(ml_promise, [ RESOLUTION_TAG.FULFILL, 0 ]);
+  }, function (__err) {
+    resolve(ml_promise, [ RESOLUTION_TAG.REJECT, 0 ]);
+  });
+  return ml_promise;
 }
 
 //Provides: ml_canvas_image_data_export_png
@@ -711,19 +744,29 @@ function ml_canvas_create_offscreen_from_image_data(data) {
 }
 
 //Provides: ml_canvas_create_offscreen_from_png
-//Requires: ml_canvas_create_offscreen,_ml_canvas_image_of_png_file
+//Requires: ml_canvas_create_offscreen,_ml_canvas_image_of_png_file,PROMISE_TAG,RESOLUTION_TAG
+//Requires: caml_named_value
 function ml_canvas_create_offscreen_from_png(filename) {
   var img = _ml_canvas_image_of_png_file(filename);
   if (img === null) {
-    return null;
+    return [ 0, [ PROMISE_TAG.REJECTED, 0 ] ];
   }
-  var canvas = ml_canvas_create_offscreen([ 0, img.width, img.height ])
-  if (canvas === null) {
-    return null;
-  }
-  canvas.ctxt.drawImage(img, 0, 0);
-  return canvas;
+  var resolve = caml_named_value("ml_canvas_promise_resolve");
+  var ml_promise = [ 0, [ PROMISE_TAG.PENDING, 0, 0 ] ];
+  img[0].then(function (__img) {
+    var canvas = ml_canvas_create_offscreen([ 0, img[1].width, img[1].height ])
+    if (canvas === null) {
+      return [ 0, [ PROMISE_TAG.REJECTED, 0 ] ];
+    }
+    canvas.ctxt.drawImage(img[1], 0, 0);
+    resolve(ml_promise, [ RESOLUTION_TAG.FULFILL, canvas ]);
+  }, function (__err) {
+    resolve(ml_promise, [ RESOLUTION_TAG.REJECT, 0 ]);
+  });
+  return ml_promise;
 }
+
+
 
 // Provides: ml_canvas_destroy
 function ml_canvas_destroy(canvas) {
@@ -1300,36 +1343,31 @@ function ml_canvas_put_image_data(canvas, dpos, data, spos, size) {
                            spos[1], spos[2], size[1], size[2]);
 }
 
+//Provides: ml_canvas_import_png
+//Requires: _ml_canvas_image_of_png_file,PROMISE_TAG,RESOLUTION_TAG
+//Requires: caml_named_value
+function ml_canvas_import_png(canvas, pos, filename) {
+  var img = _ml_canvas_image_of_png_file(filename);
+  if (img === null) {
+    return [ 0, [ PROMISE_TAG.REJECTED, 0 ] ];
+  }
+  var resolve = caml_named_value("ml_canvas_promise_resolve");
+  var ml_promise = [ 0, [ PROMISE_TAG.PENDING, 0, 0 ] ];
+  img[0].then(function (__img) {
+    canvas.ctxt.drawImage(img[1], pos[1], pos[2]);
+    // image, sx, sy, sWitdh, sHeight, dx, dy, dWidth, dHeight
+    resolve(ml_promise, [ RESOLUTION_TAG.FULFILL, 0 ]);
+  }, function (__err) {
+    resolve(ml_promise, [ RESOLUTION_TAG.REJECT, 0 ]);
+  });
+  return ml_promise;
+}
+
 //Provides: ml_canvas_export_png
 //Requires: caml_create_file
 function ml_canvas_export_png(canvas, filename) {
   var data = canvas.surface.toDataURL("image/png").substring(22);
   caml_create_file(filename, window.atob(data));
-}
-
-//Provides: ml_canvas_import_png
-//Requires: _ml_canvas_image_of_png_file
-function ml_canvas_import_png(canvas, pos, filename) {
-  var img = _ml_canvas_image_of_png_file(filename);
-  if (img !== null) {
-    canvas.ctxt.drawImage(img, pos[1], pos[2]);
-    // image, sx, sy, sWitdh, sHeight, dx, dy, dWidth, dHeight
-  }
-}
-
-//Provides: _ml_canvas_image_of_png_file
-//Requires: caml_read_file_content
-function _ml_canvas_image_of_png_file(filename) {
-  var file = caml_read_file_content(filename);
-  if (file === null) {
-    return null;
-  }
-  var data = window.btoa(caml_read_file_content(filename));
-  var img = new window.Image();
-  img.loading = 'eager';
-  img.decoding = 'sync';
-  img.src = 'data:image/png;base64,' + data;
-  return img;
 }
 
 

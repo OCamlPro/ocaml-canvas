@@ -38,16 +38,19 @@ let () =
   Canvas.save c;
   Canvas.restore c;
 
-  let dragonImage = ImageData.createFromPNG "assets/dragon.png" in
-  let pattern = Canvas.createPattern c dragonImage RepeatXY in
-  Canvas.setFillPattern c pattern;
-  Canvas.scale c (0.1, 0.1);
-  Canvas.rotate c (0. -. 0.3);
-  Canvas.save c;
-  Canvas.save c;
-  Canvas.restore c;
-  Canvas.restore c;
-  Canvas.fillRect c ~pos:(0.,0.) ~size:(3000., 3000.);
+  let p_dragonImage = ImageData.createFromPNG "assets/dragon.png" in
+  ignore @@
+    Promise.bind p_dragonImage (fun dragonImage ->
+        let pattern = Canvas.createPattern c dragonImage RepeatXY in
+        Canvas.setFillPattern c pattern;
+        Canvas.scale c (0.1, 0.1);
+        Canvas.rotate c (0. -. 0.3);
+        Canvas.save c;
+        Canvas.save c;
+        Canvas.restore c;
+        Canvas.restore c;
+        Canvas.fillRect c ~pos:(0.,0.) ~size:(3000., 3000.);
+        Promise.return ());
 
   Backend.run (fun state -> function
 

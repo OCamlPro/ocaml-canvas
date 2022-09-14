@@ -60,6 +60,22 @@ CAMLprim value name(value *a, int n) \
 
 
 
+/* Promises */
+static CAMLprim value
+_ml_canvas_promise_return(
+  value mlValue)
+{
+  CAMLparam1(mlValue);
+  CAMLlocal2(mlStatus,mlPromise);
+  mlStatus = caml_alloc(1, TAG_PROMISE_FULFILLED);
+  Store_field(mlStatus, 0, mlValue);
+  mlPromise = caml_alloc_tuple(1);
+  Store_field(mlPromise, 0, mlStatus);
+  CAMLreturn(mlPromise);
+}
+
+
+
 /* Image Data (aka Pixmaps) */
 
 CAMLprim value
@@ -72,7 +88,7 @@ ml_canvas_image_data_create_from_png(
   if ((res == false) || (pixmap_valid(pixmap) == false)) {
     caml_failwith("unable to create pixmap from PNG file");
   }
-  CAMLreturn(Val_pixmap(&pixmap));
+  CAMLreturn(_ml_canvas_promise_return(Val_pixmap(&pixmap)));
 }
 
 CAMLprim value
@@ -185,7 +201,7 @@ ml_canvas_image_data_import_png(
   if ((res == false) || (pixmap_valid(pixmap) == false)) {
     caml_failwith("unable to import PNG file into pixmap");
   }
-  CAMLreturn(Val_unit);
+  CAMLreturn(_ml_canvas_promise_return(Val_unit));
 }
 
 CAMLprim value
@@ -708,7 +724,7 @@ ml_canvas_create_offscreen_from_png(
   }
   mlCanvas = Val_canvas(canvas);
   canvas_release(canvas); /* Because Val_canvas retains it */
-  CAMLreturn(mlCanvas);
+  CAMLreturn(_ml_canvas_promise_return(mlCanvas));
 }
 
 
@@ -1684,20 +1700,6 @@ ml_canvas_put_image_data(
 }
 
 CAMLprim value
-ml_canvas_export_png(
-  value mlCanvas,
-  value mlFilename)
-{
-  CAMLparam2(mlCanvas, mlFilename);
-  bool res = canvas_export_png(Canvas_val(mlCanvas),
-                               String_val(mlFilename));
-  if (res == false) {
-    caml_failwith("unable to export to PNG");
-  }
-  CAMLreturn(Val_unit);
-}
-
-CAMLprim value
 ml_canvas_import_png(
   value mlCanvas,
   value mlDPos,
@@ -1711,6 +1713,20 @@ ml_canvas_import_png(
                       String_val(mlFilename));
   if (res == false) {
     caml_failwith("unable to import PNG");
+  }
+  CAMLreturn(_ml_canvas_promise_return(Val_unit));
+}
+
+CAMLprim value
+ml_canvas_export_png(
+  value mlCanvas,
+  value mlFilename)
+{
+  CAMLparam2(mlCanvas, mlFilename);
+  bool res = canvas_export_png(Canvas_val(mlCanvas),
+                               String_val(mlFilename));
+  if (res == false) {
+    caml_failwith("unable to export to PNG");
   }
   CAMLreturn(Val_unit);
 }

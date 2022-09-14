@@ -18,12 +18,18 @@ let () =
 
   let c = Canvas.createFramed "Compositions"
             ~pos:(300, 200) ~size:(400, 267) in
-  let catImage = Canvas.createOffscreenFromPNG "./assets/dragon.png" in
-  let spectrumImage = Canvas.createOffscreenFromPNG "./assets/fabric.png" in
-  Canvas.blit ~dst:c ~dpos:(0,0) ~src:spectrumImage ~spos:(0,0) ~size:(400,400);
-  Canvas.setGlobalCompositeOperation c Canvas.ColorDodge;
-  Canvas.blit ~dst:c ~dpos:(0,0) ~src:catImage ~spos:(0,0) ~size:(400,400);
-  Canvas.show c;
+  let p_catImage = Canvas.createOffscreenFromPNG "./assets/dragon.png" in
+  let p_spectrumImage = Canvas.createOffscreenFromPNG "./assets/fabric.png" in
+  ignore @@
+    Promise.bind p_catImage (fun catImage ->
+        Promise.bind p_spectrumImage (fun spectrumImage ->
+            Canvas.blit ~dst:c ~dpos:(0,0) ~src:spectrumImage
+              ~spos:(0,0) ~size:(400,400);
+            Canvas.setGlobalCompositeOperation c Canvas.ColorDodge;
+            Canvas.blit ~dst:c ~dpos:(0,0) ~src:catImage
+              ~spos:(0,0) ~size:(400,400);
+            Canvas.show c;
+            Promise.return ()));
 
   Backend.run (fun state -> function
 

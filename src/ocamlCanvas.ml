@@ -190,6 +190,106 @@ module V1 = struct
 
   end
 
+  module Promise = struct
+
+    type 'a t = {
+      mutable status: 'a status
+    }
+
+    and 'a status =
+      | Alias of 'a t
+      | Rejected of exn
+      | Fulfilled of 'a
+      | Pending of 'a callback list * exn callback list
+
+    and 'a callback =
+      | Callback : (('a -> 'b t) * 'b t) -> 'a callback
+
+
+    type 'a resolution =
+      | Fulfill of 'a
+      | Reject of exn
+
+    let create () = { status = Pending ([], []) }
+    let return v = { status = Fulfilled v }
+    let fail e = { status = Rejected e }
+
+    let rec resolve_alias p =
+      match p.status with
+      | Alias ({ status = Alias _ } as p') -> (* p' is an alias *)
+          let p'' = resolve_alias p' in
+          p.status <- Alias p'';
+          p''
+      | Alias p' -> p' (* p' is not an alias *)
+      | _ -> p
+
+    let bind : type a b . a t -> (a -> b t) -> b t =
+      fun p f ->
+      let p = resolve_alias p in
+      match p.status with
+      | Alias _ -> assert false
+      | Rejected e -> fail e
+      | Fulfilled v -> (try f v with e -> fail e)
+      | Pending (cb, ecb) ->
+          let p' = create () in
+          p.status <- Pending (Callback (f, p') :: cb, ecb);
+          p'
+
+    let catch : type a b . (unit -> a t) -> (exn -> a t) -> a t =
+      fun pf f ->
+      let p = resolve_alias (try pf () with e -> fail e) in
+      match p.status with
+      | Alias _ -> assert false
+      | Rejected e -> (try f e with e -> fail e)
+      | Fulfilled v -> return v
+      | Pending (cb, ecb) ->
+          let p' = create () in
+          p.status <- Pending (cb, Callback (f, p') :: ecb);
+          p'
+
+    let rec resolve : type a . a t -> a resolution -> unit =
+      fun p r ->
+      let p = resolve_alias p in
+      match p.status with
+      | Alias _ -> assert false
+      | Rejected _e -> failwith "can't resolve rejected"
+      | Fulfilled _v -> failwith "can't resolve fulfilled"
+      | Pending (cb, ecb) ->
+          match r with
+          | Fulfill v ->
+              let cb = List.rev cb in
+              p.status <- Fulfilled v;
+              callback cb v
+          | Reject e ->
+              let ecb = List.rev ecb in
+              p.status <- Rejected e;
+              if ecb = [] then raise e;
+              callback ecb e
+
+    and callback : type a . a callback list -> a -> unit =
+      fun cb r ->
+      List.iter (function
+          | Callback (f, p'') -> (* p'' pending *)
+              let p'' = resolve_alias p'' in
+              let p' = resolve_alias (try f r with e -> fail e) in
+              match p'.status with (* new or exist *)
+              | Alias _ -> assert false
+              | Rejected e -> resolve p'' (Reject e)
+              | Fulfilled v' -> resolve p''(Fulfill v')
+              | Pending (cb', ecb') ->
+                  match p''.status with
+                  | Alias _ -> assert false
+                  | Rejected _e -> failwith "already failed"
+                  | Fulfilled _v -> failwith "already resolved"
+                  | Pending (cb'', ecb'') ->
+                      p'.status <- Pending (cb'' @ cb', ecb'' @ ecb');
+                      p''.status <- Alias p'
+        ) cb
+
+    let () = Callback.register "ml_canvas_promise_resolve" resolve
+
+  end
+
   module ImageData = struct
 
     type t =
@@ -201,7 +301,7 @@ module V1 = struct
       Bigarray.Array3.fill a 0;
       a
 
-    external createFromPNG : string -> t
+    external createFromPNG : string -> t Promise.t
       = "ml_canvas_image_data_create_from_png"
 
     external getSize : t -> (int * int)
@@ -224,7 +324,7 @@ module V1 = struct
     external putPixel : t -> (int * int) -> Color.t -> unit
       = "ml_canvas_image_data_put_pixel"
 
-    external importPNG : t -> pos:(int * int) -> string -> unit
+    external importPNG : t -> pos:(int * int) -> string -> unit Promise.t
       = "ml_canvas_image_data_import_png"
 
     external exportPNG : t -> string -> unit
@@ -407,7 +507,7 @@ module V1 = struct
     external createOffscreenFromImageData : ImageData.t -> [> `Offscreen] t
       = "ml_canvas_create_offscreen_from_image_data"
 
-    external createOffscreenFromPNG : string -> [> `Offscreen] t
+    external createOffscreenFromPNG : string -> [> `Offscreen] t Promise.t
       = "ml_canvas_create_offscreen_from_png"
 
     (* Visibility *)
@@ -672,11 +772,11 @@ module V1 = struct
       spos:(int * int) -> size:(int * int) -> unit
       = "ml_canvas_put_image_data"
 
+    external importPNG : 'kind t -> pos:(int * int) -> string -> unit Promise.t
+      = "ml_canvas_import_png"
+
     external exportPNG : 'kind t -> string -> unit
       = "ml_canvas_export_png"
-
-    external importPNG : 'kind t -> pos:(int * int) -> string -> unit
-      = "ml_canvas_import_png"
 
   end
 

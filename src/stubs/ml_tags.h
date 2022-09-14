@@ -11,6 +11,18 @@
 #ifndef __ML_TAGS_H
 #define __ML_TAGS_H
 
+typedef enum promise_tag_t {
+  TAG_PROMISE_ALIAS     = 0,
+  TAG_PROMISE_REJECTED  = 1,
+  TAG_PROMISE_FULFILLED = 2,
+  TAG_PROMISE_PENDING   = 3
+} promise_tag_t;
+
+typedef enum resolution_tag_t {
+  TAG_RESOLUTION_FULFILL = 0,
+  TAG_RESOLUTION_REJECT  = 1,
+} resolution_tag_t;
+
 typedef enum focus_tag_t {
   TAG_FOCUS_OUT = 0,
   TAG_FOCUS_IN  = 1
