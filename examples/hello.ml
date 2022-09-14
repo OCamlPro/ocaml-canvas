@@ -54,13 +54,16 @@ let () =
   Canvas.blit ~dst:c ~dpos:(10, 0) ~src:c2 ~spos:(0, 0) ~size:(15, 15);
   Canvas.restore c;
 
-  let c3 = Canvas.createOffscreenFromPNG "assets/frog.png" in
-  let size = Canvas.getSize c3 in
-  Canvas.save c;
-  Canvas.setTransform c Transform.id;
-  Canvas.scale c (0.25, 0.25);
-  Canvas.blit ~dst:c ~dpos:(750, 400) ~src:c3 ~spos:(0, 0) ~size;
-  Canvas.restore c;
+  let p_c3 = Canvas.createOffscreenFromPNG "assets/frog.png" in
+  ignore @@
+    Promise.bind p_c3 (fun c3 ->
+        let size = Canvas.getSize c3 in
+        Canvas.save c;
+        Canvas.setTransform c Transform.id;
+        Canvas.scale c (0.25, 0.25);
+        Canvas.blit ~dst:c ~dpos:(750, 400) ~src:c3 ~spos:(0, 0) ~size;
+        Canvas.restore c;
+        Promise.return ());
 
   Backend.run (fun state -> function
 

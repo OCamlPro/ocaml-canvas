@@ -324,6 +324,27 @@ module V1 : sig
 
   end
 
+  module Promise : sig
+  (** Simple promise handling *)
+
+    type 'a t
+    (** Promises have an absract type *)
+
+    val return : 'a -> 'a t
+    (** [return v] creates a fulfilled promise with value [v] *)
+
+    val fail : exn -> 'a t
+    (** [fail e] creates a rejecteed promise with exception [e] *)
+
+    val bind : 'a t -> ('a -> 'b t) -> 'b t
+    (** [bind p f] attaches the callback [f] to promise [p]  *)
+
+    val catch : (unit -> 'a t) -> (exn -> 'a t) -> 'a t
+    (** [catch f h] calls [f], returning a promise, and sets [h]
+        to be called if that promise becomes rejected *)
+
+  end
+
   module ImageData : sig
   (** Image data manipulation functions *)
 
@@ -335,7 +356,7 @@ module V1 : sig
     val create : (int * int) -> t
     (** [create size] creates an empty image data of the given [size] *)
 
-    val createFromPNG : string -> t
+    val createFromPNG : string -> t Promise.t
     (** [createFromPNG filename] creates an image data
         with the contents of PNG file [filename] *)
 
@@ -364,7 +385,7 @@ module V1 : sig
     (** [putPixel id pos c] sets the color of the pixel
         at position [pos] in image data [id] to color [c] *)
 
-    val importPNG : t -> pos:(int * int) -> string -> unit
+    val importPNG : t -> pos:(int * int) -> string -> unit Promise.t
     (** [importPNG id ~pos filename] loads the file [filename]
         into image data [id] at position [pos] *)
 
@@ -608,7 +629,7 @@ module V1 : sig
     (** [createOffscreenFromImageData id] creates an offscreen
         canvas with the contents of image data [id] *)
 
-    val createOffscreenFromPNG : string -> [> `Offscreen] t
+    val createOffscreenFromPNG : string -> [> `Offscreen] t Promise.t
     (** [createOffscreen filename] creates an offscreen
         canvas with the contents of PNG file [filename] *)
 
@@ -958,13 +979,13 @@ module V1 : sig
         at position [dpos] in canvas [c] with the provided pixel
         data starting at position [spos] and of size [size] *)
 
+    val importPNG : 'kind t -> pos:(int * int) -> string -> unit Promise.t
+    (** [importPNG c ~pos filename] loads the file
+        [filename] into canvas [c] at position [pos] *)
+
     val exportPNG : 'kind t -> string -> unit
     (** [exportPNG c filename] saves the contents of
         canvas [c] to a file with name [filename] *)
-
-    val importPNG : 'kind t -> pos:(int * int) -> string -> unit
-    (** [importPNG c ~pos filename] loads the file
-        [filename] into canvas [c] at position [pos] *)
 
   end
 
