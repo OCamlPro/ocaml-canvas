@@ -74,6 +74,10 @@ let () =
           Backend.stop ();
         state, true
 
+    | Event.CanvasClosed { canvas = _; timestamp = _ } ->
+        Backend.stop ();
+        state, true
+
     | Event.ButtonAction { canvas = _; timestamp = _;
                            position = (x, y); button = _; state = Down } ->
         Canvas.setFillColor c Color.red;

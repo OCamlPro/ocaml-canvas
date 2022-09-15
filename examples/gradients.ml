@@ -9,7 +9,7 @@
 (**************************************************************************)
 
 open OcamlCanvas.V1
-open Float
+(* open Float *)
 
 let interpInt x1 x2 t =
   int_of_float ((1.0 -. t) *. (float_of_int x1) +. t *. (float_of_int x2))
@@ -22,7 +22,7 @@ let interpColor c1 c2 t =
 let hsv_to_rgb h s v =
   let c = v *. s in
   let m = v -. c in
-  let x = c *. (1.0 -. abs(((rem (h /. 60.0) 2.0) -. 1.0))) in
+  let x = c *. (1.0 -. abs_float(((mod_float (h /. 60.0) 2.0) -. 1.0))) in
   let r, g, b = match h with
     | a when a < 60.0 -> c, x , 0.0
     | a when a < 120.0 -> x, c, 0.0
@@ -47,11 +47,17 @@ let () =
   Canvas.show c;
 
   Backend.run (fun state -> function
+
       | Event.KeyAction { canvas = _; timestamp = _;
                           key; char = _; flags = _; state = Down } ->
           if key = Event.KeyEscape then
             Backend.stop ();
           state, true
+
+      | Event.CanvasClosed { canvas = _; timestamp = _ } ->
+          Backend.stop ();
+          state, true
+
       | Frame { canvas = c; timestamp = _ } ->
           let state = state +. 1. /. 60. in
           Canvas.setFillColor c (hsv_to_rgb (state *. 36.0)  1.0 1.0);
@@ -60,8 +66,10 @@ let () =
             (interpColor Color.black Color.white (state *. 0.1));
           Canvas.fillRect c ~pos:(128.0 *. state, 360.0) ~size:(128.0, 360.0);
           state, true
+
       | _ ->
           state, false
+
     ) (function _state ->
       Printf.printf "Goodbye !\n"
     ) (-1.0)

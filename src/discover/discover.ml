@@ -25,8 +25,9 @@ let gdi_config _c =
   [ "-lkernel32"; "-lgdi32"; "-lgdiplus" ]
 
 let qtz_config _c =
-  [ "-DHAS_QUARTZ"; "-Qunused-arguments"; "-Wno-missing-braces";
-    "-framework"; "Cocoa"; "-x"; "objective-c" ],
+  [ "-DHAS_QUARTZ"; "-Qunused-arguments";
+    "-Wno-missing-braces"; "-Wno-deprecated-declarations" ;
+    "-framework"; "Cocoa"; "-x"; "objective-c"; ],
   [ "-framework"; "Cocoa"; "-framework"; "Carbon" (*"-x"; "objective-c" *) ]
 
 let x11_config c =

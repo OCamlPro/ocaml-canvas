@@ -13,11 +13,12 @@ ODOC_TARGET:=_build/docs/doc/.
 all: build
 
 build:
-	opam exec -- dune build @install
+	-opam exec -- dune build @configure --auto-promote
+	opam exec -- dune build @all
 
 build-deps:
 	if ! [ -e _opam ]; then \
-	   opam switch create . 4.10.0 ; \
+	   opam switch create . 4.14.0 ; \
 	fi
 	opam install ./*.opam --deps-only
 

@@ -1,4 +1,4 @@
-(lang dune 2.0)
+(lang dune 2.1)
 (profile dev)
 (context (opam (switch 4.03.0)))
 (context (opam (switch 4.04.2)))

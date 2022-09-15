@@ -77,6 +77,7 @@ let f1 () =
   let _c = create_canvas "Orange" 50 90 200 200 in
 
   Backend.run (fun state -> function
+
       | KeyAction { canvas = c; timestamp = _;
                     key; char; flags = _; state = Down } ->
 

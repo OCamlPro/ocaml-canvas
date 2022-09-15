@@ -137,6 +137,10 @@ let () =
           Backend.stop ();
         state, true
 
+    | Event.CanvasClosed { canvas = _; timestamp = _ } ->
+        Backend.stop ();
+        state, true
+
     | Event.Frame { canvas = _; timestamp = _ } ->
         state, true
 

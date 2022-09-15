@@ -35,6 +35,10 @@ let () =
 
   Backend.run (fun state -> function
 
+    | Event.CanvasClosed { canvas = _; timestamp = _ } ->
+        Backend.stop ();
+        state, true
+
     | Event.KeyAction { canvas = _; timestamp = _;
                         key; char = _; flags = _; state = Down } ->
         if key = Event.KeyEscape then
@@ -50,7 +54,7 @@ let () =
         let t = -. (g *. a *. a) /. (v *. v) in
         let tan_alpha =
           (-. a +.
-             Float.sqrt (a *. a -. 4. *. t *. (b +. t -. 600.))) /.
+             sqrt (a *. a -. 4. *. t *. (b +. t -. 600.))) /.
             (2. *. t) in
         (a, b, tan_alpha, old_t), true
 
@@ -61,8 +65,8 @@ let () =
         Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(800.0, 600.0);
         Canvas.clearPath c;
         Canvas.moveTo c (0.,600.);
-        let alpha = Float.atan tan_alpha in
-        let cos_a = Float.cos alpha and sin_a = Float.sin alpha in
+        let alpha = atan tan_alpha in
+        let cos_a = cos alpha and sin_a = sin alpha in
         let n = 10 in
         for i = 1 to n do
           let x_1 = (float_of_int i) *. a /. (float_of_int n)

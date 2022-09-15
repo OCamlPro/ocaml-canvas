@@ -18,7 +18,6 @@
 #include "caml/memory.h"
 #include "caml/alloc.h"
 #include "caml/custom.h"
-#include "caml/weak.h"
 #include "caml/fail.h"
 #include "caml/callback.h"
 
@@ -41,6 +40,12 @@
 
 #if OCAML_VERSION < 41200
 
+#define Val_none Val_int(0)
+#define Some_val(v) Field(v, 0)
+#define Tag_some 0
+#define Is_none(v) ((v) == Val_none)
+#define Is_some(v) Is_block(v)
+
 CAMLexport value caml_alloc_some(value v)
 {
   CAMLparam1(v);
@@ -49,7 +54,65 @@ CAMLexport value caml_alloc_some(value v)
   CAMLreturn(some);
 }
 
+#endif /* OCAML_VERSION < 41200 */
+
+#if OCAML_VERSION < 40400
+
+value caml_alloc_float_array(mlsize_t len)
+{
+#ifdef FLAT_FLOAT_ARRAY
+  mlsize_t wosize = len * Double_wosize;
+  value result;
+  if (wosize <= Max_young_wosize){
+    if (wosize == 0)
+      return Atom(0);
+    else
+      Alloc_small (result, wosize, Double_array_tag);
+  }else {
+    result = caml_alloc_shr (wosize, Double_array_tag);
+    result = caml_check_urgent_gc (result);
+  }
+  return result;
+#else
+  return caml_alloc (len, 0);
 #endif
+}
+
+#endif /* OCAML_VERSION < 40400 */
+
+#if OCAML_VERSION < 40800 || OCAML_VERSION >= 50000
+
+CAMLextern value caml_ephe_create(value len);
+CAMLextern value caml_ephe_set_key(value ar, value n, value el);
+CAMLextern value caml_ephe_get_key(value ar, value n);
+
+CAMLexport value caml_weak_array_create(mlsize_t len)
+{
+  return caml_ephe_create(Val_long(len));
+}
+
+CAMLexport void caml_weak_array_set(value eph, mlsize_t offset, value k)
+{
+  caml_ephe_set_key(eph, Val_long(offset), k);
+}
+
+CAMLexport int caml_weak_array_get(value eph, mlsize_t offset, value *key)
+{
+  value res = caml_ephe_get_key(eph, Val_long(offset));
+  if (Is_none(res)) {
+    return 0;
+  } else {
+    *key = Field(res, 0);
+    return 1;
+  }
+}
+
+#else
+
+#include "caml/weak.h"
+
+#endif /* OCAML_VERSION < 40800 || OCAML_VERSION >= 50000 */
+
 
 value
 Val_int32_clip(

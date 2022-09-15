@@ -1,6 +1,6 @@
 (lang dune 2.1)
 (name ocaml-canvas)
-(version 0.1)
+(version 0.9)
 
 (formatting disabled)
 (generate_opam_files false)
@@ -16,10 +16,9 @@
 (package
  (name ocaml-canvas)
  (depends
-  (dune (and :build (>= 2.0)))
-  (dune-configurator :build)
   (ocaml (and :build (>= 4.03.0)))
-  (js_of_ocaml :build)
+  (dune (and :build (>= 2.2)))
+  (dune-configurator (and :build (>= 1.11)))
   (conf-freetype (and (<> :os macos) (<> :os win32)))
   (conf-libfontconfig (and (<> :os macos) (<> :os win32)))
   (conf-libxcb (and (<> :os macos) (<> :os win32)))
@@ -30,6 +29,8 @@
   (conf-libwayland (and (<> :os macos) (<> :os win32)))
   (conf-xkbcommon (and (<> :os macos) (<> :os win32)))
   (odoc :with-doc))
+ (depopts
+  (js_of_ocaml (and :build (>= 3.6))))
  (synopsis "The OCaml-Canvas library")
  (description "\
 The OCaml-Canvas library provides a portable Canvas for OCaml.
