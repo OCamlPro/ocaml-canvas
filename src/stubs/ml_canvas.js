@@ -1470,3 +1470,10 @@ function ml_canvas_stop() {
     _ml_canvas_mlContinuation = null;
   }
 }
+
+//Provides: ml_canvas_get_current_timestamp
+//Requires: caml_int64_of_float
+function ml_canvas_get_current_timestamp() {
+  var e = new window.Event("dummy");
+  return caml_int64_of_float(e.timeStamp * 1000.0);
+}

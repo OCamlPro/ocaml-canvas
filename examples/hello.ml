@@ -10,6 +10,8 @@
 
 open OcamlCanvas.V1
 
+type Event.payload += CanvasBlit of [`Offscreen] Canvas.t * [`Onscreen] Canvas.t * (int * int)
+
 let pi = acos(-1.)
 
 let () =
@@ -67,10 +69,25 @@ let () =
 
   Backend.run (fun state -> function
 
-    | Event.KeyAction { canvas = _; timestamp = _;
-                        key; char = _; flags = _; state = Down } ->
-        if key = Event.KeyEscape then
-          Backend.stop ();
+    | Event.Custom { timestamp = _; payload = CanvasBlit (c', c, (x, y)) } ->
+        let size = Canvas.getSize c' in
+        Canvas.save c;
+        Canvas.setTransform c Transform.id;
+        let (w, h) = Canvas.getSize c' in
+        Canvas.translate c (float_of_int x, float_of_int y);
+        Canvas.scale c (0.25, 0.25);
+        Canvas.translate c (-. 0.5 *. float_of_int w, - 0.5 *. float_of_int h);
+        Canvas.blit ~dst:c ~dpos:(0, 0) ~src:c' ~spos:(0, 0) ~size;
+        Canvas.restore c;
+        state, true
+
+    | Event.ButtonAction { canvas = _c; timestamp = _; position = (x, y);
+                           button = ButtonRight; state = Down } ->
+        let p_c = Canvas.createOffscreenFromPNG "assets/frog.png" in
+        ignore @@
+          Promise.bind p_c (fun c' ->
+              Backend.sendCustomEvent (CanvasBlit (c', c, (x, y)));
+              Promise.return ());
         state, true
 
     | Event.ButtonAction { canvas = c; timestamp = _;
@@ -80,6 +97,12 @@ let () =
         Canvas.arc c ~center:(float_of_int x, float_of_int y)
           ~radius:5.0 ~theta1:0.0 ~theta2:(pi *. 2.0) ~ccw:false;
         Canvas.fill c ~nonzero:false;
+        state, true
+
+    | Event.KeyAction { canvas = _; timestamp = _;
+                        key; char = _; flags = _; state = Down } ->
+        if key = Event.KeyEscape then
+          Backend.stop ();
         state, true
 
     | Event.CanvasClosed { canvas = _; timestamp = _ } ->

@@ -1909,6 +1909,14 @@ ml_canvas_stop(
 }
 
 CAMLprim value
+ml_canvas_get_current_timestamp(
+  void)
+{
+  CAMLparam0();
+  CAMLreturn(caml_copy_int64(backend_get_time()));
+}
+
+CAMLprim value
 ml_canvas_get_canvas(
   value mlId)
 {
