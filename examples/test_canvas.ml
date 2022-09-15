@@ -204,6 +204,8 @@ let f2 () =
           Canvas.setFillColor c color;
           Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(200.0, 200.0);
           state, true
+      | Custom { timestamp = _; payload = _ } ->
+          state, false
     ) (function _state -> ())
     (Color.of_string "red", Color.of_string "green")
 
@@ -438,6 +440,8 @@ Format.print_flush ();
 *)
 
           state, true
+      | Custom { timestamp = _; payload = _ } ->
+          state, false
     ) (function _state ->
       Printf.printf "We're done\n";
       Format.print_flush ();
@@ -692,6 +696,8 @@ let f4 () =
 (*          Canvas.fill c ~nonzero:false; *)
 
           state, true
+      | Custom { timestamp = _; payload = _ } ->
+          state, false
     ) (function _state -> ()) false
 
 

@@ -328,7 +328,7 @@ module V1 : sig
   (** Simple promise handling *)
 
     type 'a t
-    (** Promises have an absract type *)
+    (** Promises have an abstract type *)
 
     val return : 'a -> 'a t
     (** [return v] creates a fulfilled promise with value [v] *)
@@ -1257,6 +1257,16 @@ module V1 : sig
     }
     (** Describes a mouse motion event *)
 
+    type payload = ..
+    (** An extensible type so you can declare your own events,
+        for use with {!Backend.sendCustomEvent} *)
+
+    type custom_event = {
+      timestamp: timestamp;
+      payload: payload; (** Arbitrary payload *)
+    }
+    (** Describes a custom event *)
+
     type t =
       | Frame of frame_event
       (** Occurs 60 times per second. If you actually draw something to the
@@ -1283,6 +1293,8 @@ module V1 : sig
       (** Occurs when the user presses a mouse button *)
       | MouseMove of mouse_move_event
       (** Occurs when the user moves the mouse cursor *)
+      | Custom of custom_event
+      (** Occurs as a response to a call to {!Backend.sendCustomEvent} *)
 
     val int_of_key : key -> int
     (** [int_of_key k] returns a platform-independent integer representation
@@ -1353,6 +1365,16 @@ module V1 : sig
 
     val getCanvas : int -> 'a Canvas.t option
     (** [getCanvas i] returns the canvas that has id [i], if it exists *)
+
+    val getCurrentTimestamp : unit -> Event.timestamp
+    (** [getCurrentTimestamp ()] returns the current timestamp
+        in microseconds, from an arbitrary starting point *)
+
+    val sendCustomEvent : Event.payload -> unit
+    (** [sendCustomEvent p] requests the backend to send a custom event
+        with payload [p] ; if called within an event handler, this event
+        will be processed after processing of the current event is done.
+        This ensures the state remains consistent accross events. *)
 
   end
 

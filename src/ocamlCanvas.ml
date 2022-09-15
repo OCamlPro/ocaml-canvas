@@ -235,7 +235,7 @@ module V1 = struct
           p.status <- Pending (Callback (f, p') :: cb, ecb);
           p'
 
-    let catch : type a b . (unit -> a t) -> (exn -> a t) -> a t =
+    let catch : type a . (unit -> a t) -> (exn -> a t) -> a t =
       fun pf f ->
       let p = resolve_alias (try pf () with e -> fail e) in
       match p.status with
@@ -1022,7 +1022,14 @@ module V1 = struct
     type mouse_move_event = {
       canvas: [`Onscreen] Canvas.t;
       timestamp: timestamp;
-      position: int * int; (** Cursor position when the event occured *)
+      position: int * int;
+    }
+
+    type payload = ..
+
+    type custom_event = {
+      timestamp: timestamp;
+      payload: payload;
     }
 
     type t =
@@ -1034,6 +1041,7 @@ module V1 = struct
       | KeyAction of key_action_event
       | ButtonAction of button_action_event
       | MouseMove of mouse_move_event
+      | Custom of custom_event
 
     external int_of_key : key -> int
       = "ml_canvas_int_of_key"
@@ -1077,8 +1085,32 @@ module V1 = struct
     external stop : unit -> unit
       = "ml_canvas_stop"
 
+    external getCurrentTimestamp : unit -> Event.timestamp
+      = "ml_canvas_get_current_timestamp"
+
     external getCanvas : int -> 'kind Canvas.t option
       = "ml_canvas_get_canvas"
+
+    let pending_custom = ref []
+
+    let sendCustomEvent payload =
+      pending_custom := payload :: !pending_custom
+
+    let run h k s =
+      let h s e =
+        let s, b = h s e in
+        let pc = List.rev !pending_custom in
+        pending_custom := [];
+        let s =
+          List.fold_left (fun s p ->
+              fst (h s (Event.Custom { timestamp = getCurrentTimestamp ();
+                                       payload = p }))
+            ) s pc
+        in
+        s, b
+      in
+      let k s = k s in
+      run h k s
 
   end
 

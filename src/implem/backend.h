@@ -18,6 +18,10 @@
 #include "event.h"
 #include "canvas.h"
 
+int64_t
+backend_get_time(
+  void);
+
 bool
 backend_init(
   impl_type_t impl_type);

@@ -110,6 +110,27 @@ _backend_id_equal(
   return (*id1) == (*id2);
 }
 
+int64_t
+backend_get_time(
+  void)
+{
+  if (get_impl_type() == IMPL_NONE) {
+    return 0;
+  }
+
+  int64_t result = 0;
+
+  switch_IMPL() {
+    case_GDI(result = gdi_get_time());
+    case_QUARTZ(result = qtz_get_time());
+    case_X11(result = x11_get_time());
+    case_WAYLAND(/*result = wl_get_time()*/);
+    default_fail();
+  }
+
+  return result;
+}
+
 bool
 backend_init(
   impl_type_t impl_type)
@@ -211,6 +232,10 @@ void
 backend_stop(
   void)
 {
+  if (get_impl_type() == IMPL_NONE) {
+    return;
+  }
+
   switch_IMPL() {
     case_GDI(gdi_backend_stop());
     case_QUARTZ(qtz_backend_stop());
@@ -269,5 +294,8 @@ canvas_t *
 backend_get_canvas(
   int32_t id)
 {
+  if (get_impl_type() == IMPL_NONE) {
+    return NULL;
+  }
   return (canvas_t *)ht_find(_backend_id_to_canvas, (void *)&id);
 }
