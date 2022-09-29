@@ -51,6 +51,10 @@ let () =
           Backend.stop ();
         state, true
 
+    | Event.CanvasClosed { canvas = _; timestamp = _ } ->
+        Backend.stop ();
+        state, true
+
     | Event.Frame { canvas = _; timestamp = _ } ->
         let state = state +. 1.0 in
         Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(400.0, 650.0);

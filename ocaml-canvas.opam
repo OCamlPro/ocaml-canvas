@@ -1,6 +1,6 @@
 opam-version: "2.0"
 name: "ocaml-canvas"
-version: "0.1"
+version: "0.9"
 synopsis: "The OCaml-Canvas library"
 description: """
 The OCaml-Canvas library provides a portable Canvas for OCaml.
@@ -13,23 +13,30 @@ bug-reports: "https://github.com/OCamlPro/ocaml-canvas/issues"
 homepage: "https://ocamlpro.github.io/ocaml-canvas/"
 doc: "https://ocamlpro.github.io/ocaml-canvas/sphinx"
 depends: [
-  "dune" {build & >= "2.0"}
-  "dune-configurator" {build}
-  "ocaml" {build & >= "4.03.0"}
-  "js_of_ocaml" {build}
-  "conf-freetype" { os != "macos" & os != "win32" }
-  "conf-libfontconfig" { os != "macos" & os != "win32" }
-  "conf-libxcb" { os != "macos" & os != "win32" }
-  "conf-libxcb-shm" { os != "macos" & os != "win32" }
-  "conf-libxcb-image" { os != "macos" & os != "win32" }
-  "conf-libxcb-xkb" { os != "macos" & os != "win32" }
-  "conf-libxcb-keysyms" { os != "macos" & os != "win32" }
-  "conf-libwayland" { os != "macos" & os != "win32" }
-  "conf-xkbcommon" { os != "macos" & os != "win32" }
-  "odoc" {with-doc}
+  "ocaml"                 { build & >= "4.03.0" }
+  "dune"                  { build & >= "2.2" }
+  "dune-configurator"     { build & >= "1.11" }
+  "odoc"                  { build & with-doc }
+
+  "conf-freetype"         { os != "macos" & os != "win32" }
+  "conf-libfontconfig"    { os != "macos" & os != "win32" }
+  ((
+    "conf-libwayland"     { os != "macos" & os != "win32" }
+    "conf-xkbcommon"      { os != "macos" & os != "win32" }
+  )|(
+    "conf-libxcb"         { os != "macos" & os != "win32" }
+    "conf-libxcb-shm"     { os != "macos" & os != "win32" }
+    "conf-libxcb-image"   { os != "macos" & os != "win32" }
+    "conf-libxcb-xkb"     { os != "macos" & os != "win32" }
+    "conf-libxcb-keysyms" { os != "macos" & os != "win32" }
+  ))
+]
+depopts: [
+  "js_of_ocaml"           { build & >= "3.6" }
 ]
 build: [
-  ["dune" "subst"] {pinned}
+  ["dune" "subst"] { pinned }
+  ["sh" "-c" "dune build -p %{name}% @configure --auto-promote || true" ]
   ["dune" "build" "-p" name "-j" jobs
-   "@install" "@runtest" {with-test} "@doc" {with-doc} ]
+   "@install" "@runtest" { with-test } "@doc" { with-doc }]
 ]

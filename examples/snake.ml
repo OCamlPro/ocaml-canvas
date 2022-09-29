@@ -65,6 +65,11 @@ let () =
   Canvas.show c;
 
   Backend.run (fun state -> function
+
+      | Event.CanvasClosed { canvas = _; timestamp = _ } ->
+          Backend.stop ();
+          state, true
+
       | KeyAction { canvas = _; timestamp = _;
                     key = KeyUpArrow; char = _; flags = _; state = Down } ->
           let state =
@@ -72,6 +77,7 @@ let () =
             else { state with cur_dir = (0.0, -1.0) }
           in
           state, true
+
       | KeyAction { canvas = _; timestamp = _;
                    key = KeyDownArrow; char = _; flags = _; state = Down } ->
           let state =
@@ -79,6 +85,7 @@ let () =
             else { state with cur_dir = (0.0, 1.0) }
           in
           state, true
+
       | KeyAction { canvas = _; timestamp = _;
                    key = KeyLeftArrow; char = _; flags = _; state = Down } ->
           let state =
@@ -86,6 +93,7 @@ let () =
             else { state with cur_dir = (-1.0, 0.0) }
           in
           state, true
+
       | KeyAction { canvas = _; timestamp = _;
                    key = KeyRightArrow; char = _; flags = _; state = Down } ->
           let state =
@@ -93,11 +101,13 @@ let () =
             else { state with cur_dir = (1.0, 0.0) }
           in
           state, true
+
       | Event.KeyAction { canvas = _; timestamp = _;
                           key; char = _; flags = _; state = Down } ->
           if key = Event.KeyEscape then
             Backend.stop ();
           state, true
+
       | Frame { canvas = c; timestamp = _ } ->
           buildBackground c;
           let snake, food_loc =
@@ -119,8 +129,10 @@ let () =
           drawSnake c snake;
           placeBlock c food_loc Color.green;
           { state with r; snake; food_loc }, true
+
       | _ ->
           state, false
+
     ) (function _state ->
       Printf.printf "Goodbye !\n"
     ) { r = -1.0;
