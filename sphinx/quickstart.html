@@ -1,0 +1,352 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Quick start &mdash; ocaml-canvas master
+ (16bdc84
+) (2022/09/29 22:36) documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/fixes.css" type="text/css" />
+    <link rel="author" title="About these documents" href="about.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Copyright and License" href="license.html" />
+    <link rel="prev" title="How to install" href="install.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> ocaml-canvas
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                master
+ (16bdc84
+)
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference external" href="https://ocamlpro.github.io/ocaml-canvas">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">How to install</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Quick start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#initialization">Initialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#creating-canvas">Creating canvas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#drawing-on-canvas">Drawing on canvas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#handling-canvas-events">Handling canvas events</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#an-actual-example">An actual example</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://ocamlpro.github.io/ocaml-canvas/doc">API doc</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">Copyright and License</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/ocamlpro/ocaml-canvas">Devel and Issues on Github</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ocaml-canvas</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Quick start</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/quickstart.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="quick-start">
+<h1>Quick start<a class="headerlink" href="#quick-start" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="initialization">
+<h2>Initialization<a class="headerlink" href="#initialization" title="Permalink to this headline">¶</a></h2>
+<p>Before using any function in the library (and assuming the <code class="code docutils literal notranslate"><span class="pre">OCamlCanvas</span></code>
+module has been opened), the user should call <code class="code docutils literal notranslate"><span class="pre">Backend.init</span></code> so that
+the library makes any internal initialization it needs for the current
+backend. This function takes as input a value of type <code class="code docutils literal notranslate"><span class="pre">Backend.options</span></code>,
+allowing to tweak specific features of each backend.
+It is however recommended to simply use the default options,
+i.e <code class="code docutils literal notranslate"><span class="pre">Backend.default_options</span></code>.</p>
+</div>
+<div class="section" id="creating-canvas">
+<h2>Creating canvas<a class="headerlink" href="#creating-canvas" title="Permalink to this headline">¶</a></h2>
+<p>Once the backend is initialized, one can create Canvas objects
+using the <code class="code docutils literal notranslate"><span class="pre">Canvas.createFramed</span></code>, <code class="code docutils literal notranslate"><span class="pre">Canvas.createFrameless</span></code> and
+<code class="code docutils literal notranslate"><span class="pre">Canvas.createOffscreen</span></code> functions. The first one creates a canvas
+contained in a regular window (which is simulated in the Javascript
+backend). The second one creates a window that has no decoration at
+all. The last one creates canvas that are not rendered on screen,
+which can be useful to save complex images that can then simply
+copied to a visible canvas. Onscreen canvas are hidden by default,
+and <code class="code docutils literal notranslate"><span class="pre">Canvas.show</span></code> should be called on them to make them visible.</p>
+</div>
+<div class="section" id="drawing-on-canvas">
+<h2>Drawing on canvas<a class="headerlink" href="#drawing-on-canvas" title="Permalink to this headline">¶</a></h2>
+<p>Drawing on the canvas can be perfomed using various drawing primitives,
+the most ubiquitous being <code class="code docutils literal notranslate"><span class="pre">Canvas.clearPath</span></code>, <code class="code docutils literal notranslate"><span class="pre">Canvas.moveTo</span></code>,
+<code class="code docutils literal notranslate"><span class="pre">Canvas.lineTo</span></code>, <code class="code docutils literal notranslate"><span class="pre">Canvas.arc</span></code>, <code class="code docutils literal notranslate"><span class="pre">Canvas.bezierCurveTo</span></code>, <code class="code docutils literal notranslate"><span class="pre">Canvas.fill</span></code>
+and <code class="code docutils literal notranslate"><span class="pre">Canvas.stroke</span></code>. These function allow to build a path step by step
+and either fill it completely or draw its outline. It is also possible
+to directly render some text with the <code class="code docutils literal notranslate"><span class="pre">Canvas.fillText</span></code> and
+<code class="code docutils literal notranslate"><span class="pre">Canvas.strokeText</span></code> functions.</p>
+<p>The Canvas drawing style can be customized using the functions
+<code class="code docutils literal notranslate"><span class="pre">Canvas.setFillColor</span></code>, <code class="code docutils literal notranslate"><span class="pre">Canvas.setStrokeColor</span></code> and
+<code class="code docutils literal notranslate"><span class="pre">Canvas.setLineWidth</span></code>. The font used to draw text can be specified
+with the <code class="code docutils literal notranslate"><span class="pre">Canvas.setFont</span></code> function. It is also possible to apply
+various transformations to a canvas, such as translation, rotation and
+scaling, with the functions <code class="code docutils literal notranslate"><span class="pre">Canvas.transform</span></code>, <code class="code docutils literal notranslate"><span class="pre">Canvas.translate</span></code>,
+<code class="code docutils literal notranslate"><span class="pre">Canvas.scale</span></code>, <code class="code docutils literal notranslate"><span class="pre">Canvas.rotate</span></code> and <code class="code docutils literal notranslate"><span class="pre">Canvas.shear</span></code>. All these
+styling elements can be saved and restored using the functions
+<code class="code docutils literal notranslate"><span class="pre">Canvas.save</span></code> and <code class="code docutils literal notranslate"><span class="pre">Canvas.restore</span></code>.</p>
+</div>
+<div class="section" id="handling-canvas-events">
+<h2>Handling canvas events<a class="headerlink" href="#handling-canvas-events" title="Permalink to this headline">¶</a></h2>
+<p>Once the canvas are ready, we may start handling events for these canvas.
+To do so, we use the <code class="code docutils literal notranslate"><span class="pre">Backend.run</span></code> function, which runs an event loop.
+<strong>This function MUST be the last instruction of the program</strong>. It takes as
+argument two functions: the first one is an event handler, and the second
+one is executed when the event loop has finished running. The event loop
+may be stopped by calling <code class="code docutils literal notranslate"><span class="pre">Backend.stop</span></code> in the event handler.</p>
+<p>The event handler function should pattern-match its argument against
+the constructors of the <code class="code docutils literal notranslate"><span class="pre">Event.t</span></code> type it is interested in, and return
+a boolean value indicating whether it processed the event (for some
+events, this may have some side-effect, indicated in the event’s
+description). Each event reports at least the Canvas on which it
+occured, and its timestamp. It may also report mouse coordinates
+for mouse events, or keyboard status for keyboard events.</p>
+</div>
+<div class="section" id="an-actual-example">
+<h2>An actual example<a class="headerlink" href="#an-actual-example" title="Permalink to this headline">¶</a></h2>
+<p>The following program creates a windowed canvas with an orange background,
+a cyan border, and the “Hello world !” text drawn rotated in the middle.
+The user may press the “Escape” key to exit the program.</p>
+<div class="highlight-ocaml notranslate"><div class="highlight"><pre><span></span><span class="k">open</span> <span class="nc">OCamlCanvas</span>
+
+<span class="k">let</span> <span class="bp">()</span> <span class="o">=</span>
+
+  <span class="nn">Backend</span><span class="p">.</span><span class="o">(</span><span class="n">init</span> <span class="n">default_options</span><span class="o">);</span>
+
+  <span class="k">let</span> <span class="n">c</span> <span class="o">=</span> <span class="nn">Canvas</span><span class="p">.</span><span class="n">createFramed</span> <span class="s2">&quot;Hello world&quot;</span>
+            <span class="o">~</span><span class="n">pos</span><span class="o">:(</span><span class="mi">300</span><span class="o">,</span> <span class="mi">200</span><span class="o">)</span> <span class="o">~</span><span class="n">size</span><span class="o">:(</span><span class="mi">300</span><span class="o">,</span> <span class="mi">200</span><span class="o">)</span> <span class="k">in</span>
+
+  <span class="nn">Canvas</span><span class="p">.</span><span class="n">setFillColor</span> <span class="n">c</span> <span class="nn">Color</span><span class="p">.</span><span class="n">orange</span><span class="o">;</span>
+  <span class="nn">Canvas</span><span class="p">.</span><span class="n">fillRect</span> <span class="n">c</span> <span class="o">~</span><span class="n">pos</span><span class="o">:(</span><span class="mi">0</span><span class="o">.</span><span class="mi">0</span><span class="o">,</span> <span class="mi">0</span><span class="o">.</span><span class="mi">0</span><span class="o">)</span> <span class="o">~</span><span class="n">size</span><span class="o">:(</span><span class="mi">300</span><span class="o">.</span><span class="mi">0</span><span class="o">,</span> <span class="mi">200</span><span class="o">.</span><span class="mi">0</span><span class="o">);</span>
+
+  <span class="nn">Canvas</span><span class="p">.</span><span class="n">setStrokeColor</span> <span class="n">c</span> <span class="nn">Color</span><span class="p">.</span><span class="n">cyan</span><span class="o">;</span>
+  <span class="nn">Canvas</span><span class="p">.</span><span class="n">setLineWidth</span> <span class="n">c</span> <span class="mi">10</span><span class="o">.</span><span class="mi">0</span><span class="o">;</span>
+  <span class="nn">Canvas</span><span class="p">.</span><span class="n">clearPath</span> <span class="n">c</span><span class="o">;</span>
+  <span class="nn">Canvas</span><span class="p">.</span><span class="n">moveTo</span> <span class="n">c</span> <span class="o">(</span><span class="mi">5</span><span class="o">.</span><span class="mi">0</span><span class="o">,</span> <span class="mi">5</span><span class="o">.</span><span class="mi">0</span><span class="o">);</span>
+  <span class="nn">Canvas</span><span class="p">.</span><span class="n">lineTo</span> <span class="n">c</span> <span class="o">(</span><span class="mi">295</span><span class="o">.</span><span class="mi">0</span><span class="o">,</span> <span class="mi">5</span><span class="o">.</span><span class="mi">0</span><span class="o">);</span>
+  <span class="nn">Canvas</span><span class="p">.</span><span class="n">lineTo</span> <span class="n">c</span> <span class="o">(</span><span class="mi">295</span><span class="o">.</span><span class="mi">0</span><span class="o">,</span> <span class="mi">195</span><span class="o">.</span><span class="mi">0</span><span class="o">);</span>
+  <span class="nn">Canvas</span><span class="p">.</span><span class="n">lineTo</span> <span class="n">c</span> <span class="o">(</span><span class="mi">5</span><span class="o">.</span><span class="mi">0</span><span class="o">,</span> <span class="mi">195</span><span class="o">.</span><span class="mi">0</span><span class="o">);</span>
+  <span class="nn">Canvas</span><span class="p">.</span><span class="n">closePath</span> <span class="n">c</span><span class="o">;</span>
+  <span class="nn">Canvas</span><span class="p">.</span><span class="n">stroke</span> <span class="n">c</span><span class="o">;</span>
+
+  <span class="nn">Canvas</span><span class="p">.</span><span class="n">setFont</span> <span class="n">c</span> <span class="s2">&quot;Liberation Sans&quot;</span> <span class="o">~</span><span class="n">size</span><span class="o">:</span><span class="mi">36</span><span class="o">.</span><span class="mi">0</span>
+    <span class="o">~</span><span class="n">slant</span><span class="o">:</span><span class="nn">Font</span><span class="p">.</span><span class="nc">Roman</span> <span class="o">~</span><span class="n">weight</span><span class="o">:</span><span class="nn">Font</span><span class="p">.</span><span class="n">bold</span><span class="o">;</span>
+
+  <span class="nn">Canvas</span><span class="p">.</span><span class="n">setFillColor</span> <span class="n">c</span> <span class="o">(</span><span class="nn">Color</span><span class="p">.</span><span class="n">of_rgb</span> <span class="mi">0</span> <span class="mi">64</span> <span class="mi">255</span><span class="o">);</span>
+  <span class="nn">Canvas</span><span class="p">.</span><span class="n">setLineWidth</span> <span class="n">c</span> <span class="mi">1</span><span class="o">.</span><span class="mi">0</span><span class="o">;</span>
+  <span class="nn">Canvas</span><span class="p">.</span><span class="n">save</span> <span class="n">c</span><span class="o">;</span>
+  <span class="nn">Canvas</span><span class="p">.</span><span class="n">translate</span> <span class="n">c</span> <span class="o">(</span><span class="mi">150</span><span class="o">.</span><span class="mi">0</span><span class="o">,</span> <span class="mi">100</span><span class="o">.</span><span class="mi">0</span><span class="o">);</span>
+  <span class="nn">Canvas</span><span class="p">.</span><span class="n">rotate</span> <span class="n">c</span> <span class="o">(-.</span> <span class="nn">Float</span><span class="p">.</span><span class="n">pi</span> <span class="o">/.</span> <span class="mi">8</span><span class="o">.</span><span class="mi">0</span><span class="o">);</span>
+  <span class="nn">Canvas</span><span class="p">.</span><span class="n">fillText</span> <span class="n">c</span> <span class="s2">&quot;Hello world !&quot;</span> <span class="o">(-</span><span class="mi">130</span><span class="o">.</span><span class="mi">0</span><span class="o">,</span> <span class="mi">20</span><span class="o">.</span><span class="mi">0</span><span class="o">);</span>
+  <span class="nn">Canvas</span><span class="p">.</span><span class="n">restore</span> <span class="n">c</span><span class="o">;</span>
+
+  <span class="nn">Canvas</span><span class="p">.</span><span class="n">show</span> <span class="n">c</span><span class="o">;</span>
+
+  <span class="nn">Backend</span><span class="p">.</span><span class="n">run</span> <span class="o">(</span><span class="k">function</span>
+
+    <span class="o">|</span> <span class="nn">Event</span><span class="p">.</span><span class="nc">KeyAction</span> <span class="o">{</span> <span class="n">canvas</span> <span class="o">=</span> <span class="o">_;</span> <span class="n">timestamp</span> <span class="o">=</span> <span class="o">_;</span>
+                        <span class="n">key</span><span class="o">;</span> <span class="kt">char</span> <span class="o">=</span> <span class="o">_;</span> <span class="n">flags</span> <span class="o">=</span> <span class="o">_;</span> <span class="n">state</span> <span class="o">=</span> <span class="nc">Down</span> <span class="o">}</span> <span class="o">-&gt;</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="o">=</span> <span class="nn">Event</span><span class="p">.</span><span class="nc">KeyEscape</span> <span class="k">then</span>
+          <span class="nn">Backend</span><span class="p">.</span><span class="n">stop</span> <span class="bp">()</span><span class="o">;</span>
+        <span class="bp">true</span>
+
+    <span class="o">|</span> <span class="nn">Event</span><span class="p">.</span><span class="nc">ButtonAction</span> <span class="o">{</span> <span class="n">canvas</span> <span class="o">=</span> <span class="o">_;</span> <span class="n">timestamp</span> <span class="o">=</span> <span class="o">_;</span>
+                           <span class="n">position</span> <span class="o">=</span> <span class="o">(</span><span class="n">x</span><span class="o">,</span> <span class="n">y</span><span class="o">);</span> <span class="n">button</span> <span class="o">=</span> <span class="o">_;</span> <span class="n">state</span> <span class="o">=</span> <span class="nc">Down</span> <span class="o">}</span> <span class="o">-&gt;</span>
+        <span class="nn">Canvas</span><span class="p">.</span><span class="n">setFillColor</span> <span class="n">c</span> <span class="nn">Color</span><span class="p">.</span><span class="n">red</span><span class="o">;</span>
+        <span class="nn">Canvas</span><span class="p">.</span><span class="n">clearPath</span> <span class="n">c</span><span class="o">;</span>
+        <span class="nn">Canvas</span><span class="p">.</span><span class="n">arc</span> <span class="n">c</span> <span class="o">~</span><span class="n">center</span><span class="o">:(</span><span class="n">float_of_int</span> <span class="n">x</span><span class="o">,</span> <span class="n">float_of_int</span> <span class="n">y</span><span class="o">)</span>
+          <span class="o">~</span><span class="n">radius</span><span class="o">:</span><span class="mi">5</span><span class="o">.</span><span class="mi">0</span> <span class="o">~</span><span class="n">theta1</span><span class="o">:</span><span class="mi">0</span><span class="o">.</span><span class="mi">0</span> <span class="o">~</span><span class="n">theta2</span><span class="o">:(</span><span class="n">pi</span> <span class="o">*.</span> <span class="mi">2</span><span class="o">.</span><span class="mi">0</span><span class="o">)</span> <span class="o">~</span><span class="n">ccw</span><span class="o">:</span><span class="bp">false</span><span class="o">;</span>
+        <span class="nn">Canvas</span><span class="p">.</span><span class="n">fill</span> <span class="n">c</span> <span class="o">~</span><span class="n">nonzero</span><span class="o">:</span><span class="bp">false</span><span class="o">;</span>
+        <span class="bp">true</span>
+
+    <span class="o">|</span> <span class="nn">Event</span><span class="p">.</span><span class="nc">Frame</span> <span class="o">{</span> <span class="n">canvas</span> <span class="o">=</span> <span class="o">_;</span> <span class="n">timestamp</span> <span class="o">=</span> <span class="o">_</span> <span class="o">}</span> <span class="o">-&gt;</span>
+        <span class="bp">true</span>
+
+    <span class="o">|</span> <span class="o">_</span> <span class="o">-&gt;</span>
+        <span class="bp">false</span>
+
+    <span class="o">)</span> <span class="o">(</span><span class="k">function</span> <span class="bp">()</span> <span class="o">-&gt;</span>
+         <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">&quot;Goodbye !</span><span class="se">\n</span><span class="s2">&quot;</span>
+    <span class="o">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="license.html" class="btn btn-neutral float-right" title="Copyright and License" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="install.html" class="btn btn-neutral float-left" title="How to install" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright OCamlPro SAS
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
