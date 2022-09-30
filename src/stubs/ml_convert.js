@@ -435,12 +435,12 @@ function Slant_val(slant) {
 }
 
 //Provides: Val_join_type
-//Requires: LINE_JOIN_TAG
+//Requires: JOIN_TYPE_TAG
 
 var join_type_to_tag = new joo_global_object.Map([
-  ["round", LINE_JOIN_TAG.ROUND],
-  ["miter", LINE_JOIN_TAG.MITER],
-  ["bevel", LINE_JOIN_TAG.BEVEL],
+  ["round", JOIN_TYPE_TAG.ROUND],
+  ["miter", JOIN_TYPE_TAG.MITER],
+  ["bevel", JOIN_TYPE_TAG.BEVEL],
 ]);
 
 function Val_join_type(join) {
@@ -448,12 +448,12 @@ function Val_join_type(join) {
 }
 
 //Provides: Join_type_val
-//Requires: LINE_JOIN_TAG
+//Requires: JOIN_TYPE_TAG
 
 var tag_to_join_type = new joo_global_object.Map([
-  [LINE_JOIN_TAG.ROUND, "round"],
-  [LINE_JOIN_TAG.MITER, "miter"],
-  [LINE_JOIN_TAG.BEVEL, "bevel"],
+  [JOIN_TYPE_TAG.ROUND, "round"],
+  [JOIN_TYPE_TAG.MITER, "miter"],
+  [JOIN_TYPE_TAG.BEVEL, "bevel"],
 ]);
 
 function Join_type_val(join) {
@@ -461,12 +461,12 @@ function Join_type_val(join) {
 }
 
 //Provides: Val_cap_type
-//Requires: LINE_CAP_TAG
+//Requires: CAP_TYPE_TAG
 
 var cap_type_to_tag = new joo_global_object.Map([
-  ["butt",   LINE_CAP_TAG.BUTT],
-  ["square", LINE_CAP_TAG.SQUARE],
-  ["round",  LINE_CAP_TAG.ROUND],
+  ["butt",   CAP_TYPE_TAG.BUTT],
+  ["square", CAP_TYPE_TAG.SQUARE],
+  ["round",  CAP_TYPE_TAG.ROUND],
 ]);
 
 function Val_cap_type(cap) {
@@ -474,12 +474,12 @@ function Val_cap_type(cap) {
 }
 
 //Provides: Cap_type_val
-//Requires: LINE_CAP_TAG
+//Requires: CAP_TYPE_TAG
 
 var tag_to_cap_type = new joo_global_object.Map([
-  [LINE_CAP_TAG.BUTT,   "butt"],
-  [LINE_CAP_TAG.SQUARE, "square"],
-  [LINE_CAP_TAG.ROUND,  "round"],
+  [CAP_TYPE_TAG.BUTT,   "butt"],
+  [CAP_TYPE_TAG.SQUARE, "square"],
+  [CAP_TYPE_TAG.ROUND,  "round"],
 ]);
 
 function Cap_type_val(cap) {

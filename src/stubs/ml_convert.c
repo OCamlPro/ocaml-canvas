@@ -1166,9 +1166,9 @@ Val_join_type(
 {
   CAMLparam0();
   static intnat map[3] = {
-    [JOIN_ROUND] = TAG_ROUND,
-    [JOIN_MITER] = TAG_MITER,
-    [JOIN_BEVEL] = TAG_BEVEL
+    [JOIN_ROUND] = TAG_JOIN_ROUND,
+    [JOIN_MITER] = TAG_JOIN_MITER,
+    [JOIN_BEVEL] = TAG_JOIN_BEVEL
   };
   CAMLreturn(Val_int(map[join]));
 }
@@ -1179,9 +1179,9 @@ Join_type_val(
 {
   CAMLparam1(mlLineJoin);
   static const join_type_t map[3] = {
-    [TAG_ROUND] = JOIN_ROUND,
-    [TAG_MITER] = JOIN_MITER,
-    [TAG_BEVEL] = JOIN_BEVEL
+    [TAG_JOIN_ROUND] = JOIN_ROUND,
+    [TAG_JOIN_MITER] = JOIN_MITER,
+    [TAG_JOIN_BEVEL] = JOIN_BEVEL
   };
   CAMLreturnT(join_type_t, map[Int_val(mlLineJoin)]);
 }
@@ -1193,8 +1193,8 @@ Val_cap_type(
   CAMLparam0();
   static intnat map[3] = {
     [CAP_BUTT]   = TAG_CAP_BUTT,
-    [CAP_ROUND]  = TAG_CAP_ROUND,
-    [CAP_SQUARE] = TAG_CAP_SQUARE
+    [CAP_SQUARE] = TAG_CAP_SQUARE,
+    [CAP_ROUND]  = TAG_CAP_ROUND
   };
   CAMLreturn(Val_int(map[cap]));
 }
@@ -1206,8 +1206,8 @@ Cap_type_val(
   CAMLparam1(mlLineCap);
   static const cap_type_t map[3] = {
     [TAG_CAP_BUTT]   = CAP_BUTT,
-    [TAG_CAP_ROUND]  = CAP_ROUND,
-    [TAG_CAP_SQUARE] = CAP_SQUARE
+    [TAG_CAP_SQUARE] = CAP_SQUARE,
+    [TAG_CAP_ROUND]  = CAP_ROUND
   };
   CAMLreturnT(cap_type_t, map[Int_val(mlLineCap)]);
 }

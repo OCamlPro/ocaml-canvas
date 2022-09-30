@@ -4,7 +4,7 @@ Quick start
 Initialization
 --------------
 
-Before using any function in the library (and assuming the :code:`OCamlCanvas`
+Before using any function in the library (and assuming the :code:`OCamlCanvas.V1`
 module has been opened), the user should call :code:`Backend.init` so that
 the library makes any internal initialization it needs for the current
 backend. This function takes as input a value of type :code:`Backend.options`,
@@ -12,66 +12,69 @@ allowing to tweak specific features of each backend.
 It is however recommended to simply use the default options,
 i.e :code:`Backend.default_options`.
 
-Creating canvas
----------------
+Creating canvases
+-----------------
 
 Once the backend is initialized, one can create Canvas objects
 using the :code:`Canvas.createFramed`, :code:`Canvas.createFrameless` and
 :code:`Canvas.createOffscreen` functions. The first one creates a canvas
 contained in a regular window (which is simulated in the Javascript
 backend). The second one creates a window that has no decoration at
-all. The last one creates canvas that are not rendered on screen,
+all. The last one creates canvases that are not rendered on screen,
 which can be useful to save complex images that can then simply
-copied to a visible canvas. Onscreen canvas are hidden by default,
+copied to a visible canvas. Onscreen canvases are hidden by default,
 and :code:`Canvas.show` should be called on them to make them visible.
 
-Drawing on canvas
------------------
+Drawing on canvases
+-------------------
 
-Drawing on the canvas can be perfomed using various drawing primitives,
+Drawing on a canvas can be perfomed using various drawing primitives,
 the most ubiquitous being :code:`Canvas.clearPath`, :code:`Canvas.moveTo`,
 :code:`Canvas.lineTo`, :code:`Canvas.arc`, :code:`Canvas.bezierCurveTo`, :code:`Canvas.fill`
-and :code:`Canvas.stroke`. These function allow to build a path step by step
+and :code:`Canvas.stroke`. These functions allow to build a path step by step
 and either fill it completely or draw its outline. It is also possible
 to directly render some text with the :code:`Canvas.fillText` and
 :code:`Canvas.strokeText` functions.
 
-The Canvas drawing style can be customized using the functions
-:code:`Canvas.setFillColor`, :code:`Canvas.setStrokeColor` and
+The canvas drawing style can be customized using functions
+such as :code:`Canvas.setFillColor`, :code:`Canvas.setStrokeColor` or
 :code:`Canvas.setLineWidth`. The font used to draw text can be specified
 with the :code:`Canvas.setFont` function. It is also possible to apply
 various transformations to a canvas, such as translation, rotation and
 scaling, with the functions :code:`Canvas.transform`, :code:`Canvas.translate`,
 :code:`Canvas.scale`, :code:`Canvas.rotate` and :code:`Canvas.shear`. All these
-styling elements can be saved and restored using the functions
-:code:`Canvas.save` and :code:`Canvas.restore`.
+styling elements can be saved and restored to/from a state stack
+using the functions :code:`Canvas.save` and :code:`Canvas.restore`.
 
 Handling canvas events
 ----------------------
 
-Once the canvas are ready, we may start handling events for these canvas.
+Once the canvases are ready, we may start handling events for these canvases.
 To do so, we use the :code:`Backend.run` function, which runs an event loop.
-**This function MUST be the last instruction of the program**. It takes as
-argument two functions: the first one is an event handler, and the second
-one is executed when the event loop has finished running. The event loop
-may be stopped by calling :code:`Backend.stop` in the event handler.
+**This function MUST be the last instruction of the program**. It takes three
+arguments: the first one is an event handler function, the second one is
+is executed when the event loop has finished running, and the third one
+is an initial state of an arbitrary type. The event loop may be stopped
+by calling :code:`Backend.stop` from the event handler.
 
-The event handler function should pattern-match its argument against
-the constructors of the :code:`Event.t` type it is interested in, and return
-a boolean value indicating whether it processed the event (for some
-events, this may have some side-effect, indicated in the event's
-description). Each event reports at least the Canvas on which it
-occured, and its timestamp. It may also report mouse coordinates
-for mouse events, or keyboard status for keyboard events.
+The event handler function takes two arguments: a state, and an event
+description. It should pattern-match the event against the various
+constructors of the :code:`Event.t` type it is interested in, and return a
+pair consisting of the new state and a boolean value indicating whether
+the event was processed (for some events, this may have some side-effect,
+indicated in the event's description). Each event reports at least the
+canvas on which it occured, and its timestamp. It may also report mouse
+coordinates for mouse events, or keyboard status for keyboard events.
 
 An actual example
 -----------------
 
 The following program creates a windowed canvas with an orange background,
 a cyan border, and the "Hello world !" text drawn rotated in the middle.
-The user may press the "Escape" key to exit the program.
+The user may press the "Escape" key or close the window to exit the
+program. It will show the number of frames displayed when quitting.
 ::
-    open OCamlCanvas
+    open OCamlCanvas.V1
 
     let () =
 
@@ -106,29 +109,33 @@ The user may press the "Escape" key to exit the program.
 
       Canvas.show c;
 
-      Backend.run (function
+      Backend.run (fun state -> function
 
-        | Event.KeyAction { canvas = _; timestamp = _;
-                            key; char = _; flags = _; state = Down } ->
+        | Event.CanvasClosed { canvas = _; timestamp = _ } ->
+            Backend.stop ();
+            state, true
+
+        | Event.KeyAction { canvas = _; timestamp = _; key;
+                            char = _; flags = _; state = Down } ->
             if key = Event.KeyEscape then
               Backend.stop ();
-            true
+            state, true
 
-        | Event.ButtonAction { canvas = _; timestamp = _;
-                               position = (x, y); button = _; state = Down } ->
+        | Event.ButtonAction { canvas = _; timestamp = _; position = (x, y);
+                               button = _; state = Down } ->
             Canvas.setFillColor c Color.red;
             Canvas.clearPath c;
             Canvas.arc c ~center:(float_of_int x, float_of_int y)
               ~radius:5.0 ~theta1:0.0 ~theta2:(pi *. 2.0) ~ccw:false;
             Canvas.fill c ~nonzero:false;
-            true
+            state, true
 
         | Event.Frame { canvas = _; timestamp = _ } ->
-            true
+            Int64.add state Int64.one, true
 
         | _ ->
-            false
+            state, false
 
-        ) (function () ->
-             Printf.printf "Goodbye !\n"
-        )
+      ) (fun state ->
+          Printf.printf "Displayed %Ld frames. Goodbye !\n" state
+      ) 0L

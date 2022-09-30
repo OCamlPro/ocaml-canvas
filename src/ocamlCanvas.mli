@@ -31,49 +31,52 @@
     {!Canvas.createOffscreen} functions. The first one creates a canvas
     contained in a regular window (which is simulated in the Javascript
     backend). The second one creates a window that has no decoration at
-    all. The last one creates canvas that are not rendered on screen,
+    all. The last one creates canvases that are not rendered on screen,
     which can be useful to save complex images that can then simply
-    copied to a visible canvas. Onscreen canvas are hidden by default,
+    copied to a visible canvas. Onscreen canvases are hidden by default,
     and {!Canvas.show} should be called on them to make them visible.
 
-    Drawing on the canvas can be perfomed using various drawing primitives,
+    Drawing on a canvas can be perfomed using various drawing primitives,
     the most ubiquitous being {!Canvas.clearPath}, {!Canvas.moveTo},
     {!Canvas.lineTo}, {!Canvas.arc}, {!Canvas.bezierCurveTo}, {!Canvas.fill}
-    and {!Canvas.stroke}. These function allow to build a path step by step
+    and {!Canvas.stroke}. These functions allow to build a path step by step
     and either fill it completely or draw its outline. It is also possible
     to directly render some text with the {!Canvas.fillText} and
     {!Canvas.strokeText} functions.
 
-    The Canvas drawing style can be customized using the functions
-    {!Canvas.setFillColor}, {!Canvas.setStrokeColor} and
+    The canvas drawing style can be customized using functions
+    such as {!Canvas.setFillColor}, {!Canvas.setStrokeColor} or
     {!Canvas.setLineWidth}. The font used to draw text can be specified
     with the {!Canvas.setFont} function. It is also possible to apply
     various transformations to a canvas, such as translation, rotation and
     scaling, with the functions {!Canvas.transform}, {!Canvas.translate},
     {!Canvas.scale}, {!Canvas.rotate} and {!Canvas.shear}. All these
-    styling elements can be saved and restored using the functions
-    {!Canvas.save} and {!Canvas.restore}.
+    styling elements can be saved and restored to/from a state stack
+    using the functions {!Canvas.save} and {!Canvas.restore}.
 
-    Once the canvas are ready, we may start handling events for these canvas.
+    Once the canvases are ready, we may start handling events for these canvases.
     To do so, we use the {!Backend.run} function, which runs an event loop.
-    This function MUST be the last instruction of the program. It takes as
-    argument two functions: the first one is an event handler, and the second
-    one is executed when the event loop has finished running. The event loop
-    may be stopped by calling {!Backend.stop} in the event handler.
+    This function MUST be the last instruction of the program. It takes three
+    arguments: the first one is an event handler function, the second one is
+    is executed when the event loop has finished running, and the third one
+    is an initial state of an arbitrary type. The event loop may be stopped
+    by calling {!Backend.stop} from the event handler.
 
-    The event handler function should pattern-match its argument against
-    the constructors of the {!Event.t} type it is interested in, and return
-    a boolean value indicating whether it processed the event (for some
-    events, this may have some side-effect, indicated in the event's
-    description). Each event reports at least the Canvas on which it
-    occured, and its timestamp. It may also report mouse coordinates
-    for mouse events, or keyboard status for keyboard events.
+    The event handler function takes two arguments: a state, and an event
+    description. It should pattern-match the event against the various
+    constructors of the {!Event.t} type it is interested in, and return a
+    pair consisting of the new state and a boolean value indicating whether
+    the event was processed (for some events, this may have some side-effect,
+    indicated in the event's description). Each event reports at least the
+    canvas on which it occured, and its timestamp. It may also report mouse
+    coordinates for mouse events, or keyboard status for keyboard events.
 
     {1 An actual example}
 
     The following program creates a windowed canvas with an orange background,
     a cyan border, and the "Hello world !" text drawn rotated in the middle.
-    The user may press the "Escape" key to exit the program.
+    The user may press the "Escape" key or close the window to exit the
+    program. It will show the number of frames displayed when quitting.
 
 {[
     open OCamlCanvas.V1
@@ -111,47 +114,52 @@
 
       Canvas.show c;
 
-      Backend.run (function
+      Backend.run (fun state -> function
 
-        | Event.KeyAction { canvas = _; timestamp = _;
-                            key; char = _; flags = _; state = Down } ->
+        | Event.CanvasClosed { canvas = _; timestamp = _ } ->
+            Backend.stop ();
+            state, true
+
+        | Event.KeyAction { canvas = _; timestamp = _; key;
+                            char = _; flags = _; state = Down } ->
             if key = Event.KeyEscape then
               Backend.stop ();
-            true
+            state, true
 
-        | Event.ButtonAction { canvas = _; timestamp = _;
-                               position = (x, y); button = _; state = Down } ->
+        | Event.ButtonAction { canvas = _; timestamp = _; position = (x, y);
+                               button = _; state = Down } ->
             Canvas.setFillColor c Color.red;
             Canvas.clearPath c;
             Canvas.arc c ~center:(float_of_int x, float_of_int y)
               ~radius:5.0 ~theta1:0.0 ~theta2:(pi *. 2.0) ~ccw:false;
             Canvas.fill c ~nonzero:false;
-            true
+            state, true
 
         | Event.Frame { canvas = _; timestamp = _ } ->
-            true
+            Int64.add state Int64.one, true
 
         | _ ->
-            false
+            state, false
 
-        ) (function () ->
-             Printf.printf "Goodbye !\n"
-        )
+      ) (fun state ->
+          Printf.printf "Displayed %Ld frames. Goodbye !\n" state
+      ) 0L
 ]}
 *)
 
 module V1 : sig
+(** The OCaml-Canvas module is versioned. This is version 1. *)
 
   module Transform : sig
   (** Transform manipulation functions *)
 
     type t = {
-      a : float; (** scaling/flipping, rotation *)
-      b : float; (** shearing, rotation *)
-      c : float; (** scaling/flipping, rotation *)
-      d : float; (** shearing, rotation *)
-      e : float; (** translation *)
-      f : float; (** translation *)
+      a : float; (** x scaling/flipping, rotation *)
+      b : float; (** x shearing, rotation *)
+      c : float; (** y scaling/flipping, rotation *)
+      d : float; (** y shearing, rotation *)
+      e : float; (** x translation *)
+      f : float; (** y translation *)
     }
     (** A type to represent transformation matrices of the form:
  {[     a b 0
@@ -221,7 +229,8 @@ module V1 : sig
     (** [of_rgb r g b] creates a color from its [r], [g] and [b] components *)
 
     val to_rgb : t -> int * int * int
-    (** [to_rgb c] converts a color to its [r], [g] and [b] components *)
+    (** [to_rgb c] converts a color to its [r], [g] and [b] components,
+        ignoring the alpha component *)
 
     val of_argb : int -> int -> int -> int -> t
     (** [of_argb a r g b] creates a color from
@@ -243,6 +252,12 @@ module V1 : sig
 
     val to_int32 : t -> Int32.t
     (** [to_int c] converts a color [c] to its 32-bit integer representation *)
+
+    val transpBlack : t
+    (** Predefined `transpBlack` color *)
+
+    val transpWhite : t
+    (** Predefined `transpWhite` color *)
 
     val black : t
     (** Predefined `black` color *)
@@ -272,7 +287,11 @@ module V1 : sig
     (** Predefined `red` color *)
 
     val of_string : string -> t
-    (** [of_string s] returns the color associated with string [s] *)
+    (** [of_string s] returns the color associated with string [s].
+        [s] can be either a color name (as defined by [define_color]),
+        or an hexadecimal representation of the form #AARRGGBB.
+        If the color is unknown or unparsable, this returns
+        [transparent_black]. *)
 
     val define_color : string -> t -> t
     (** [define_color s c] add a color [c]
@@ -375,7 +394,7 @@ module V1 : sig
       src:t -> spos:(int * int) -> size:(int * int) -> unit
     (** [blit ~dst ~dpos ~src ~spos ~size] copies the area
         specified by [spos] and [size] from image data [src]
-        to imdate data [dst] at position [dpos] *)
+        to image data [dst] at position [dpos] *)
 
     val getPixel : t -> (int * int) -> Color.t
     (** [getPixel id pos] returns the color of the pixel
@@ -487,31 +506,39 @@ module V1 : sig
 
   end
 
-  module Canvas : sig
-  (** Canvas manipulation functions *)
+  module Join : sig
 
-    type 'kind t
-    (** An abstract type representing a canvas *)
-
-    type line_join =
+    type t =
       | Round
       | Miter
       | Bevel (**)
-    (** An enum type for representing line join types *)
+    (** The different kinds of line joins *)
 
-    type line_cap =
+  end
+
+  module Cap : sig
+
+    type t =
       | Butt
       | Square
-      | RoundCap (**)
-    (** An enum type for representing line cap types *)
+      | Round (**)
+    (** The different kinds of line caps *)
 
-    type style =
+  end
+
+  module Style : sig
+
+    type t =
       | Color of Color.t
       | Gradient of Gradient.t
       | Pattern of Pattern.t (**)
-    (** A type to represent stroke and fill styles *)
+    (** Stroke and fill styles *)
 
-    type composite_op =
+  end
+
+  module CompositeOp : sig
+
+    type t =
       | SourceOver
       | SourceIn
       | SourceOut
@@ -538,7 +565,15 @@ module V1 : sig
       | Saturation
       | Color
       | Luminosity (**)
-    (** A type to represent blending and compositing operations *)
+    (** Blending and compositing operations *)
+
+  end
+
+  module Canvas : sig
+  (** Canvas manipulation functions *)
+
+    type 'kind t
+    (** An abstract type representing a canvas *)
 
 
     (** {1 Gradient creation functions} *)
@@ -653,8 +688,7 @@ module V1 : sig
     (** {1 Configuration} *)
 
     val getId : 'kind t -> int
-    (** [getId c] returns the unique id of canvas [c],
-        or 0 if the canvas has been destroyed *)
+    (** [getId c] returns the unique id of canvas [c] *)
 
     val getSize : 'kind t -> (int * int)
     (** [getSize c] returns the size of canvas [c] *)
@@ -716,16 +750,16 @@ module V1 : sig
     val setLineWidth : 'kind t -> float -> unit
     (** [setLineWidth c w] sets the current line width of canvas [c] to [w] *)
 
-    val getLineJoin : 'kind t -> line_join
+    val getLineJoin : 'kind t -> Join.t
     (** [getLineJoin c] returns the current line join type of canvas [c] *)
 
-    val setLineJoin : 'kind t -> line_join -> unit
+    val setLineJoin : 'kind t -> Join.t -> unit
     (** [setLineJoin c j] sets the current line join type of canvas[c] to [j] *)
 
-    val getLineCap : 'kind t -> line_cap
+    val getLineCap : 'kind t -> Cap.t
     (** [getLineJoin c] returns the current line cap type of canvas [c] *)
 
-    val setLineCap : 'kind t -> line_cap -> unit
+    val setLineCap : 'kind t -> Cap.t -> unit
     (** [setLineJoin c j] sets the current line cap type of canvas[c] to [j] *)
 
     val getMiterLimit : 'kind t -> float
@@ -761,10 +795,10 @@ module V1 : sig
     (** [setStrokePattern c pat] sets the current stroke
         style of canvas [c] to the pattern [pat] *)
 
-    val getStrokeStyle : 'kind t -> style
+    val getStrokeStyle : 'kind t -> Style.t
     (** [getStrokeStyle c] returns the current stroke style of canvas [c] *)
 
-    val setStrokeStyle : 'kind t -> style -> unit
+    val setStrokeStyle : 'kind t -> Style.t -> unit
     (** [setStrokeStyle c style] sets the current stroke
         style of canvas [c] to style [style] *)
 
@@ -783,10 +817,10 @@ module V1 : sig
     (** [setFillPattern c pat] sets the current fill
         style of canvas [c] to the pattern [pat] *)
 
-    val getFillStyle : 'kind t -> style
+    val getFillStyle : 'kind t -> Style.t
     (** [getFillStyle c] return the current fill style of canvas [c] *)
 
-    val setFillStyle : 'kind t -> style -> unit
+    val setFillStyle : 'kind t -> Style.t -> unit
     (** [setFillStyle c style] sets the current
         fill style of canvas [c] to style [style] *)
 
@@ -796,36 +830,30 @@ module V1 : sig
     val setGlobalAlpha : 'kind t -> float -> unit
     (** [setGlobalAlpha c a] sets the global alpha value of canvas[c] to [a] *)
 
-    val getGlobalCompositeOperation : 'kind t -> composite_op
+    val getGlobalCompositeOperation : 'kind t -> CompositeOp.t
     (** [getGlobalCompositeOperation c] returns the global
         composite or blending operation of canvas[c] *)
 
-    val setGlobalCompositeOperation : 'kind t -> composite_op -> unit
+    val setGlobalCompositeOperation : 'kind t -> CompositeOp.t -> unit
     (** [setGlobalCompositeOperation c o] sets the global
         composite or blending operation of canvas[c] to [o] *)
 
-    val getShadowColor :
-      'kind t -> Color.t
+    val getShadowColor : 'kind t -> Color.t
     (** [setShadowColor c] returns the canvas [c]'s shadow color *)
 
-    val setShadowColor :
-      'kind t -> Color.t -> unit
+    val setShadowColor : 'kind t -> Color.t -> unit
     (** [setShadowColor c col] sets the canvas [c]'s shadow color to [col] *)
 
-    val getShadowBlur :
-      'kind t -> float
+    val getShadowBlur : 'kind t -> float
     (** [setShadowBlur c] returns the shadow blur radius of canvas [c]  *)
 
-    val setShadowBlur :
-      'kind t -> float -> unit
+    val setShadowBlur : 'kind t -> float -> unit
     (** [setShadowBlur c b] sets the shadow blur radius of canvas [c] to [b] *)
 
-    val getShadowOffset :
-      'kind t -> (float * float)
+    val getShadowOffset : 'kind t -> (float * float)
     (** [setShadowOffset c] returns the offset of the shadows drawn in [c] *)
 
-    val setShadowOffset :
-      'kind t -> (float * float) -> unit
+    val setShadowOffset : 'kind t -> (float * float) -> unit
     (** [setShadowOffset c o] sets the offset
         of the shadows drawn in [c] to [o] *)
 
@@ -869,15 +897,13 @@ module V1 : sig
         (if such point exists) will be connected to the first point of the
         arc by a straight line. *)
 
-    val arcTo :
-      'kind t -> p1:Point.t -> p2:Point.t -> radius:float -> unit
+    val arcTo : 'kind t -> p1:Point.t -> p2:Point.t -> radius:float -> unit
     (** [arcTo c ~p1 ~p2 ~radius] adds an arc of the given [radius]
         using the control points [p1] and [p2] to the current
         subpath of canvas [c]. If the current subpath is empty,
         this behaves as if [moveTo c ~p:p1] was called. *)
 
-    val quadraticCurveTo :
-      'kind t -> cp:Point.t -> p:Point.t -> unit
+    val quadraticCurveTo : 'kind t -> cp:Point.t -> p:Point.t -> unit
     (** [quadraticCurveTo c ~cp ~p] adds a quadratic Bezier curve
         using the control point [cp] and the end point [p]
         to the current subpath of canvas [c] *)
