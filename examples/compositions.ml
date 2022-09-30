@@ -25,7 +25,7 @@ let () =
         Promise.bind p_spectrumImage (fun spectrumImage ->
             Canvas.blit ~dst:c ~dpos:(0,0) ~src:spectrumImage
               ~spos:(0,0) ~size:(400,400);
-            Canvas.setGlobalCompositeOperation c Canvas.ColorDodge;
+            Canvas.setGlobalCompositeOperation c CompositeOp.ColorDodge;
             Canvas.blit ~dst:c ~dpos:(0,0) ~src:catImage
               ~spos:(0,0) ~size:(400,400);
             Canvas.show c;

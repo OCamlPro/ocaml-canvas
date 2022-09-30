@@ -142,6 +142,8 @@ module V1 = struct
       colors := StringMap.add (String.lowercase_ascii name) c !colors;
       c
 
+    let transpBlack = define_color "transparent_black" 0x00000000l
+    let transpWhite = define_color "transparent_white" 0x00FFFFFFl
     let black = define_color "black" 0xFF000000l
     let white = define_color "white" 0xFFFFFFFFl
     let blue = define_color "blue" 0xFF0000FFl
@@ -374,20 +376,17 @@ module V1 = struct
       theta1:float -> theta2:float -> ccw:bool -> unit
       = "ml_canvas_path_arc" "ml_canvas_path_arc_n"
 
-    external arcTo :
-      t -> p1:Point.t -> p2:Point.t -> radius:float -> unit
+    external arcTo : t -> p1:Point.t -> p2:Point.t -> radius:float -> unit
       = "ml_canvas_path_arc_to"
 
-    external quadraticCurveTo :
-      t -> cp:Point.t -> p:Point.t -> unit
+    external quadraticCurveTo : t -> cp:Point.t -> p:Point.t -> unit
       = "ml_canvas_path_quadratic_curve_to"
 
     external bezierCurveTo :
       t -> cp1:Point.t -> cp2:Point.t -> p:Point.t -> unit
       = "ml_canvas_path_bezier_curve_to"
 
-    external rect :
-      t -> pos:Point.t -> size:(float * float) -> unit
+    external rect : t -> pos:Point.t -> size:(float * float) -> unit
       = "ml_canvas_path_rect"
 
     external ellipse :
@@ -403,26 +402,36 @@ module V1 = struct
 
   end
 
-  module Canvas = struct
+  module Join = struct
 
-    type 'kind t
-
-    type line_join =
+    type t =
       | Round
       | Miter
       | Bevel
 
-    type line_cap =
+  end
+
+  module Cap = struct
+
+    type t =
       | Butt
       | Square
-      | RoundCap
+      | Round
 
-    type style =
+  end
+
+  module Style = struct
+
+    type t =
       | Color of Color.t
       | Gradient of Gradient.t
       | Pattern of Pattern.t
 
-    type composite_op =
+  end
+
+  module CompositeOp = struct
+
+    type t =
       | SourceOver
       | SourceIn
       | SourceOut
@@ -449,6 +458,12 @@ module V1 = struct
       | Saturation
       | Color
       | Luminosity
+
+  end
+
+  module Canvas = struct
+
+    type 'kind t
 
     (* Gradients *)
 
@@ -573,16 +588,16 @@ module V1 = struct
     external setLineWidth : 'kind t -> float -> unit
       = "ml_canvas_set_line_width"
 
-    external getLineJoin : 'kind t -> line_join
+    external getLineJoin : 'kind t -> Join.t
       = "ml_canvas_get_line_join"
 
-    external setLineJoin : 'kind t -> line_join -> unit
+    external setLineJoin : 'kind t -> Join.t -> unit
       = "ml_canvas_set_line_join"
 
-    external getLineCap : 'kind t -> line_cap
+    external getLineCap : 'kind t -> Cap.t
       = "ml_canvas_get_line_cap"
 
-    external setLineCap : 'kind t -> line_cap -> unit
+    external setLineCap : 'kind t -> Cap.t -> unit
       = "ml_canvas_set_line_cap"
 
     external getMiterLimit : 'kind t -> float
@@ -615,10 +630,10 @@ module V1 = struct
     external setStrokePattern : 'kind t -> Pattern.t -> unit
       = "ml_canvas_set_stroke_pattern"
 
-    external getStrokeStyle : 'kind t -> style
+    external getStrokeStyle : 'kind t -> Style.t
       = "ml_canvas_get_stroke_style"
 
-    external setStrokeStyle : 'kind t -> style -> unit
+    external setStrokeStyle : 'kind t -> Style.t -> unit
       = "ml_canvas_set_stroke_style"
 
     external getFillColor : 'kind t -> Color.t
@@ -633,10 +648,10 @@ module V1 = struct
     external setFillPattern : 'kind t -> Pattern.t -> unit
       = "ml_canvas_set_fill_pattern"
 
-    external getFillStyle : 'kind t -> style
+    external getFillStyle : 'kind t -> Style.t
       = "ml_canvas_get_fill_style"
 
-    external setFillStyle : 'kind t -> style -> unit
+    external setFillStyle : 'kind t -> Style.t -> unit
       = "ml_canvas_set_fill_style"
 
     external getGlobalAlpha : 'kind t -> float
@@ -645,10 +660,10 @@ module V1 = struct
     external setGlobalAlpha : 'kind t -> float -> unit
       = "ml_canvas_set_global_alpha"
 
-    external getGlobalCompositeOperation : 'kind t -> composite_op
+    external getGlobalCompositeOperation : 'kind t -> CompositeOp.t
       = "ml_canvas_get_global_composite_operation"
 
-    external setGlobalCompositeOperation : 'kind t -> composite_op -> unit
+    external setGlobalCompositeOperation : 'kind t -> CompositeOp.t -> unit
       = "ml_canvas_set_global_composite_operation"
 
     external getShadowColor : 'kind t -> Color.t
@@ -693,20 +708,17 @@ module V1 = struct
       theta1:float -> theta2:float -> ccw:bool -> unit
       = "ml_canvas_arc" "ml_canvas_arc_n"
 
-    external arcTo :
-      'kind t -> p1:Point.t -> p2:Point.t -> radius:float -> unit
+    external arcTo : 'kind t -> p1:Point.t -> p2:Point.t -> radius:float -> unit
       = "ml_canvas_arc_to"
 
-    external quadraticCurveTo :
-      'kind t -> cp:Point.t -> p:Point.t -> unit
+    external quadraticCurveTo : 'kind t -> cp:Point.t -> p:Point.t -> unit
       = "ml_canvas_quadratic_curve_to"
 
     external bezierCurveTo :
       'kind t -> cp1:Point.t -> cp2:Point.t -> p:Point.t -> unit
       = "ml_canvas_bezier_curve_to"
 
-    external rect :
-      'kind t -> pos:Point.t -> size:(float * float) -> unit
+    external rect : 'kind t -> pos:Point.t -> size:(float * float) -> unit
       = "ml_canvas_rect"
 
     external ellipse :
@@ -734,20 +746,16 @@ module V1 = struct
 
     (* Immediate drawing *)
 
-    external fillRect :
-      'kind t -> pos:Point.t -> size:(float * float) -> unit
+    external fillRect : 'kind t -> pos:Point.t -> size:(float * float) -> unit
       = "ml_canvas_fill_rect"
 
-    external strokeRect :
-      'kind t -> pos:Point.t -> size:(float * float) -> unit
+    external strokeRect : 'kind t -> pos:Point.t -> size:(float * float) -> unit
       = "ml_canvas_stroke_rect"
 
-    external fillText :
-      'kind t -> string -> Point.t -> unit
+    external fillText : 'kind t -> string -> Point.t -> unit
       = "ml_canvas_fill_text"
 
-    external strokeText :
-      'kind t -> string -> Point.t -> unit
+    external strokeText : 'kind t -> string -> Point.t -> unit
       = "ml_canvas_stroke_text"
 
     external blit :

@@ -60,7 +60,7 @@ function _key_up_handler(e) {
 }
 
 //Provides: _header_down_handler
-//Requires: _focus,_move,ml_canvas_destroy,_ml_canvas_process_event,EVENT_TAG
+//Requires: _focus,_move,ml_canvas_close,_ml_canvas_process_event,EVENT_TAG
 //Requires: caml_int64_of_float
 function _header_down_handler(e) {
   if (e.target !== null) {
@@ -72,7 +72,7 @@ function _header_down_handler(e) {
                   [ 0, e.target.canvas,
                     caml_int64_of_float(e.timeStamp * 1000.0) ] ];
       _ml_canvas_process_event(evt);
-      ml_canvas_destroy(e.target.canvas);
+      ml_canvas_close(e.target.canvas);
       _focus = null;
       return false;
     }
@@ -170,7 +170,8 @@ function _ml_canvas_image_of_png_file(filename) {
   if (file === null) {
     return null;
   }
-  var data = window.btoa(caml_read_file_content(filename));
+  var fc = caml_read_file_content(filename);
+  var data = window.btoa(fc.toUft16 === undefined ? fc.c : fc);
   var img = new window.Image();
   img.loading = 'eager';
   img.decoding = 'sync';
@@ -768,43 +769,55 @@ function ml_canvas_create_offscreen_from_png(filename) {
 
 
 
-// Provides: ml_canvas_destroy
-function ml_canvas_destroy(canvas) {
-  if (canvas.header !== null) {
-    canvas.header.parentNode.removeChild(canvas.header);
-  }
-  if (canvas.surface !== null) {
-    canvas.surface.parentNode.removeChild(canvas.surface);
-  }
-  if (canvas.frame !== null) {
-    canvas.frame.parentNode.removeChild(canvas.frame);
-  }
-  canvas.name = null;
-  canvas.frame = null;
-  canvas.header = null;
-  canvas.surface = null;
-  canvas.ctxt = null;
-  canvas.id = 0;
-}
-
-
-
 /* Visibility */
 
 // Provides: ml_canvas_show
 // Requires: _focus
 function ml_canvas_show(canvas) {
-  _focus = canvas;
-  canvas.frame.style.visibility = "visible";
+  if (canvas.frame !== null) {
+    _focus = canvas;
+    canvas.frame.style.visibility = "visible";
+  }
 }
 
 // Provides: ml_canvas_hide
 // Requires: _focus
 function ml_canvas_hide(canvas) {
-  if (_focus === canvas) {
-    _focus = null;
+  if (canvas.frame !== null) {
+    if (_focus === canvas) {
+      _focus = null;
+    }
+    canvas.frame.style.visibility = "hidden";
   }
-  canvas.frame.style.visibility = "hidden";
+}
+
+// Provides: ml_canvas_close
+// Requires: ml_canvas_hide
+function ml_canvas_close(canvas) {
+  if (canvas.frame !== null) {
+    ml_canvas_hide(canvas);
+    canvas.name = null;
+    if (canvas.surface != null) {
+      canvas.surface.canvas = null;
+      if (canvas.surface.parentNode !== null) {
+        canvas.surface.parentNode.removeChild(canvas.surface);
+      }
+    }
+    if (canvas.header != null) {
+      canvas.header.canvas = null;
+      if (canvas.header.parentNode !== null) {
+        canvas.header.parentNode.removeChild(canvas.header);
+      }
+      canvas.header = null;
+    }
+    if (canvas.frame !== null) {
+      canvas.frame.canvas = null;
+      if (canvas.frame.parentNode !== null) {
+        canvas.frame.parentNode.removeChild(canvas.frame);
+      }
+      canvas.frame = null;
+    }
+  }
 }
 
 
@@ -839,14 +852,18 @@ function ml_canvas_set_size(canvas, size) {
 
 // Provides: ml_canvas_get_position
 function ml_canvas_get_position(canvas) {
-  return [ 0, canvas.x, canvas.y ];
+  if (canvas.frame !== null) {
+    return [ 0, canvas.x, canvas.y ];
+  } else {
+    return [ 0, 0, 0 ];
+  }
 }
 
 // Provides: ml_canvas_set_position
 function ml_canvas_set_position(canvas, pos) {
-  var x = pos[1];
-  var y = pos[2];
   if (canvas.frame !== null) {
+    var x = pos[1];
+    var y = pos[2];
     canvas.x = x;
     canvas.y = y;
     canvas.frame.style.left = x + "px";
@@ -1131,10 +1148,11 @@ function ml_canvas_set_shadow_offset(canvas, offset) {
 }
 
 //Provides: ml_canvas_set_font
-//Requires: Slant_val
+//Requires: Slant_val,caml_jsstring_of_string
 function ml_canvas_set_font(canvas, family, size, slant, weight) {
   canvas.ctxt.font =
-    Slant_val(slant) + " " + weight + " " + size + "pt " + family;
+    Slant_val(slant) + " " + weight + " " + size + "pt " +
+        caml_jsstring_of_string(family);
 }
 
 

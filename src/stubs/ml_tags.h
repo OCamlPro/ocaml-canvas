@@ -218,17 +218,17 @@ typedef enum slant_tag_t {
   TAG_OBLIQUE = 2
 } slant_tag_t;
 
-typedef enum line_join_tag_t {
-  TAG_ROUND = 0,
-  TAG_MITER = 1,
-  TAG_BEVEL = 2
-} line_join_tag_t;
+typedef enum join_type_tag_t {
+  TAG_JOIN_ROUND = 0,
+  TAG_JOIN_MITER = 1,
+  TAG_JOIN_BEVEL = 2
+} join_type_tag_t;
 
-typedef enum line_cap_tag_t {
+typedef enum cap_type_tag_t {
   TAG_CAP_BUTT   = 0,
   TAG_CAP_SQUARE = 1,
   TAG_CAP_ROUND  = 2
-} line_cap_tag_t;
+} cap_type_tag_t;
 
 typedef enum comp_op_tag_t {
   TAG_OP_SOURCE_OVER      = 0,

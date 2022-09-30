@@ -226,15 +226,15 @@ var SLANT_TAG = {
   OBLIQUE : 2
 };
 
-//Provides: LINE_JOIN_TAG
-var LINE_JOIN_TAG = {
+//Provides: JOIN_TYPE_TAG
+var JOIN_TYPE_TAG = {
   ROUND : 0,
   MITER : 1,
   BEVEL : 2
 }
 
-//Provides: LINE_CAP_TAG
-var LINE_CAP_TAG = {
+//Provides: CAP_TYPE_TAG
+var CAP_TYPE_TAG = {
   BUTT   : 0,
   SQUARE : 1,
   ROUND  : 2

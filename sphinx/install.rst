@@ -16,7 +16,7 @@ Checkout the sources of :code:`ocaml-canvas` in a directory.
 You need a switch with at least version :code:`4.03.0` of OCaml,
 you can for example create it with::
 
-  opam switch create 4.10.0
+  opam switch create 4.14.0
 
 Then, you need to install all the dependencies::
 

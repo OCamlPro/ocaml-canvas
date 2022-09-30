@@ -37,28 +37,28 @@ let () =
 
   Canvas.setLineWidth c 10.0;
 
-  Canvas.setLineCap c Canvas.Butt;
+  Canvas.setLineCap c Cap.Butt;
 
   Canvas.clearPath c;
   Canvas.moveTo c (100.0, 50.0);
   Canvas.lineTo c (300.0, 50.0);
   Canvas.stroke c;
 
-  Canvas.setLineCap c Canvas.RoundCap;
+  Canvas.setLineCap c Cap.Round;
 
   Canvas.clearPath c;
   Canvas.moveTo c (100.0, 100.0);
   Canvas.lineTo c (300.0, 100.0);
   Canvas.stroke c;
 
-  Canvas.setLineCap c Canvas.Square;
+  Canvas.setLineCap c Cap.Square;
 
   Canvas.clearPath c;
   Canvas.moveTo c (100.0, 150.0);
   Canvas.lineTo c (300.0, 150.0);
   Canvas.stroke c;
 
-  Canvas.setLineCap c Canvas.RoundCap;
+  Canvas.setLineCap c Cap.Round;
 
   Canvas.clearPath c;
   Canvas.moveTo c (100.0, 200.0);
@@ -66,7 +66,7 @@ let () =
   Canvas.setTransform c (Transform.create (1.0, 0.0, 1.0, 1.0, 0.0, 0.0));
   Canvas.stroke c;
 
-  Canvas.setLineCap c Canvas.RoundCap;
+  Canvas.setLineCap c Cap.Round;
   Canvas.setTransform c Transform.id;
 
   Canvas.clearPath c;
@@ -78,9 +78,9 @@ let () =
 
 
   Canvas.setLineWidth c 20.0;
-  Canvas.setLineCap c Canvas.Butt;
+  Canvas.setLineCap c Cap.Butt;
   Canvas.setTransform c Transform.id;
-  Canvas.setLineJoin c Canvas.Round;
+  Canvas.setLineJoin c Join.Round;
 
   Canvas.clearPath c;
   Canvas.moveTo c (100.0, 325.0);
@@ -89,9 +89,9 @@ let () =
   Canvas.stroke c;
 
 
-  Canvas.setLineCap c Canvas.Butt;
+  Canvas.setLineCap c Cap.Butt;
   Canvas.setTransform c Transform.id;
-  Canvas.setLineJoin c Canvas.Bevel;
+  Canvas.setLineJoin c Join.Bevel;
 
   Canvas.clearPath c;
   Canvas.moveTo c (100.0, 375.0);
@@ -99,9 +99,9 @@ let () =
   Canvas.lineTo c (300.0, 375.0);
   Canvas.stroke c;
 
-  Canvas.setLineCap c Canvas.Butt;
+  Canvas.setLineCap c Cap.Butt;
   Canvas.setTransform c Transform.id;
-  Canvas.setLineJoin c Canvas.Round;
+  Canvas.setLineJoin c Join.Round;
 
   Canvas.clearPath c;
   Canvas.moveTo c (200.0, 375.0);
