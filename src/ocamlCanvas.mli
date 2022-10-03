@@ -194,14 +194,49 @@ module V1 : sig
 
   end
 
+  module Vector : sig
+  (** Vector manipulation functions *)
+
+    type t = (float * float)
+    (** A vector is a pair of floats of the form (x, y)  *)
+
+    val zero : t
+    (** [zero] is the zero/null vector *)
+
+    val unit : t
+    (** [unit] is the unit vector *)
+
+    val add : t -> t -> t
+    (** [add v1 v2] returns the sum of vectors [v1] and v2 *)
+
+    val sub : t -> t -> t
+    (** [sub v1 v2] returns the difference of vectors [v1] and [v2] *)
+
+    val mul : t -> float -> t
+    (** [mul v k] returns the product of vector [v] by the scalar [k] *)
+
+    val dot  : t -> t -> float
+    (** [dot v1 v2] returns the dot product of vectors [v1] and [v2] *)
+
+    val norm : t -> float
+    (** [norm v] computes the norm of vector [v] *)
+
+  end
+
   module Point : sig
   (** Point manipulation functions *)
 
     type t = (float * float)
     (** A point is a pair of floats of the form (x, y)  *)
 
-    val translate : t -> by:(float * float) -> t
-    (** [translate p ~by] translates point [p] by the vector [by] *)
+    val of_ints : (int * int) -> t
+    (** [of_ints (x, y)] creates a point from integer coordinates *)
+
+    val sub : t -> t -> Vector.t
+    (** [sub p1 p2] returns the difference between points [p1] and [p2] *)
+
+    val translate : t -> by:Vector.t -> t
+    (** [translate p ~by] translates point [p] by vector [by] *)
 
     val rotate : t -> around:t -> theta:float -> t
     (** [rotate p ~around ~theta] rotates point [p] around
