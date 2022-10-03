@@ -69,9 +69,42 @@ module V1 = struct
 
   end
 
+  module Vector = struct
+
+    type t = (float * float)
+
+    let zero =
+      (0.0, 0.0)
+
+    let unit =
+      (1.0, 1.0)
+
+    let add (x1, y1) (x2, y2) =
+      x1 +. x2, y1 +. y2
+
+    let sub (x1, y1) (x2, y2) =
+      x1 -. x2, y1 -. y2
+
+    let mul (x, y) k =
+      x *. k, y *. k
+
+    let dot (x1, y1) (x2, y2) =
+      x1 *. x2 +. y1 *. y2
+
+    let norm (x, y) =
+      sqrt (x *. x +. y *. y)
+
+  end
+
   module Point = struct
 
     type t = (float * float)
+
+    let of_ints (x, y) =
+      (float_of_int x, float_of_int y)
+
+    let sub (x1, y1) (x2, y2) =
+      x1 -. x2, y1 -. y2
 
     let translate (x, y) ~by:(a, b) =
       (x +. a, y +. b)
