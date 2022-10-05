@@ -167,3 +167,51 @@
  (modules window_with_textbox)
  (libraries ocaml-canvas))
 
+
+(executable
+ (name demo1)
+ (public_name ocaml-canvas-demo1)
+ (modes byte_complete native js)
+ (modules demo1)
+ (libraries ocaml-canvas))
+
+
+(executable
+ (name demo2)
+ (public_name ocaml-canvas-demo2)
+ (modes byte_complete native js)
+ (modules demo2)
+ (libraries ocaml-canvas))
+
+
+(executable
+ (name demo3)
+ (public_name ocaml-canvas-demo3)
+ (modes byte_complete native js)
+ (modules demo3)
+ (libraries ocaml-canvas))
+
+
+(executable
+ (name demo4)
+ (public_name ocaml-canvas-demo4)
+ (modes byte_complete native js)
+ (modules demo4)
+ (libraries ocaml-canvas))
+
+
+(executable
+ (name demo5)
+ (public_name ocaml-canvas-demo5)
+ (modes byte_complete native js)
+ (modules demo5)
+ (libraries ocaml-canvas))
+
+
+(executable
+ (name demo6)
+ (public_name ocaml-canvas-demo6)
+ (modes byte_complete native js)
+ (modules demo6)
+ (libraries ocaml-canvas))
+

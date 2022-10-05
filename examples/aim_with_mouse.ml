@@ -24,12 +24,12 @@ let () =
   Canvas.setFillColor c Color.white;
   Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(800.0, 600.0);
 
+  Canvas.show c;
+
   let a = Array.create_float 2 in
   Array.set a 0 20.0;
   Array.set a 1 20.0;
   Canvas.setLineDash c (a);
-
-  Canvas.show c;
 
   Backend.run (fun state -> function
 

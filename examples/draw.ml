@@ -34,6 +34,9 @@ let () =
   let size_f = Point.of_ints size_i in
 
   let c = Canvas.createFramed "Draw" ~pos:(300, 200) ~size:size_i in
+
+  Canvas.show c;
+
   Canvas.setFillColor c Color.transpBlack;
   Canvas.setStrokeColor c Color.white;
   Canvas.setLineDash c [| 20.0; 20.0 |];
@@ -51,8 +54,6 @@ let () =
     Promise.bind p_color_map (fun color_map ->
       Backend.postCustomEvent (CanvasLoaded (color_map));
       Promise.return ());
-
-  Canvas.show c;
 
   let initial_state = {
     selecting = false;

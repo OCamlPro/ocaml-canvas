@@ -54,7 +54,7 @@ let fc_config c =
 let ft_config c =
   let cflags, libs =
     query_or_default c "freetype2"
-      [ "-I/usr/include/freetype2"; (*"-I/usr/include/libpng16"*) ]
+      [ "-I/usr/include/freetype2"; ]
       [ "-lfreetype" ]
   in
   cflags, libs
