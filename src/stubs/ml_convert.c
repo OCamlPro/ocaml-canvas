@@ -58,25 +58,9 @@ CAMLexport value caml_alloc_some(value v)
 
 #if OCAML_VERSION < 40400
 
-value caml_alloc_float_array(mlsize_t len)
-{
-#ifdef FLAT_FLOAT_ARRAY
-  mlsize_t wosize = len * Double_wosize;
-  value result;
-  if (wosize <= Max_young_wosize){
-    if (wosize == 0)
-      return Atom(0);
-    else
-      Alloc_small (result, wosize, Double_array_tag);
-  }else {
-    result = caml_alloc_shr (wosize, Double_array_tag);
-    result = caml_check_urgent_gc (result);
-  }
-  return result;
-#else
-  return caml_alloc (len, 0);
-#endif
-}
+CAMLprim value caml_make_float_vect(value len);
+
+#define caml_alloc_float_array(len) caml_make_float_vect(Val_long(len))
 
 #endif /* OCAML_VERSION < 40400 */
 
