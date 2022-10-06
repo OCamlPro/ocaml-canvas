@@ -73,14 +73,14 @@ jobs:
 
       - run: opam pin add . -y --no-action
 
-      - run: opam depext -y conf-libwayland conf-xkbcommon conf-libxcb conf-libxcb-shm conf-libxcb-image conf-libxcb-xkb conf-libxcb-keysyms
+      - run: opam depext -y conf-libwayland conf-wayland-protocols
         if: matrix.os == 'ubuntu-latest'
 #        if: steps.cache-opam.outputs.cache-hit != 'true'
 
       - run: opam depext -y ocaml-canvas
 #        if: steps.cache-opam.outputs.cache-hit != 'true'
 
-      - run: opam install -y conf-libwayland conf-xkbcommon conf-libxcb conf-libxcb-shm conf-libxcb-image conf-libxcb-xkb conf-libxcb-keysyms
+      - run: opam install -y conf-libwayland conf-wayland-protocols
         if: matrix.os == 'ubuntu-latest'
 #        if: steps.cache-opam.outputs.cache-hit != 'true'
 
