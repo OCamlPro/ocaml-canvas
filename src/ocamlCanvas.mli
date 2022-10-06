@@ -150,6 +150,53 @@
 module V1 : sig
 (** The OCaml-Canvas module is versioned. This is version 1. *)
 
+  module Const : sig
+  (** Some useful mathematical constants *)
+
+    val pi : float
+    (** [pi] is an approximation of pi with double precision *)
+
+    val pi_2 : float
+    (** [pi_2] is pi / 2 *)
+
+    val pi_4 : float
+    (** [pi_4] is pi / 4 *)
+
+    val pi_8 : float
+    (** [pi_8] is pi / 8 *)
+
+    val inv_pi : float
+    (** [inv_pi] is 1 / pi *)
+
+    val inv_pi_2 : float
+    (** [inv_pi_2] is 2 / pi *)
+
+    val inv_pi_4 : float
+    (** [inv_pi_4] is 4 / pi *)
+
+    val inv_pi_8 : float
+    (** [inv_pi_8] is 8 / pi *)
+
+    val e : float
+    (** [e] is an approximation of e with double precision *)
+
+    val inv_e : float
+    (** [inv_e] is 1 / e *)
+
+    val log2_e : float
+    (** [log2_e] is log2(e) *)
+
+    val log10_e : float
+    (** [log10_e] is log10(e) *)
+
+    val ln_2 : float
+    (** [ln2_e] is ln2(e) *)
+
+    val ln_10 : float
+    (** [ln10_e] is ln10(e) *)
+
+  end
+
   module Transform : sig
   (** Transform manipulation functions *)
 
