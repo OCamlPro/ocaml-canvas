@@ -39,7 +39,7 @@ let () =
     Canvas.createOffscreenFromPNG "./assets/spritesheet.png" in
   ignore @@
     Promise.bind p_sprite_sheet (fun sprite_sheet ->
-      Backend.sendCustomEvent (CanvasLoaded (sprite_sheet));
+      Backend.postCustomEvent (CanvasLoaded (sprite_sheet));
       Promise.return ());
 
   Canvas.show c;

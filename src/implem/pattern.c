@@ -80,6 +80,13 @@ pattern_evaluate_pos(
 
 static void (*_pattern_destroy_callback)(pattern_t *) = NULL;
 
+void
+pattern_set_destroy_callback(
+  void (*callback_function)(pattern_t *))
+{
+  _pattern_destroy_callback = callback_function;
+}
+
 static void
 _pattern_destroy(
   pattern_t *pattern)

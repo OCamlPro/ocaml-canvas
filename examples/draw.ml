@@ -49,7 +49,7 @@ let () =
   let p_color_map = Canvas.createOffscreenFromPNG "assets/colors.png" in
   ignore @@
     Promise.bind p_color_map (fun color_map ->
-      Backend.sendCustomEvent (CanvasLoaded (color_map));
+      Backend.postCustomEvent (CanvasLoaded (color_map));
       Promise.return ());
 
   Canvas.show c;
