@@ -317,6 +317,20 @@ ml_canvas_gradient_add_color_stop(
 
 /* Patterns */
 
+static void
+_ml_canvas_pattern_destroy_callback(
+  pattern_t *pattern)
+{
+  CAMLparam0();
+  value *mlWeakPointer_ptr = (value *)pattern_get_data(pattern);
+  if (mlWeakPointer_ptr != NULL) {
+    pattern_set_data(pattern, NULL);
+    caml_remove_generational_global_root(mlWeakPointer_ptr);
+    free(mlWeakPointer_ptr);
+  }
+  CAMLreturn0;
+}
+
 CAMLprim value
 ml_canvas_create_pattern(
   value mlCanvas,
@@ -1802,6 +1816,7 @@ ml_canvas_init(
   if (_ml_canvas_initialized == true) {
     canvas_set_destroy_callback(_ml_canvas_canvas_destroy_callback);
     gradient_set_destroy_callback(_ml_canvas_gradient_destroy_callback);
+    pattern_set_destroy_callback(_ml_canvas_pattern_destroy_callback);
     path2d_set_destroy_callback(_ml_canvas_path_destroy_callback);
   }
 

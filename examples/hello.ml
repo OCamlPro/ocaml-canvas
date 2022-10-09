@@ -87,7 +87,7 @@ let () =
         let p_c = Canvas.createOffscreenFromPNG "assets/frog.png" in
         ignore @@
           Promise.bind p_c (fun c' ->
-              Backend.sendCustomEvent (CanvasBlit (c', c, (x, y)));
+              Backend.postCustomEvent (CanvasBlit (c', c, (x, y)));
               Promise.return ());
         state, true
 

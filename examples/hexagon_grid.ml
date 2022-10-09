@@ -24,7 +24,7 @@ let () =
     Promise.bind p_hex_grid (fun hex_grid ->
       Canvas.setGlobalCompositeOperation hex_grid SourceAtop;
       Canvas.setFillColor hex_grid Color.orange;
-      Backend.sendCustomEvent (CanvasLoaded (hex_grid));
+      Backend.postCustomEvent (CanvasLoaded (hex_grid));
       Promise.return ());
 
   Canvas.show c;

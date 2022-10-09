@@ -1367,7 +1367,7 @@ module V1 : sig
 
     type payload = ..
     (** An extensible type so you can declare your own events,
-        for use with {!Backend.sendCustomEvent} *)
+        for use with {!Backend.postCustomEvent} *)
 
     type custom_event = {
       timestamp: timestamp;
@@ -1402,7 +1402,7 @@ module V1 : sig
       | MouseMove of mouse_move_event
       (** Occurs when the user moves the mouse cursor *)
       | Custom of custom_event
-      (** Occurs as a response to a call to {!Backend.sendCustomEvent} *)
+      (** Occurs as a response to a call to {!Backend.postCustomEvent} *)
 
     val int_of_key : key -> int
     (** [int_of_key k] returns a platform-independent integer representation
@@ -1478,8 +1478,8 @@ module V1 : sig
     (** [getCurrentTimestamp ()] returns the current timestamp
         in microseconds, from an arbitrary starting point *)
 
-    val sendCustomEvent : Event.payload -> unit
-    (** [sendCustomEvent p] requests the backend to send a custom event
+    val postCustomEvent : Event.payload -> unit
+    (** [postCustomEvent p] requests the backend to process a custom event
         with payload [p] ; if called within an event handler, this event
         will be processed after processing of the current event is done.
         This ensures the state remains consistent accross events. *)

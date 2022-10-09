@@ -1157,7 +1157,7 @@ module V1 = struct
 
     let pending_custom = ref []
 
-    let sendCustomEvent payload =
+    let postCustomEvent payload =
       pending_custom := payload :: !pending_custom
 
     let run h k s =
