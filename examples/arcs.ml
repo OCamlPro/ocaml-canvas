@@ -10,8 +10,6 @@
 
 open OcamlCanvas.V1
 
-let pi = acos(-1.)
-
 let arc c (x, y) t1 t2 r ccw =
   Canvas.clearPath c;
   Canvas.moveTo c (x, y);
@@ -20,7 +18,7 @@ let arc c (x, y) t1 t2 r ccw =
 
 let () =
 
-  Backend.(init default_options);
+  Backend.init ();
 
   let c = Canvas.createFramed "Arcs"
             ~pos:(300, 200) ~size:(900, 900) in
@@ -50,91 +48,91 @@ let () =
 
   (* Various arcs with theta 1 < theta 2, ccw = false *)
 
-  arc c (100.0, 100.0) 0.0 (pi /. 2.0) 40.0 false;
-  arc c (200.0, 100.0) (pi /. 2.0) pi 40.0 false;
-  arc c (300.0, 100.0) pi (3.0 *. pi /. 2.0) 40.0 false;
-  arc c (400.0, 100.0) (3.0 *. pi /. 2.0) (2.0 *. pi) 40.0 false;
+  arc c (100.0, 100.0) 0.0 (Const.pi_2) 40.0 false;
+  arc c (200.0, 100.0) (Const.pi_2) Const.pi 40.0 false;
+  arc c (300.0, 100.0) Const.pi (3.0 *. Const.pi_2) 40.0 false;
+  arc c (400.0, 100.0) (3.0 *. Const.pi_2) (2.0 *. Const.pi) 40.0 false;
 
-  arc c (100.0, 200.0) 0.0 pi 40.0 false;
-  arc c (200.0, 200.0) (pi /. 2.0) (3.0 *. pi /. 2.0) 40.0 false;
-  arc c (300.0, 200.0) pi (2.0 *. pi) 40.0 false;
-  arc c (400.0, 200.0) (3.0 *. pi /. 2.0) (5.0 *. pi /. 2.0) 40.0 false;
+  arc c (100.0, 200.0) 0.0 Const.pi 40.0 false;
+  arc c (200.0, 200.0) (Const.pi_2) (3.0 *. Const.pi_2) 40.0 false;
+  arc c (300.0, 200.0) Const.pi (2.0 *. Const.pi) 40.0 false;
+  arc c (400.0, 200.0) (3.0 *. Const.pi_2) (5.0 *. Const.pi_2) 40.0 false;
 
-  arc c (100.0, 300.0) 0.0 (3.0 *. pi /. 2.0) 40.0 false;
-  arc c (200.0, 300.0) (pi /. 2.0) (2.0 *. pi) 40.0 false;
-  arc c (300.0, 300.0) pi (5.0 *. pi /. 2.0) 40.0 false;
-  arc c (400.0, 300.0) (3.0 *. pi /. 2.0) (3.0 *. pi) 40.0 false;
+  arc c (100.0, 300.0) 0.0 (3.0 *. Const.pi_2) 40.0 false;
+  arc c (200.0, 300.0) (Const.pi_2) (2.0 *. Const.pi) 40.0 false;
+  arc c (300.0, 300.0) Const.pi (5.0 *. Const.pi_2) 40.0 false;
+  arc c (400.0, 300.0) (3.0 *. Const.pi_2) (3.0 *. Const.pi) 40.0 false;
 
-  arc c (100.0, 400.0) 0.0 (2.0 *. pi) 40.0 false;
-  arc c (200.0, 400.0) (pi /. 2.0) (5.0 *. pi /. 2.0) 40.0 false;
-  arc c (300.0, 400.0) pi (3.0 *. pi) 40.0 false;
-  arc c (400.0, 400.0) (3.0 *. pi /. 2.0) (7.0 *. pi /. 2.0) 40.0 false;
+  arc c (100.0, 400.0) 0.0 (2.0 *. Const.pi) 40.0 false;
+  arc c (200.0, 400.0) (Const.pi_2) (5.0 *. Const.pi_2) 40.0 false;
+  arc c (300.0, 400.0) Const.pi (3.0 *. Const.pi) 40.0 false;
+  arc c (400.0, 400.0) (3.0 *. Const.pi_2) (7.0 *. Const.pi_2) 40.0 false;
 
   (* Various arcs with theta 1 > theta 2, ccw = false *)
 
-  arc c (100.0, 500.0) (pi /. 2.0) 0.0 40.0 false;
-  arc c (200.0, 500.0) pi (pi /. 2.0) 40.0 false;
-  arc c (300.0, 500.0) (3.0 *. pi /. 2.0) pi 40.0 false;
-  arc c (400.0, 500.0) (2.0 *. pi) (3.0 *. pi /. 2.0) 40.0 false;
+  arc c (100.0, 500.0) (Const.pi_2) 0.0 40.0 false;
+  arc c (200.0, 500.0) Const.pi (Const.pi_2) 40.0 false;
+  arc c (300.0, 500.0) (3.0 *. Const.pi_2) Const.pi 40.0 false;
+  arc c (400.0, 500.0) (2.0 *. Const.pi) (3.0 *. Const.pi_2) 40.0 false;
 
-  arc c (100.0, 600.0) pi 0.0 40.0 false;
-  arc c (200.0, 600.0) (3.0 *. pi /. 2.0) (pi /. 2.0) 40.0 false;
-  arc c (300.0, 600.0) (2.0 *. pi) pi 40.0 false;
-  arc c (400.0, 600.0) (5.0 *. pi /. 2.0) (3.0 *. pi /. 2.0) 40.0 false;
+  arc c (100.0, 600.0) Const.pi 0.0 40.0 false;
+  arc c (200.0, 600.0) (3.0 *. Const.pi_2) (Const.pi_2) 40.0 false;
+  arc c (300.0, 600.0) (2.0 *. Const.pi) Const.pi 40.0 false;
+  arc c (400.0, 600.0) (5.0 *. Const.pi_2) (3.0 *. Const.pi_2) 40.0 false;
 
-  arc c (100.0, 700.0) (3.0 *. pi /. 2.0) 0.0 40.0 false;
-  arc c (200.0, 700.0) (2.0 *. pi) (pi /. 2.0) 40.0 false;
-  arc c (300.0, 700.0) (5.0 *. pi /. 2.0) pi 40.0 false;
-  arc c (400.0, 700.0) (3.0 *. pi) (3.0 *. pi /. 2.0) 40.0 false;
+  arc c (100.0, 700.0) (3.0 *. Const.pi_2) 0.0 40.0 false;
+  arc c (200.0, 700.0) (2.0 *. Const.pi) (Const.pi_2) 40.0 false;
+  arc c (300.0, 700.0) (5.0 *. Const.pi_2) Const.pi 40.0 false;
+  arc c (400.0, 700.0) (3.0 *. Const.pi) (3.0 *. Const.pi_2) 40.0 false;
 
-  arc c (100.0, 800.0) (2.0 *. pi) 0.0 40.0 false;
-  arc c (200.0, 800.0) (5.0 *. pi /. 2.0) (pi /. 2.0) 40.0 false;
-  arc c (300.0, 800.0) (3.0 *. pi) pi 40.0 false;
-  arc c (400.0, 800.0) (7.0 *. pi /. 2.0) (3.0 *. pi /. 2.0) 40.0 false;
+  arc c (100.0, 800.0) (2.0 *. Const.pi) 0.0 40.0 false;
+  arc c (200.0, 800.0) (5.0 *. Const.pi_2) (Const.pi_2) 40.0 false;
+  arc c (300.0, 800.0) (3.0 *. Const.pi) Const.pi 40.0 false;
+  arc c (400.0, 800.0) (7.0 *. Const.pi_2) (3.0 *. Const.pi_2) 40.0 false;
 
   (* Various arcs with theta 1 < theta 2, ccw = true *)
 
-  arc c (500.0, 100.0) 0.0 (pi /. 2.0) 40.0 true;
-  arc c (600.0, 100.0) (pi /. 2.0) pi 40.0 true;
-  arc c (700.0, 100.0) pi (3.0 *. pi /. 2.0) 40.0 true;
-  arc c (800.0, 100.0) (3.0 *. pi /. 2.0) (2.0 *. pi) 40.0 true;
+  arc c (500.0, 100.0) 0.0 (Const.pi_2) 40.0 true;
+  arc c (600.0, 100.0) (Const.pi_2) Const.pi 40.0 true;
+  arc c (700.0, 100.0) Const.pi (3.0 *. Const.pi_2) 40.0 true;
+  arc c (800.0, 100.0) (3.0 *. Const.pi_2) (2.0 *. Const.pi) 40.0 true;
 
-  arc c (500.0, 200.0) 0.0 pi 40.0 true;
-  arc c (600.0, 200.0) (pi /. 2.0) (3.0 *. pi /. 2.0) 40.0 true;
-  arc c (700.0, 200.0) pi (2.0 *. pi) 40.0 true;
-  arc c (800.0, 200.0) (3.0 *. pi /. 2.0) (5.0 *. pi /. 2.0) 40.0 true;
+  arc c (500.0, 200.0) 0.0 Const.pi 40.0 true;
+  arc c (600.0, 200.0) (Const.pi_2) (3.0 *. Const.pi_2) 40.0 true;
+  arc c (700.0, 200.0) Const.pi (2.0 *. Const.pi) 40.0 true;
+  arc c (800.0, 200.0) (3.0 *. Const.pi_2) (5.0 *. Const.pi_2) 40.0 true;
 
-  arc c (500.0, 300.0) 0.0 (3.0 *. pi /. 2.0) 40.0 true;
-  arc c (600.0, 300.0) (pi /. 2.0) (2.0 *. pi) 40.0 true;
-  arc c (700.0, 300.0) pi (5.0 *. pi /. 2.0) 40.0 true;
-  arc c (800.0, 300.0) (3.0 *. pi /. 2.0) (3.0 *. pi) 40.0 true;
+  arc c (500.0, 300.0) 0.0 (3.0 *. Const.pi_2) 40.0 true;
+  arc c (600.0, 300.0) (Const.pi_2) (2.0 *. Const.pi) 40.0 true;
+  arc c (700.0, 300.0) Const.pi (5.0 *. Const.pi_2) 40.0 true;
+  arc c (800.0, 300.0) (3.0 *. Const.pi_2) (3.0 *. Const.pi) 40.0 true;
 
-  arc c (500.0, 400.0) 0.0 (2.0 *. pi) 40.0 true;
-  arc c (600.0, 400.0) (pi /. 2.0) (5.0 *. pi /. 2.0) 40.0 true;
-  arc c (700.0, 400.0) pi (3.0 *. pi) 40.0 true;
-  arc c (800.0, 400.0) (3.0 *. pi /. 2.0) (7.0 *. pi /. 2.0) 40.0 true;
+  arc c (500.0, 400.0) 0.0 (2.0 *. Const.pi) 40.0 true;
+  arc c (600.0, 400.0) (Const.pi_2) (5.0 *. Const.pi_2) 40.0 true;
+  arc c (700.0, 400.0) Const.pi (3.0 *. Const.pi) 40.0 true;
+  arc c (800.0, 400.0) (3.0 *. Const.pi_2) (7.0 *. Const.pi_2) 40.0 true;
 
   (* Various arcs with theta 1 > theta 2, ccw = true *)
 
-  arc c (500.0, 500.0) (pi /. 2.0) 0.0 40.0 true;
-  arc c (600.0, 500.0) pi (pi /. 2.0) 40.0 true;
-  arc c (700.0, 500.0) (3.0 *. pi /. 2.0) pi 40.0 true;
-  arc c (800.0, 500.0) (2.0 *. pi) (3.0 *. pi /. 2.0) 40.0 true;
+  arc c (500.0, 500.0) (Const.pi_2) 0.0 40.0 true;
+  arc c (600.0, 500.0) Const.pi (Const.pi_2) 40.0 true;
+  arc c (700.0, 500.0) (3.0 *. Const.pi_2) Const.pi 40.0 true;
+  arc c (800.0, 500.0) (2.0 *. Const.pi) (3.0 *. Const.pi_2) 40.0 true;
 
-  arc c (500.0, 600.0) pi 0.0 40.0 true;
-  arc c (600.0, 600.0) (3.0 *. pi /. 2.0) (pi /. 2.0) 40.0 true;
-  arc c (700.0, 600.0) (2.0 *. pi) pi 40.0 true;
-  arc c (800.0, 600.0) (5.0 *. pi /. 2.0) (3.0 *. pi /. 2.0) 40.0 true;
+  arc c (500.0, 600.0) Const.pi 0.0 40.0 true;
+  arc c (600.0, 600.0) (3.0 *. Const.pi_2) (Const.pi_2) 40.0 true;
+  arc c (700.0, 600.0) (2.0 *. Const.pi) Const.pi 40.0 true;
+  arc c (800.0, 600.0) (5.0 *. Const.pi_2) (3.0 *. Const.pi_2) 40.0 true;
 
-  arc c (500.0, 700.0) (3.0 *. pi /. 2.0) 0.0 40.0 true;
-  arc c (600.0, 700.0) (2.0 *. pi) (pi /. 2.0) 40.0 true;
-  arc c (700.0, 700.0) (5.0 *. pi /. 2.0) pi 40.0 true;
-  arc c (800.0, 700.0) (3.0 *. pi) (3.0 *. pi /. 2.0) 40.0 true;
+  arc c (500.0, 700.0) (3.0 *. Const.pi_2) 0.0 40.0 true;
+  arc c (600.0, 700.0) (2.0 *. Const.pi) (Const.pi_2) 40.0 true;
+  arc c (700.0, 700.0) (5.0 *. Const.pi_2) Const.pi 40.0 true;
+  arc c (800.0, 700.0) (3.0 *. Const.pi) (3.0 *. Const.pi_2) 40.0 true;
 
-  arc c (500.0, 800.0) (2.0 *. pi) 0.0 40.0 true;
-  arc c (600.0, 800.0) (5.0 *. pi /. 2.0) (pi /. 2.0) 40.0 true;
-  arc c (700.0, 800.0) (3.0 *. pi) pi 40.0 true;
-  arc c (800.0, 800.0) (7.0 *. pi /. 2.0) (3.0 *. pi /. 2.0) 40.0 true;
+  arc c (500.0, 800.0) (2.0 *. Const.pi) 0.0 40.0 true;
+  arc c (600.0, 800.0) (5.0 *. Const.pi_2) (Const.pi_2) 40.0 true;
+  arc c (700.0, 800.0) (3.0 *. Const.pi) Const.pi 40.0 true;
+  arc c (800.0, 800.0) (7.0 *. Const.pi_2) (3.0 *. Const.pi_2) 40.0 true;
 
   Canvas.show c;
 

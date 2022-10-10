@@ -10,11 +10,9 @@
 
 open OcamlCanvas.V1
 
-let pi = acos(-1.)
-
 let () =
 
-  Backend.(init default_options);
+  Backend.init ();
 
   let c = Canvas.createFramed "Dashing line"
             ~pos:(300, 50) ~size:(400, 650) in

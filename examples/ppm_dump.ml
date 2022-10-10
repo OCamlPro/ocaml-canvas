@@ -10,11 +10,9 @@
 
 open OcamlCanvas.V1
 
-let pi = acos(-1.)
-
 let () =
 
-  Backend.(init default_options);
+  Backend.init ();
 
   let c = Canvas.createFramed "PPM Dump"
             ~pos:(300, 200) ~size:(300, 200) in
@@ -39,7 +37,7 @@ let () =
   Canvas.setLineWidth c 1.0;
   Canvas.save c;
   Canvas.translate c (150.0, 100.0);
-  Canvas.rotate c (-.pi /. 8.0);
+  Canvas.rotate c (-. Const.pi_8);
   Canvas.fillText c "Hello world !" (-130.0, 20.0);
   Canvas.restore c;
 
@@ -83,7 +81,7 @@ let () =
         Canvas.setFillColor c Color.red;
         Canvas.clearPath c;
         Canvas.arc c ~center:(float_of_int x, float_of_int y)
-          ~radius:5.0 ~theta1:0.0 ~theta2:(pi *. 2.0) ~ccw:false;
+          ~radius:5.0 ~theta1:0.0 ~theta2:(2.0 *. Const.pi) ~ccw:false;
         Canvas.fill c ~nonzero:false;
         state, true
 

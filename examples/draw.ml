@@ -28,7 +28,7 @@ type state = {
 
 let () =
 
-  Backend.(init default_options);
+  Backend.init ();
 
   let size_i = (800, 600) in
   let size_f = Point.of_ints size_i in

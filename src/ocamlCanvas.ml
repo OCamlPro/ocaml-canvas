@@ -346,6 +346,46 @@ module V1 = struct
 
     let () = Callback.register "ml_canvas_promise_resolve" resolve
 
+    let join : unit t list -> unit t =
+      fun pl ->
+      let pl = List.map resolve_alias pl in
+      let p' = create () in
+      let nb_pending = ref (List.length pl) in
+      let first_rej_opt = ref None in
+      let decrement_pending () =
+        assert (!nb_pending > 0);
+        nb_pending := !nb_pending - 1;
+        if !nb_pending = 0 then
+          match !first_rej_opt with
+          | None -> resolve (resolve_alias p') (Fulfill ())
+          | Some e -> resolve (resolve_alias p') (Reject e)
+      in
+      let ff () =
+        decrement_pending ();
+        return ();
+      in
+      let fr e =
+        begin
+          match !first_rej_opt with
+          | Some _e -> ()
+          | None -> first_rej_opt := Some e
+        end;
+        decrement_pending ();
+        return ();
+      in
+      try
+        List.iter (fun p ->
+            match p.status with
+            | Alias _ -> assert false
+            | Rejected e -> ignore @@ fr e
+            | Fulfilled () -> ignore @@ ff ()
+            | Pending (cb, ecb) ->
+                p.status <- Pending (Callback (ff, create ()) :: cb,
+                                     Callback (fr, create ()) :: ecb)
+          ) pl;
+        p'
+      with e -> fail e
+
   end
 
   module ImageData = struct
@@ -1117,28 +1157,7 @@ module V1 = struct
 
   module Backend = struct
 
-    type _ backend_type =
-      | Canvas : [`JS] backend_type
-      | GDI : [`Win32] backend_type
-      | Quartz : [`OSX] backend_type
-      | X11 : [<`Unix | `OSX | `Win32] backend_type
-      | Wayland : [`Unix] backend_type
-
-    type options = {
-      js_backends: [`JS] backend_type list;
-      win32_backends: [`Win32] backend_type list;
-      osx_backends: [`OSX] backend_type list;
-      unix_backends: [`Unix] backend_type list;
-    }
-
-    let default_options = {
-      js_backends = [Canvas];
-      win32_backends = [GDI; X11];
-      osx_backends = [Quartz; X11];
-      unix_backends = [Wayland; X11];
-    }
-
-    external init : options -> unit
+    external init : unit -> unit
       = "ml_canvas_init"
 
     external run :

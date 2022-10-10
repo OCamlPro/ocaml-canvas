@@ -10,11 +10,9 @@
 
 open OcamlCanvas.V1
 
-let pi = acos(-1.)
-
 let () =
 
-  Backend.(init default_options);
+  Backend.init ();
 
   let c = Canvas.createFramed "Clipping"
             ~pos:(300, 200) ~size:(300, 300) in

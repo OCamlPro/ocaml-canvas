@@ -17,11 +17,9 @@ type state = {
   pressing : bool;
 }
 
-let pi = acos (-1.0)
-
 let () =
 
-  Backend.(init default_options);
+  Backend.init ();
 
   let width = 520 in
   let height = 200 in
@@ -73,7 +71,7 @@ let () =
         let vec = Vector.add vec (Vector.mul accel dt) in
 
         let vx, vy = vec in
-        let x, y = Point.translate state.pos (Vector.mul vec dt) in
+        let x, y = Point.translate state.pos ~by:(Vector.mul vec dt) in
         let x, vx =
           if x > w -. r then w -. r, min (0.0 -. vx) 0.0
           else if x < 0.0 +. r then 0. +. r, max (0.0 -. vx) 0.0
@@ -104,7 +102,7 @@ let () =
         Canvas.setShadowColor c (Color.of_argb 64 0 0 0);
         Canvas.setShadowOffset c (Vector.mul mv (-. 10.0 *. blur /. speed));
         Canvas.arc c ~center:pos ~radius:r
-          ~theta1:0.0 ~theta2:(2.0 *. pi) ~ccw:false;
+          ~theta1:0.0 ~theta2:(2.0 *. Const.pi) ~ccw:false;
         Canvas.fill c ~nonzero:true;
 
         { state with pos; vec }, true

@@ -10,16 +10,15 @@
 
 open OcamlCanvas.V1
 
-let pi = acos(-1.)
-
 let () =
 
-  Backend.(init default_options);
+  Backend.init ();
 
   let c = Canvas.createFramed "Compositions"
             ~pos:(300, 200) ~size:(400, 267) in
   let p_catImage = Canvas.createOffscreenFromPNG "./assets/dragon.png" in
   let p_spectrumImage = Canvas.createOffscreenFromPNG "./assets/fabric.png" in
+
   ignore @@
     Promise.bind p_catImage (fun catImage ->
         Promise.bind p_spectrumImage (fun spectrumImage ->

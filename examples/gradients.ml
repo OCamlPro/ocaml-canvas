@@ -9,7 +9,6 @@
 (**************************************************************************)
 
 open OcamlCanvas.V1
-(* open Float *)
 
 let interpInt x1 x2 t =
   int_of_float ((1.0 -. t) *. (float_of_int x1) +. t *. (float_of_int x2))
@@ -22,7 +21,7 @@ let interpColor c1 c2 t =
 let hsv_to_rgb h s v =
   let c = v *. s in
   let m = v -. c in
-  let x = c *. (1.0 -. abs_float(((mod_float (h /. 60.0) 2.0) -. 1.0))) in
+  let x = c *. (1.0 -. abs_float (((mod_float (h /. 60.0) 2.0) -. 1.0))) in
   let r, g, b = match h with
     | a when a < 60.0 -> c, x , 0.0
     | a when a < 120.0 -> x, c, 0.0
@@ -38,7 +37,7 @@ let hsv_to_rgb h s v =
 
 let () =
 
-  Backend.(init default_options);
+  Backend.init ();
 
   let c =
     Canvas.createFramed "test" ~pos:(960 - 640, 540 - 360) ~size:(1280, 720) in

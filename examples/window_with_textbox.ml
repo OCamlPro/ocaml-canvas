@@ -45,7 +45,7 @@ let clamp v low high =
 
 let () =
 
-  Backend.(init default_options);
+  Backend.init ();
 
   let ccm = Canvas.createFramed "文章入力欄" ~pos:(500, 500) ~size:(300, 200) in
   Canvas.setFillColor ccm Color.white;

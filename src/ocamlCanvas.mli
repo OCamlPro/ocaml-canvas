@@ -21,10 +21,7 @@
     Before using any function in the library (and assuming the `OCamlCanvas.V1`
     module has been opened), the user should call {!Backend.init} so that
     the library makes any internal initialization it needs for the current
-    backend. This function takes as input a value of type {!Backend.options},
-    allowing to tweak specific features of each backend.
-    It is however recommended to simply use the default options,
-    i.e {!Backend.default_options}.
+    backend.
 
     Once the backend is initialized, one can create Canvas objects
     using the {!Canvas.createFramed}, {!Canvas.createFrameless} and
@@ -435,7 +432,7 @@ module V1 : sig
     (** [return v] creates a fulfilled promise with value [v] *)
 
     val fail : exn -> 'a t
-    (** [fail e] creates a rejecteed promise with exception [e] *)
+    (** [fail e] creates a rejected promise with exception [e] *)
 
     val bind : 'a t -> ('a -> 'b t) -> 'b t
     (** [bind p f] attaches the callback [f] to promise [p]  *)
@@ -443,6 +440,10 @@ module V1 : sig
     val catch : (unit -> 'a t) -> (exn -> 'a t) -> 'a t
     (** [catch f h] calls [f], returning a promise, and sets [h]
         to be called if that promise becomes rejected *)
+
+    val join : unit t list -> unit t
+    (** [join pl] creates a promise that is fulfilled when all promises in
+        [pl] are fulfilled, or rejected if a promise in [pl] is rejected *)
 
   end
 
@@ -1420,27 +1421,8 @@ module V1 : sig
   module Backend : sig
   (** Initialization and event loop control *)
 
-    type _ backend_type =
-      | Canvas : [`JS] backend_type
-      | GDI : [`Win32] backend_type
-      | Quartz : [`OSX] backend_type
-      | X11 : [<`Unix | `OSX | `Win32] backend_type
-      | Wayland : [`Unix] backend_type (**)
-    (** The different kind of supported backends *)
-
-    type options = {
-      js_backends: [`JS] backend_type list;
-      win32_backends: [`Win32] backend_type list;
-      osx_backends: [`OSX] backend_type list;
-      unix_backends: [`Unix] backend_type list;
-    }
-    (** List of available backends per OS *)
-
-    val default_options : options
-    (** The default options to use for backend initialization *)
-
-    val init : options -> unit
-    (** [init o] initializes the backend with the specified options *)
+    val init : unit -> unit
+    (** [init ()] initializes the backend *)
 
     val run :
       ('state -> Event.t -> 'state * bool) ->
