@@ -1414,26 +1414,17 @@ var _ml_canvas_initialized = false;
 //Provides: ml_canvas_init
 //Requires: _key_down_handler,_key_up_handler,_up_handler,_move_handler,_frame_handler,_ml_canvas_initialized
 //Requires: caml_list_to_js_array
-function ml_canvas_init(mlOptions) {
+function ml_canvas_init() {
   if (_ml_canvas_initialized) {
     return false;
   }
 
-  var backends = caml_list_to_js_array(mlOptions[1]); /* options.js_backends */
-
-  for (var i = 0; (i < backends.length) && (!_ml_canvas_initialized); ++i) {
-    switch (backends[i]) {
-      case 0: /* Canvas */
-        document.onkeydown = _key_down_handler;
-        document.onkeyup = _key_up_handler;
-        document.onmouseup = _up_handler;
-        document.onmousemove = _move_handler;
-        window.requestAnimationFrame(_frame_handler);
-        _ml_canvas_initialized = true;
-        break;
-      default: window.console.log("Invalid backend specified"); break;
-    };
-  }
+  document.onkeydown = _key_down_handler;
+  document.onkeyup = _key_up_handler;
+  document.onmouseup = _up_handler;
+  document.onmousemove = _move_handler;
+  window.requestAnimationFrame(_frame_handler);
+  _ml_canvas_initialized = true;
 
   return _ml_canvas_initialized;
 }

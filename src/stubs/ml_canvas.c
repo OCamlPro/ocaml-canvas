@@ -1771,46 +1771,25 @@ ml_canvas_key_of_int(
 
 static bool _ml_canvas_initialized = false;
 
-static impl_type_t
-_ml_canvas_impl_type(
-  value mlBackend)
-{
-  CAMLparam1(mlBackend);
-  impl_type_t impl_type = IMPL_NONE;
-  switch (Int_val(mlBackend)) {
-    case TAG_CANVAS:  assert(!"HTML5 Canvas not available from C"); break;
-    case TAG_GDI:     impl_type = IMPL_GDI;     break;
-    case TAG_QUARTZ:  impl_type = IMPL_QUARTZ;  break;
-    case TAG_X11:     impl_type = IMPL_X11;     break;
-    case TAG_WAYLAND: impl_type = IMPL_WAYLAND; break;
-    default:          assert(!"Invalid backend specified"); break;
-  }
-  CAMLreturnT(impl_type_t, impl_type);
-}
-
 CAMLprim value
-ml_canvas_init(
-  value mlOptions)
+ml_canvas_init()
 {
-  CAMLparam1(mlOptions);
-  CAMLlocal2(mlBackend, mlBackendList);
+  CAMLparam0();
 
-  if (_ml_canvas_initialized) {
+  if (_ml_canvas_initialized == true) {
     CAMLreturn(Val_false);
   }
 
   switch (get_os_type()) {
-    case OS_WIN32: mlBackendList = Field(mlOptions, 1); break;
-    case OS_OSX: mlBackendList = Field(mlOptions, 2); break;
-    case OS_UNIX: mlBackendList = Field(mlOptions, 3); break;
-    default: mlBackendList = Field(mlOptions, 3); break;
-  }
-
-  while ((mlBackendList != Val_emptylist) && (!_ml_canvas_initialized)) {
-    mlBackend = Field(mlBackendList, 0);
-    mlBackendList = Field(mlBackendList, 1);
-    impl_type_t impl_type = _ml_canvas_impl_type(mlBackend);
-    _ml_canvas_initialized = backend_init(impl_type);
+    case OS_WIN32: _ml_canvas_initialized = backend_init(IMPL_GDI); break;
+    case OS_OSX: _ml_canvas_initialized = backend_init(IMPL_QUARTZ); break;
+    case OS_UNIX:
+      _ml_canvas_initialized = backend_init(IMPL_WAYLAND);
+      if (_ml_canvas_initialized == false) {
+        _ml_canvas_initialized = backend_init(IMPL_X11);
+      }
+      break;
+    default: assert(!"Invalid OS type"); break;
   }
 
   if (_ml_canvas_initialized == true) {

@@ -7,10 +7,7 @@ Initialization
 Before using any function in the library (and assuming the :code:`OCamlCanvas.V1`
 module has been opened), the user should call :code:`Backend.init` so that
 the library makes any internal initialization it needs for the current
-backend. This function takes as input a value of type :code:`Backend.options`,
-allowing to tweak specific features of each backend.
-It is however recommended to simply use the default options,
-i.e :code:`Backend.default_options`.
+backend.
 
 Creating canvases
 -----------------

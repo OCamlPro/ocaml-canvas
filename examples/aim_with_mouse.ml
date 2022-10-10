@@ -10,11 +10,9 @@
 
 open OcamlCanvas.V1
 
-let pi = acos(-1.)
-
 let () =
 
-  Backend.(init default_options);
+  Backend.init ();
 
   let c = Canvas.createFramed "Aim with mouse"
             ~pos:(300, 50) ~size:(800, 600) in

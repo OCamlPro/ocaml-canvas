@@ -173,6 +173,9 @@ backend_init(
       case_WAYLAND(wl_backend_set_listener(&_backend_event_listener));
       default_fail();
     }
+  } else {
+    ht_delete(_backend_id_to_canvas);
+    _backend_id_to_canvas = NULL;
   }
 
   return result;

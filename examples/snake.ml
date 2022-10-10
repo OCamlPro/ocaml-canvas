@@ -57,7 +57,7 @@ let () =
 
   Random.self_init ();
 
-  Backend.(init default_options);
+  Backend.init ();
 
   let c =
     Canvas.createFramed "Snake" ~pos:(960 - 250, 540 - 250) ~size:(500, 500) in

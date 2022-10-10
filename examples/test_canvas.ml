@@ -14,7 +14,7 @@ open OcamlCanvas.V1
 
 let f1 () =
 
-  Backend.(init default_options);
+  Backend.init ();
 
   let create_canvas name x y width height =
 
@@ -164,7 +164,7 @@ let f1 () =
 
 let f2 () =
 
-  Backend.(init default_options);
+  Backend.init ();
 
   let c1 = Canvas.createFramed "Test1" ~pos:(50, 50) ~size:(200, 200) in
   Canvas.setFillColor c1 (Color.of_string "red");
@@ -216,7 +216,7 @@ let f2 () =
 
 let f3 () =
 
-  Backend.(init default_options);
+  Backend.init ();
 
   let create_canvas name x y width height =
 
@@ -469,7 +469,7 @@ Format.print_flush ();
 
 let f4 () =
 
-  Backend.(init default_options);
+  Backend.init ();
 
   let create_canvas name x y width height =
     let c = Canvas.createFramed (name ^ " é \u{2600} \u{2622} \u{1F42B}")
@@ -548,7 +548,7 @@ let f4 () =
 (*
           Canvas.moveTo c (-100.0, -100.0);
           Canvas.arc c ~center:(-100.0, -100.0) ~radius:50.0
-            ~theta1:0.0 ~theta2:(Float.pi *. 1.5) ~ccw:false;
+            ~theta1:0.0 ~theta2:(Const.pi *. 1.5) ~ccw:false;
           Canvas.stroke c;
           (*Canvas.fill c ~nonzero:false ;*)
 *)
@@ -613,7 +613,7 @@ let f4 () =
 
           Canvas.moveTo c (0.0, 0.0);
           Canvas.ellipse c ~center:(0.0, 0.0) ~radius:(50.0, 75.0)
-            ~rotation:1.0 ~theta1:0.0 ~theta2:(Float.pi *. 1.75) false;
+            ~rotation:1.0 ~theta1:0.0 ~theta2:(Const.pi *. 1.75) false;
 (*         Canvas.closePath c; *)
           Canvas.stroke c;
 *)
@@ -671,13 +671,13 @@ let f4 () =
 (*
           Canvas.moveTo c (400.0, 100.0);
           Canvas.arc c ~center:(350.0, 150.0) ~radius:50.0
-            ~theta1:0.0 ~theta2:(Float.pi /. 2.0) ~ccw:false;
+            ~theta1:0.0 ~theta2:Const.pi_2 ~ccw:false;
           Canvas.lineTo c (300.0, 200).0;
           Canvas.fill c ~nonzero:false;
 
           Canvas.moveTo c (100.0, 400.0);
           Canvas.arc c ~center:(150.0, 350.0) ~radius:50.0
-            ~theta1:0.0 ~theta2:(Float.pi *. 1.5) ~ccw:true;
+            ~theta1:0.0 ~theta2:(Const.pi *. 1.5) ~ccw:true;
           Canvas.lineTo c (100.0, 300.0);
           Canvas.fill c ~nonzero:false;
 *)

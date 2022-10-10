@@ -29,7 +29,7 @@ let clamp v low high =
 
 let () =
 
-  Backend.(init default_options);
+  Backend.init ();
 
   let c = Canvas.createFramed "Spritesheet"
             ~pos:(300, 200) ~size:(1024, 1024) in

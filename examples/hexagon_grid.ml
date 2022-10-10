@@ -14,7 +14,7 @@ type Event.payload += CanvasLoaded of [`Offscreen] Canvas.t
 
 let () =
 
-  Backend.(init default_options);
+  Backend.init ();
 
   let c = Canvas.createFramed "Hexagon Grid"
             ~pos:(300, 200) ~size:(800, 696) in
