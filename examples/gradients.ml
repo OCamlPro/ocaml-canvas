@@ -57,7 +57,7 @@ let () =
           Backend.stop ();
           state, true
 
-      | Frame { canvas = c; timestamp = _ } ->
+      | Event.Frame { canvas = c; timestamp = _ } ->
           let state = state +. 1. /. 60. in
           Canvas.setFillColor c (hsv_to_rgb (state *. 36.0)  1.0 1.0);
           Canvas.fillRect c ~pos:(128.0 *. state, 0.0) ~size:(128.0, 360.0);

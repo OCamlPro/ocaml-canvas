@@ -1404,6 +1404,9 @@ module V1 : sig
       (** Occurs when the user moves the mouse cursor *)
       | Custom of custom_event
       (** Occurs as a response to a call to {!Backend.postCustomEvent} *)
+      | DON'T_MATCH_THIS___USE_CATCH_ALL______________________________
+      (** Never match on this constructor; always
+          add a catch-all case when matching events *)
 
     val int_of_key : key -> int
     (** [int_of_key k] returns a platform-independent integer representation

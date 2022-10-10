@@ -70,7 +70,7 @@ let () =
           Backend.stop ();
           state, true
 
-      | KeyAction { canvas = _; timestamp = _;
+      | Event.KeyAction { canvas = _; timestamp = _;
                     key = KeyUpArrow; char = _; flags = _; state = Down } ->
           let state =
             if (snd state.cur_dir <> 0.0) then state
@@ -78,7 +78,7 @@ let () =
           in
           state, true
 
-      | KeyAction { canvas = _; timestamp = _;
+      | Event.KeyAction { canvas = _; timestamp = _;
                    key = KeyDownArrow; char = _; flags = _; state = Down } ->
           let state =
             if (snd state.cur_dir <> 0.0) then state
@@ -86,7 +86,7 @@ let () =
           in
           state, true
 
-      | KeyAction { canvas = _; timestamp = _;
+      | Event.KeyAction { canvas = _; timestamp = _;
                    key = KeyLeftArrow; char = _; flags = _; state = Down } ->
           let state =
             if (fst state.cur_dir <> 0.0) then state
@@ -94,7 +94,7 @@ let () =
           in
           state, true
 
-      | KeyAction { canvas = _; timestamp = _;
+      | Event.KeyAction { canvas = _; timestamp = _;
                    key = KeyRightArrow; char = _; flags = _; state = Down } ->
           let state =
             if (fst state.cur_dir <> 0.0) then state
@@ -108,7 +108,7 @@ let () =
             Backend.stop ();
           state, true
 
-      | Frame { canvas = c; timestamp = _ } ->
+      | Event.Frame { canvas = c; timestamp = _ } ->
           buildBackground c;
           let snake, food_loc =
             if sumCoord (List.hd state.snake) state.cur_dir =
