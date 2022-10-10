@@ -51,13 +51,13 @@
     styling elements can be saved and restored to/from a state stack
     using the functions {!Canvas.save} and {!Canvas.restore}.
 
-    Once the canvases are ready, we may start handling events for these canvases.
-    To do so, we use the {!Backend.run} function, which runs an event loop.
-    This function MUST be the last instruction of the program. It takes three
-    arguments: the first one is an event handler function, the second one is
-    is executed when the event loop has finished running, and the third one
-    is an initial state of an arbitrary type. The event loop may be stopped
-    by calling {!Backend.stop} from the event handler.
+    Once the canvases are ready, we may start handling events for these
+    canvases. To do so, we use the {!Backend.run} function, which runs an
+    event loop. This function MUST be the last instruction of the program.
+    It takes three arguments: the first one is an event handler function,
+    the second one is executed when the event loop has finished running, and
+    the third one is an initial state of an arbitrary type. The event loop
+    may be stopped by calling {!Backend.stop} from the event handler.
 
     The event handler function takes two arguments: a state, and an event
     description. It should pattern-match the event against the various
@@ -80,7 +80,7 @@
 
     let () =
 
-      Backend.(init default_options);
+      Backend.init ();
 
       let c = Canvas.createFramed "Hello world"
                 ~pos:(300, 200) ~size:(300, 200) in
@@ -105,7 +105,7 @@
       Canvas.setLineWidth c 1.0;
       Canvas.save c;
       Canvas.translate c (150.0, 100.0);
-      Canvas.rotate c (-. Float.pi /. 8.0);
+      Canvas.rotate c (-. Const.pi_8);
       Canvas.fillText c "Hello world !" (-130.0, 20.0);
       Canvas.restore c;
 
@@ -128,7 +128,7 @@
             Canvas.setFillColor c Color.red;
             Canvas.clearPath c;
             Canvas.arc c ~center:(float_of_int x, float_of_int y)
-              ~radius:5.0 ~theta1:0.0 ~theta2:(pi *. 2.0) ~ccw:false;
+              ~radius:5.0 ~theta1:0.0 ~theta2:(2.0 * Const.pi) ~ccw:false;
             Canvas.fill c ~nonzero:false;
             state, true
 
@@ -145,7 +145,18 @@
 *)
 
 module V1 : sig
-(** The OCaml-Canvas module is versioned. This is version 1. *)
+(** The OCaml-Canvas module is versioned. This is version 1.
+    It is guaranteed that this interface will remain compatible with
+    existing programs, provided the two following rules are followed:
+    - pattern matching over Event.t MUST always include a catch-all case
+    - modules defined here MUST NOT be opened nor included in other modules
+    This second rule can actually be weakened a bit as follows, if needed:
+    such module opening or inclusion may only be performed if and only if
+    no identifier visible before the open or include directive is used
+    in the scope where the contents of the open or include directive is
+    visible, or if such identifiers are used, they only consist of a
+    single character
+ *)
 
   module Const : sig
   (** Some useful mathematical constants *)
@@ -387,7 +398,7 @@ module V1 : sig
     type slant =
       | Roman
       | Italic
-      | Oblique (**)
+      | Oblique (** *)
     (** Font slant *)
 
     type weight = int
@@ -519,7 +530,7 @@ module V1 : sig
       | NoRepeat
       | RepeatX
       | RepeatY
-      | RepeatXY (**)
+      | RepeatXY (** *)
     (** Pattern repetition *)
 
   end
@@ -594,7 +605,7 @@ module V1 : sig
     type t =
       | Round
       | Miter
-      | Bevel (**)
+      | Bevel (** *)
     (** The different kinds of line joins *)
 
   end
@@ -604,7 +615,7 @@ module V1 : sig
     type t =
       | Butt
       | Square
-      | Round (**)
+      | Round (** *)
     (** The different kinds of line caps *)
 
   end
@@ -614,7 +625,7 @@ module V1 : sig
     type t =
       | Color of Color.t
       | Gradient of Gradient.t
-      | Pattern of Pattern.t (**)
+      | Pattern of Pattern.t (** *)
     (** Stroke and fill styles *)
 
   end
@@ -647,7 +658,7 @@ module V1 : sig
       | Hue
       | Saturation
       | Color
-      | Luminosity (**)
+      | Luminosity (** *)
     (** Blending and compositing operations *)
 
   end
@@ -1116,7 +1127,7 @@ module V1 : sig
 
     type focus_direction =
       | Out
-      | In (**)
+      | In (** *)
     (** Focus direction *)
 
     type canvas_focused_event = {
@@ -1308,7 +1319,11 @@ module V1 : sig
       | KeyHelp
       | KeyMute
       | KeyVolumeUp
-      | KeyVolumeDown (**)
+      | KeyVolumeDown
+
+      | DON'T_MATCH_THIS__USE_CATCH_ALL (** *)
+      (* Never match on this constructor; always
+         add a catch-all case when matching events *)
     (** A physical keyboard key, assuming an ideal "extended" QWERTY keyboard
         that synthetizes various layouts, including ANSI, ISO and JIS.
         Note that the symbol on the key may be different from the symbolic
@@ -1328,7 +1343,7 @@ module V1 : sig
 
     type state =
       | Up
-      | Down (**)
+      | Down (** *)
     (** A keyboard key or mouse button state *)
 
     type key_action_event = {
@@ -1347,7 +1362,10 @@ module V1 : sig
       | ButtonMiddle
       | ButtonRight
       | ButtonWheelUp
-      | ButtonWheelDown (**)
+      | ButtonWheelDown
+      | DON'T_MATCH_THIS__USE_CATCH_ALL (** *)
+      (* Never match on this constructor; always
+         add a catch-all case when matching events *)
     (** A mouse button *)
 
     type button_action_event = {
@@ -1404,16 +1422,16 @@ module V1 : sig
       (** Occurs when the user moves the mouse cursor *)
       | Custom of custom_event
       (** Occurs as a response to a call to {!Backend.postCustomEvent} *)
-      | DON'T_MATCH_THIS___USE_CATCH_ALL______________________________
-      (** Never match on this constructor; always
-          add a catch-all case when matching events *)
+      | DON'T_MATCH_THIS__USE_CATCH_ALL (** *)
+      (* Never match on this constructor; always
+         add a catch-all case when matching events *)
 
     val int_of_key : key -> int
     (** [int_of_key k] returns a platform-independent integer representation
         of key [k]. This integer corresponds to the key code as defined
         by the USB standard for keybords.
         @see <https://www.usb.org/sites/default/files/documents/hut1_12v2.pdf>
-        https://www.usb.org/sites/default/files/documents/hut1_12v2.pdf *)
+    *)
 
     val key_of_int : int -> key
   (** [key_of_int i] returns the key corresponding to the

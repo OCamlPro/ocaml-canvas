@@ -1084,6 +1084,8 @@ module V1 = struct
       | KeyVolumeUp
       | KeyVolumeDown
 
+      | DON'T_MATCH_THIS__USE_CATCH_ALL
+
     type flags = {
       flag_shift : bool;
       flag_alt : bool;
@@ -1114,6 +1116,7 @@ module V1 = struct
       | ButtonRight
       | ButtonWheelUp
       | ButtonWheelDown
+      | DON'T_MATCH_THIS__USE_CATCH_ALL
 
     type button_action_event = {
       canvas: [`Onscreen] Canvas.t;
@@ -1146,7 +1149,7 @@ module V1 = struct
       | ButtonAction of button_action_event
       | MouseMove of mouse_move_event
       | Custom of custom_event
-      | DON'T_MATCH_THIS___USE_CATCH_ALL______________________________
+      | DON'T_MATCH_THIS__USE_CATCH_ALL
 
     external int_of_key : key -> int
       = "ml_canvas_int_of_key"
