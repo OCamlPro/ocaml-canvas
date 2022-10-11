@@ -25,6 +25,7 @@ Then, you need to install all the dependencies::
 Finally, you can build the package and install it::
 
   eval $(opam env)
+  dune build @configure --auto-promote
   dune build
   dune install
 

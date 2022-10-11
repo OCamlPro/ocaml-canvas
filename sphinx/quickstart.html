@@ -9,8 +9,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>Quick start &mdash; ocaml-canvas master
- (688f231
-) (2022/10/10 19:10) documentation</title>
+ (1a2034d
+) (2022/10/11 07:38) documentation</title>
   
 
   
@@ -65,7 +65,7 @@
             
               <div class="version">
                 master
- (688f231
+ (1a2034d
 )
               </div>
             
@@ -238,7 +238,7 @@ program. It will show the number of frames displayed when quitting.</p>
 
 <span class="k">let</span> <span class="bp">()</span> <span class="o">=</span>
 
-  <span class="nn">Backend</span><span class="p">.</span><span class="o">(</span><span class="n">init</span> <span class="n">default_options</span><span class="o">);</span>
+  <span class="nn">Backend</span><span class="p">.</span><span class="n">init</span> <span class="bp">()</span><span class="o">;</span>
 
   <span class="k">let</span> <span class="n">c</span> <span class="o">=</span> <span class="nn">Canvas</span><span class="p">.</span><span class="n">createFramed</span> <span class="s2">&quot;Hello world&quot;</span>
             <span class="o">~</span><span class="n">pos</span><span class="o">:(</span><span class="mi">300</span><span class="o">,</span> <span class="mi">200</span><span class="o">)</span> <span class="o">~</span><span class="n">size</span><span class="o">:(</span><span class="mi">300</span><span class="o">,</span> <span class="mi">200</span><span class="o">)</span> <span class="k">in</span>
@@ -263,7 +263,7 @@ program. It will show the number of frames displayed when quitting.</p>
   <span class="nn">Canvas</span><span class="p">.</span><span class="n">setLineWidth</span> <span class="n">c</span> <span class="mi">1</span><span class="o">.</span><span class="mi">0</span><span class="o">;</span>
   <span class="nn">Canvas</span><span class="p">.</span><span class="n">save</span> <span class="n">c</span><span class="o">;</span>
   <span class="nn">Canvas</span><span class="p">.</span><span class="n">translate</span> <span class="n">c</span> <span class="o">(</span><span class="mi">150</span><span class="o">.</span><span class="mi">0</span><span class="o">,</span> <span class="mi">100</span><span class="o">.</span><span class="mi">0</span><span class="o">);</span>
-  <span class="nn">Canvas</span><span class="p">.</span><span class="n">rotate</span> <span class="n">c</span> <span class="o">(-.</span> <span class="nn">Float</span><span class="p">.</span><span class="n">pi</span> <span class="o">/.</span> <span class="mi">8</span><span class="o">.</span><span class="mi">0</span><span class="o">);</span>
+  <span class="nn">Canvas</span><span class="p">.</span><span class="n">rotate</span> <span class="n">c</span> <span class="o">(-.</span> <span class="nn">Const</span><span class="p">.</span><span class="n">pi_8</span><span class="o">);</span>
   <span class="nn">Canvas</span><span class="p">.</span><span class="n">fillText</span> <span class="n">c</span> <span class="s2">&quot;Hello world !&quot;</span> <span class="o">(-</span><span class="mi">130</span><span class="o">.</span><span class="mi">0</span><span class="o">,</span> <span class="mi">20</span><span class="o">.</span><span class="mi">0</span><span class="o">);</span>
   <span class="nn">Canvas</span><span class="p">.</span><span class="n">restore</span> <span class="n">c</span><span class="o">;</span>
 
@@ -286,7 +286,7 @@ program. It will show the number of frames displayed when quitting.</p>
         <span class="nn">Canvas</span><span class="p">.</span><span class="n">setFillColor</span> <span class="n">c</span> <span class="nn">Color</span><span class="p">.</span><span class="n">red</span><span class="o">;</span>
         <span class="nn">Canvas</span><span class="p">.</span><span class="n">clearPath</span> <span class="n">c</span><span class="o">;</span>
         <span class="nn">Canvas</span><span class="p">.</span><span class="n">arc</span> <span class="n">c</span> <span class="o">~</span><span class="n">center</span><span class="o">:(</span><span class="n">float_of_int</span> <span class="n">x</span><span class="o">,</span> <span class="n">float_of_int</span> <span class="n">y</span><span class="o">)</span>
-          <span class="o">~</span><span class="n">radius</span><span class="o">:</span><span class="mi">5</span><span class="o">.</span><span class="mi">0</span> <span class="o">~</span><span class="n">theta1</span><span class="o">:</span><span class="mi">0</span><span class="o">.</span><span class="mi">0</span> <span class="o">~</span><span class="n">theta2</span><span class="o">:(</span><span class="n">pi</span> <span class="o">*.</span> <span class="mi">2</span><span class="o">.</span><span class="mi">0</span><span class="o">)</span> <span class="o">~</span><span class="n">ccw</span><span class="o">:</span><span class="bp">false</span><span class="o">;</span>
+          <span class="o">~</span><span class="n">radius</span><span class="o">:</span><span class="mi">5</span><span class="o">.</span><span class="mi">0</span> <span class="o">~</span><span class="n">theta1</span><span class="o">:</span><span class="mi">0</span><span class="o">.</span><span class="mi">0</span> <span class="o">~</span><span class="n">theta2</span><span class="o">:(</span><span class="mi">2</span><span class="o">.</span><span class="mi">0</span> <span class="o">*.</span> <span class="nn">Const</span><span class="p">.</span><span class="n">pi</span><span class="o">)</span> <span class="o">~</span><span class="n">ccw</span><span class="o">:</span><span class="bp">false</span><span class="o">;</span>
         <span class="nn">Canvas</span><span class="p">.</span><span class="n">fill</span> <span class="n">c</span> <span class="o">~</span><span class="n">nonzero</span><span class="o">:</span><span class="bp">false</span><span class="o">;</span>
         <span class="n">state</span><span class="o">,</span> <span class="bp">true</span>
 
