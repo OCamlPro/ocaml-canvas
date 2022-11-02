@@ -74,7 +74,7 @@ void prefix##_set_data(type *o, void *data)                                   \
 void * prefix##_get_data(type *o)                                             \
 {                                                                             \
   assert(o != NULL);                                                          \
-  assert(((object_t *)o)->count > 0);                                         \
+  assert(((object_t *)o)->count >= 0);                                        \
                                                                               \
   return ((object_t *)o)->data;                                               \
 }

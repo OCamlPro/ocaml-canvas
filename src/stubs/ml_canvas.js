@@ -228,22 +228,19 @@ function _ml_canvas_surface_of_ba(data) {
 }
 
 //Provides: ml_canvas_image_data_create_from_png
-//Requires: _ml_canvas_image_of_png_file,_ml_canvas_ba_of_img,PROMISE_TAG,RESOLUTION_TAG
-//Requires: caml_named_value
-function ml_canvas_image_data_create_from_png(filename) {
+//Requires: _ml_canvas_image_of_png_file,_ml_canvas_ba_of_img
+function ml_canvas_image_data_create_from_png(filename, onload) {
   var img = _ml_canvas_image_of_png_file(filename);
   if (img === null) {
-    return [ 0, [ PROMISE_TAG.REJECTED, 0 ] ];
+    return 0;
   }
-  var resolve = caml_named_value("ml_canvas_promise_resolve");
-  var ml_promise = [ 0, [ PROMISE_TAG.PENDING, 0, 0 ] ];
   img[0].then(function (__img) {
     var ba = _ml_canvas_ba_of_img(img[1]);
-    resolve(ml_promise, [ RESOLUTION_TAG.FULFILL, ba ]);
+    onload(ba);
   }, function (__err) {
-    resolve(ml_promise, [ RESOLUTION_TAG.REJECT, 0 ]);
+    return;
   });
-  return ml_promise;
+  return 0;
 }
 
 //Provides: ml_canvas_image_data_get_size
@@ -357,16 +354,14 @@ function ml_canvas_image_data_put_pixel(data, pos, color) {
 }
 
 //Provides: ml_canvas_image_data_import_png
-//Requires: _ml_canvas_surface_of_ba,_ml_canvas_image_of_png_file,PROMISE_TAG,RESOLUTION_TAG
-//Requires: caml_ba_to_typed_array,caml_named_value
-function ml_canvas_image_data_import_png(data, pos, filename) {
+//Requires: _ml_canvas_surface_of_ba,_ml_canvas_image_of_png_file
+//Requires: caml_ba_to_typed_array
+function ml_canvas_image_data_import_png(data, pos, filename, onload) {
   var img = _ml_canvas_image_of_png_file(filename);
   var surface = _ml_canvas_surface_of_ba(data);
   if ((img === null) || (surface === null)) {
-    return [ 0, [ PROMISE_TAG.REJECTED, 0 ] ];;
+    return 0;
   }
-  var resolve = caml_named_value("ml_canvas_promise_resolve");
-  var ml_promise = [ 0, [ PROMISE_TAG.PENDING, 0, 0 ] ];
   img[0].then(function (__img) {
     var ctxt = surface.getContext("2d");
     ctxt.drawImage(img[1], pos[1], pos[2]);
@@ -376,11 +371,11 @@ function ml_canvas_image_data_import_png(data, pos, filename) {
     for (var i = 0; i < dta.length; i++) {
       dta[i] = sta[i];
     }
-    resolve(ml_promise, [ RESOLUTION_TAG.FULFILL, 0 ]);
+    onload(data);
   }, function (__err) {
-    resolve(ml_promise, [ RESOLUTION_TAG.REJECT, 0 ]);
+    return;
   });
-  return ml_promise;
+  return 0;
 }
 
 //Provides: ml_canvas_image_data_export_png
@@ -745,26 +740,23 @@ function ml_canvas_create_offscreen_from_image_data(data) {
 }
 
 //Provides: ml_canvas_create_offscreen_from_png
-//Requires: ml_canvas_create_offscreen,_ml_canvas_image_of_png_file,PROMISE_TAG,RESOLUTION_TAG
-//Requires: caml_named_value
-function ml_canvas_create_offscreen_from_png(filename) {
+//Requires: ml_canvas_create_offscreen,_ml_canvas_image_of_png_file
+function ml_canvas_create_offscreen_from_png(filename, onload) {
   var img = _ml_canvas_image_of_png_file(filename);
   if (img === null) {
-    return [ 0, [ PROMISE_TAG.REJECTED, 0 ] ];
+    return 0;
   }
-  var resolve = caml_named_value("ml_canvas_promise_resolve");
-  var ml_promise = [ 0, [ PROMISE_TAG.PENDING, 0, 0 ] ];
   img[0].then(function (__img) {
     var canvas = ml_canvas_create_offscreen([ 0, img[1].width, img[1].height ])
     if (canvas === null) {
-      return [ 0, [ PROMISE_TAG.REJECTED, 0 ] ];
+      return 0;
     }
     canvas.ctxt.drawImage(img[1], 0, 0);
-    resolve(ml_promise, [ RESOLUTION_TAG.FULFILL, canvas ]);
+    onload(canvas);
   }, function (__err) {
-    resolve(ml_promise, [ RESOLUTION_TAG.REJECT, 0 ]);
+    return;
   });
-  return ml_promise;
+  return 0;
 }
 
 
@@ -1362,23 +1354,20 @@ function ml_canvas_put_image_data(canvas, dpos, data, spos, size) {
 }
 
 //Provides: ml_canvas_import_png
-//Requires: _ml_canvas_image_of_png_file,PROMISE_TAG,RESOLUTION_TAG
-//Requires: caml_named_value
-function ml_canvas_import_png(canvas, pos, filename) {
+//Requires: _ml_canvas_image_of_png_file
+function ml_canvas_import_png(canvas, pos, filename, onload) {
   var img = _ml_canvas_image_of_png_file(filename);
   if (img === null) {
-    return [ 0, [ PROMISE_TAG.REJECTED, 0 ] ];
+    return 0;
   }
-  var resolve = caml_named_value("ml_canvas_promise_resolve");
-  var ml_promise = [ 0, [ PROMISE_TAG.PENDING, 0, 0 ] ];
   img[0].then(function (__img) {
     canvas.ctxt.drawImage(img[1], pos[1], pos[2]);
     // image, sx, sy, sWitdh, sHeight, dx, dy, dWidth, dHeight
-    resolve(ml_promise, [ RESOLUTION_TAG.FULFILL, 0 ]);
+    onload(canvas);
   }, function (__err) {
-    resolve(ml_promise, [ RESOLUTION_TAG.REJECT, 0 ]);
+    return;
   });
-  return ml_promise;
+  return 0;
 }
 
 //Provides: ml_canvas_export_png

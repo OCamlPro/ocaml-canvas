@@ -10,15 +10,34 @@
 
 open OcamlCanvas.V1
 
+let events = ref []
+
+let retain_event e =
+  events := e :: !events
+
+let clear_events () =
+  events := []
+
 type state = {
-  active : int;
-  st1 : string;
-  st2 : string;
-  cursor_1 : int;
-  cursor_2 : int;
-  offset_1 : int;
-  offset_2 : int;
-  char_size : float;
+  mutable active : int;
+  mutable st1 : string;
+  mutable st2 : string;
+  mutable cursor_1 : int;
+  mutable cursor_2 : int;
+  mutable offset_1 : int;
+  mutable offset_2 : int;
+  mutable char_size : float;
+}
+
+let state = {
+  active = 0;
+  st1 = "";
+  st2 = "";
+  cursor_1 = 0;
+  cursor_2 = 0;
+  offset_1 = 0;
+  offset_2 = 0;
+  char_size = 14.0;
 }
 
 let in_rect (x1, y1) (posx, posy) (sizex, sizey) =
@@ -61,103 +80,107 @@ let () =
   Canvas.strokeRect ccm ~pos: (150.0, 102.0) ~size:(100.0, 30.0);
   Canvas.show ccm;
 
-  let initial_state = {
-    active = 0;
-    st1 = "";
-    st2 = "";
-    cursor_1 = 0;
-    cursor_2 = 0;
-    offset_1 = 0;
-    offset_2 = 0;
-    char_size = 14.0;
-  }
-  in
+  retain_event @@
+    React.E.map (fun _ ->
+        Backend.stop ()
+      ) Event.close;
 
-  Backend.run (fun state -> function
-
-    | Event.CanvasClosed _
-    | Event.KeyAction { key = KeyEscape; state = Down; _ } ->
-        Backend.stop ();
-        state, true
-
-    | Event.KeyAction { key = KeyTab; state = Down; _ } ->
-        let active =
-          match state.active with
-          | 1 -> 2
-          | 2 -> 1
-          | _ -> 1
-        in
-        { state with active }, true
-
-    | Event.KeyAction { key; char = c; state = Down; _ }
-          when state.active > 0 ->
-        let string, cursor, offset =
-          match state.active with
-          | 1 -> state.st1, state.cursor_1, state.offset_1
-          | _ -> state.st2, state.cursor_2, state.offset_2
-        in
-        let string, cursor, offset =
-          if Uchar.is_char c &&
-               (is_digit (Uchar.to_char c) || is_alpha (Uchar.to_char c)) then
-            let string = insert c string cursor in
-            let cursor = cursor + 1 in
-            let offset =
-              if cursor < offset || cursor > offset + 7 then offset + 1
-              else offset
+  retain_event @@
+    React.E.map (fun { Event.canvas = _;
+                       data = { Event.key; char = c; _ }; _ } ->
+        match key with
+        | KeyEscape ->
+            Backend.stop ()
+        | KeyTab ->
+            let active =
+              match state.active with
+              | 1 -> 2
+              | 2 -> 1
+              | _ -> 1
             in
-            string, cursor, offset
-          else if key = Event.KeyBackspace && cursor > 0 then
-            let string = backspace string (cursor - 1) in
-            let cursor = cursor - 1 in
-            let offset =
-              if offset > 0 then offset - 1
-              else offset
+            state.active <- active
+        | _ when state.active > 0 ->
+            let string, cursor, offset =
+              match state.active with
+              | 1 -> state.st1, state.cursor_1, state.offset_1
+              | _ -> state.st2, state.cursor_2, state.offset_2
             in
-            string, cursor, offset
-          else if key = Event.KeyLeftArrow && cursor > 0 then
-            let cursor = cursor - 1 in
-            let offset =
-              if cursor < offset || cursor > offset + 7 then offset - 1
-              else offset in
-            string, cursor, offset
-          else if key = Event.KeyRightArrow &&
-                    cursor < String.length string then
-            let cursor = cursor + 1 in
-            let offset =
-              if cursor < offset || cursor > offset + 7 then offset + 1
-              else offset
+            let string, cursor, offset =
+              if Uchar.is_char c &&
+                   (is_digit (Uchar.to_char c) ||
+                      is_alpha (Uchar.to_char c)) then
+                let string = insert c string cursor in
+                let cursor = cursor + 1 in
+                let offset =
+                  if cursor < offset || cursor > offset + 7 then offset + 1
+                  else offset
+                in
+                string, cursor, offset
+              else if key = KeyBackspace && cursor > 0 then
+                let string = backspace string (cursor - 1) in
+                let cursor = cursor - 1 in
+                let offset =
+                  if offset > 0 then offset - 1
+                  else offset
+                in
+                string, cursor, offset
+              else if key = KeyLeftArrow && cursor > 0 then
+                let cursor = cursor - 1 in
+                let offset =
+                  if cursor < offset || cursor > offset + 7 then offset - 1
+                  else offset in
+                string, cursor, offset
+              else if key = KeyRightArrow &&
+                        cursor < String.length string then
+                let cursor = cursor + 1 in
+                let offset =
+                  if cursor < offset || cursor > offset + 7 then offset + 1
+                  else offset
+                in
+                string, cursor, offset
+              else
+                string, cursor, offset
             in
-            string, cursor, offset
-          else
-            string, cursor, offset
-        in
-        begin
-          match state.active with
-          | 1 -> { state with st1 = string; cursor_1 = cursor;
-                              offset_1 = offset }, true
-          | _ -> { state with st2 = string; cursor_2 = cursor;
-                              offset_2 = offset }, true
-        end
+            begin
+              match state.active with
+              | 1 ->
+                  state.st1 <- string;
+                  state.cursor_1 <- cursor;
+                  state.offset_1 <- offset
+              | _ ->
+                  state.st2 <- string;
+                  state.cursor_2 <- cursor;
+                  state.offset_2 <- offset
+            end
+        | _ ->
+            ()
+      ) Event.key_down;
 
-    | Event.ButtonAction { position = (pos_x, pos_y);
-                           button = ButtonLeft; state = Down; _ } ->
-        let active, cursor_1, cursor_2 =
-          if in_rect (pos_x, pos_y) (152.0, 54.0) (97.0, 27.0) then
-            let cursor_target =
-              int_of_float (((float_of_int pos_x) -. 152.0) /.
-                              state.char_size) + state.offset_1 in
-            1, clamp cursor_target 0 (String.length state.st1), state.cursor_2
-          else if in_rect (pos_x, pos_y) (152.0, 104.0) (97.0, 27.0) then
-            let cursor_target =
-              int_of_float (((float_of_int pos_x) -. 152.0) /.
-                              state.char_size) + state.offset_2 in
-            2, state.cursor_1, clamp cursor_target 0 (String.length state.st2)
-          else
-            0, state.cursor_1, state.cursor_2
-        in
-        { state with active; cursor_1; cursor_2 }, true
+  retain_event @@
+    React.E.map (fun { Event.data = { Event.position = (x, y); button }; _ } ->
+        if button = ButtonLeft then
+          let active, cursor_1, cursor_2 =
+            if in_rect (x, y) (152.0, 54.0) (97.0, 27.0) then
+              let cursor_target =
+                int_of_float (((float_of_int x) -. 152.0) /.
+                                state.char_size) + state.offset_1 in
+              1, clamp cursor_target 0 (String.length state.st1), state.cursor_2
+            else if in_rect (x, y) (152.0, 104.0) (97.0, 27.0) then
+              let cursor_target =
+                int_of_float (((float_of_int x) -. 152.0) /.
+                                state.char_size) + state.offset_2 in
+              2, state.cursor_1, clamp cursor_target 0 (String.length state.st2)
+            else
+              0, state.cursor_1, state.cursor_2
+          in
+          state.active <- active;
+          state.cursor_1 <- cursor_1;
+          state.cursor_2 <- cursor_2
+      ) Event.button_down;
 
-    | Event.Frame _ ->
+  retain_event @@
+    React.E.map (fun _ ->
+
         Canvas.setFillColor ccm Color.white;
         Canvas.fillRect ccm ~pos:(152.0, 54.0) ~size:(97.0, 27.0);
         Canvas.fillRect ccm ~pos:(152.0, 104.0) ~size:(97.0, 27.0);
@@ -189,13 +212,10 @@ let () =
             ~pos:(155.0 +. state.char_size *. (float_of_int state.cursor_2),
                   85.0)
             ~size:(2.0, 55.0);
-        Canvas.restore ccm;
+        Canvas.restore ccm
 
-        state, true
+      ) Event.frame;
 
-    | _ ->
-        state, false
-
-    ) (fun _state ->
-         Printf.printf "Goodbye !\n"
-    ) initial_state
+  Backend.run (fun () ->
+      clear_events ();
+      Printf.printf "Goodbye !\n")

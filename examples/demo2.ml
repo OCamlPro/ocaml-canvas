@@ -28,15 +28,18 @@ let () =
 
   Canvas.show c;
 
-  Backend.run (fun state -> function
+  let e1 =
+    React.E.map (fun { Event.canvas = _; timestamp = _; data = () } ->
+        Backend.stop ()
+      ) Event.close
+  in
 
-    | Event.CanvasClosed { canvas = _; timestamp = _ }
-    | Event.KeyAction { canvas = _; timestamp = _;
-                        key = KeyEscape; state = Down; _ } ->
-        Backend.stop ();
-        state, true
+  let e2 =
+    React.E.map (fun { Event.canvas = _; timestamp = _;
+                       data = { Event.key; char = _; flags = _ } } ->
+        if key = KeyEscape then
+          Backend.stop ()
+      ) Event.key_down
+  in
 
-    | _ ->
-        state, false
-
-    ) (fun _state -> ()) ()
+  Backend.run (fun () -> ignore e1; ignore e2)

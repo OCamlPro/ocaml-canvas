@@ -10,6 +10,14 @@
 
 open OcamlCanvas.V1
 
+let events = ref []
+
+let retain_event e =
+  events := e :: !events
+
+let clear_events () =
+  events := []
+
 let buildBackground c =
   Canvas.setFillColor c Color.black;
   Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(500.0, 500.0);
@@ -47,10 +55,17 @@ let snakeHitWall s =
   (x < 1.0) || (x > 48.0) || (y < 1.0) || (y > 48.0)
 
 type state = {
-  r : float;
-  snake : (float * float) list;
-  cur_dir : float * float;
-  food_loc : float * float;
+  mutable r : float;
+  mutable snake : (float * float) list;
+  mutable cur_dir : float * float;
+  mutable food_loc : float * float;
+}
+
+let state = {
+  r = -1.0;
+  snake = [ (6.0, 8.0); (6.0, 7.0) ];
+  cur_dir = (0.0, 1.0);
+  food_loc = (24.0, 24.0)
 }
 
 let () =
@@ -64,78 +79,49 @@ let () =
 
   Canvas.show c;
 
-  Backend.run (fun state -> function
+  retain_event @@
+    React.E.map (fun _ ->
+        Backend.stop ()
+      ) Event.close;
 
-      | Event.CanvasClosed { canvas = _; timestamp = _ } ->
-          Backend.stop ();
-          state, true
+  retain_event @@
+    React.E.map (fun { Event.data = { Event.key; _ }; _ } ->
+        match key with
+        | KeyEscape ->
+            Backend.stop ()
+        | KeyUpArrow ->
+            if (snd state.cur_dir = 0.0) then state.cur_dir <- (0.0, -1.0)
+        | KeyDownArrow ->
+            if (snd state.cur_dir = 0.0) then state.cur_dir <- (0.0, 1.0)
+        | KeyLeftArrow ->
+            if (fst state.cur_dir = 0.0) then state.cur_dir <- (-1.0, 0.0)
+        | KeyRightArrow ->
+            if (fst state.cur_dir = 0.0) then state.cur_dir <- (1.0, 0.0)
+        | _ ->
+            ()
+      ) Event.key_down;
 
-      | Event.KeyAction { canvas = _; timestamp = _;
-                    key = KeyUpArrow; char = _; flags = _; state = Down } ->
-          let state =
-            if (snd state.cur_dir <> 0.0) then state
-            else { state with cur_dir = (0.0, -1.0) }
-          in
-          state, true
-
-      | Event.KeyAction { canvas = _; timestamp = _;
-                   key = KeyDownArrow; char = _; flags = _; state = Down } ->
-          let state =
-            if (snd state.cur_dir <> 0.0) then state
-            else { state with cur_dir = (0.0, 1.0) }
-          in
-          state, true
-
-      | Event.KeyAction { canvas = _; timestamp = _;
-                   key = KeyLeftArrow; char = _; flags = _; state = Down } ->
-          let state =
-            if (fst state.cur_dir <> 0.0) then state
-            else { state with cur_dir = (-1.0, 0.0) }
-          in
-          state, true
-
-      | Event.KeyAction { canvas = _; timestamp = _;
-                   key = KeyRightArrow; char = _; flags = _; state = Down } ->
-          let state =
-            if (fst state.cur_dir <> 0.0) then state
-            else { state with cur_dir = (1.0, 0.0) }
-          in
-          state, true
-
-      | Event.KeyAction { canvas = _; timestamp = _;
-                          key; char = _; flags = _; state = Down } ->
-          if key = Event.KeyEscape then
-            Backend.stop ();
-          state, true
-
-      | Event.Frame { canvas = c; timestamp = _ } ->
-          buildBackground c;
-          let snake, food_loc =
-            if sumCoord (List.hd state.snake) state.cur_dir =
-                 state.food_loc then
-              state.food_loc :: state.snake,
+  retain_event @@
+    React.E.map (fun { Event.canvas = c; _ } ->
+        buildBackground c;
+        if sumCoord (List.hd state.snake) state.cur_dir = state.food_loc then
+          begin
+            state.snake <- state.food_loc :: state.snake;
+            state.food_loc <-
               (2.0 +. float_of_int (Random.int 47),
                2.0 +. float_of_int (Random.int 47))
-            else
-              state.snake, state.food_loc
-          in
-          let r = state.r +. 1.0 /. 60.0 in
-          let r, snake =
-            if r <= 0.066 then r, snake
-            else 0.0, moveSnakeDirection snake state.cur_dir
-          in
-          if snakeHitSelf snake || snakeHitWall snake then
-            Backend.stop();
-          drawSnake c snake;
-          placeBlock c food_loc Color.green;
-          { state with r; snake; food_loc }, true
+          end;
+        state.r <- state.r +. 1.0 /. 60.0;
+        if state.r > 0.066 then
+          begin
+            state.r <- 0.0;
+            state.snake <- moveSnakeDirection state.snake state.cur_dir
+          end;
+        if snakeHitSelf state.snake || snakeHitWall state.snake then
+          Backend.stop ();
+        drawSnake c state.snake;
+        placeBlock c state.food_loc Color.green) Event.frame;
 
-      | _ ->
-          state, false
-
-    ) (function _state ->
-      Printf.printf "Goodbye !\n"
-    ) { r = -1.0;
-        snake = [ (6.0, 8.0); (6.0, 7.0) ];
-        cur_dir = (0.0, 1.0);
-        food_loc = (24.0, 24.0) }
+  Backend.run (fun () ->
+      clear_events ();
+      Printf.printf "Goodbye !\n")

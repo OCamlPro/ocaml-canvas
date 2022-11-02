@@ -1,6 +1,8 @@
 
 open OcamlCanvas.V1
 
+let state = ref (0.0, Int64.zero)
+
 let () =
 
   Backend.init ();
@@ -10,15 +12,23 @@ let () =
 
   Canvas.show c;
 
-  Backend.run (fun ((theta, last) as state) -> function
+  let e1 =
+    React.E.map (fun { Event.canvas = _; timestamp = _; data = () } ->
+        Backend.stop ()
+      ) Event.close
+  in
 
-    | Event.CanvasClosed { canvas = _; timestamp = _ }
-    | Event.KeyAction { canvas = _; timestamp = _;
-                        key = KeyEscape; state = Down; _ } ->
-        Backend.stop ();
-        state, true
+  let e2 =
+    React.E.map (fun { Event.canvas = _; timestamp = _;
+                       data = { Event.key; char = _; flags = _ } } ->
+        if key = KeyEscape then
+          Backend.stop ()
+      ) Event.key_down
+  in
 
-    | Event.Frame { canvas = _; timestamp = t; _ } ->
+  let e3 =
+    React.E.map (fun { Event.canvas = _; timestamp = t; data = () } ->
+        let theta, last = !state in
 
         let theta = theta +. (Int64.to_float (Int64.sub t last)) *. -0.000005 in
 
@@ -41,9 +51,8 @@ let () =
 
         Canvas.restore c;
 
-        (theta, t), true
+        state := (theta, t)
+      ) Event.frame
+  in
 
-    | _ ->
-        state, false
-
-    ) (fun _state -> ()) (0.0, Backend.getCurrentTimestamp ())
+  Backend.run (fun () -> ignore e1; ignore e2; ignore e3)
