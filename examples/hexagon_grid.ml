@@ -10,7 +10,23 @@
 
 open OcamlCanvas.V1
 
-type Event.payload += CanvasLoaded of [`Offscreen] Canvas.t
+let events = ref []
+
+let retain_event e =
+  events := e :: !events
+
+let clear_events () =
+  events := []
+
+type state = {
+  mutable hex_grid_opt : [`Offscreen] Canvas.t option;
+  mutable counter : float;
+}
+
+let state = {
+  hex_grid_opt = None;
+  counter = 0.0
+}
 
 let () =
 
@@ -19,56 +35,55 @@ let () =
   let c = Canvas.createFramed "Hexagon Grid"
             ~pos:(300, 200) ~size:(800, 696) in
 
-  let p_hex_grid = Canvas.createOffscreenFromPNG "./assets/hexagon.png" in
-  ignore @@
-    Promise.bind p_hex_grid (fun hex_grid ->
-      Canvas.setGlobalCompositeOperation hex_grid SourceAtop;
-      Canvas.setFillColor hex_grid Color.orange;
-      Backend.postCustomEvent (CanvasLoaded (hex_grid));
-      Promise.return ());
-
   Canvas.show c;
 
-  Backend.run (fun ((hex_grid_opt, counter) as state) -> function
-
-    | Event.CanvasClosed _
-    | Event.KeyAction { key = KeyEscape; state = Down; _ } ->
-        Backend.stop ();
-        state, true
-
-    | Event.Custom { payload = CanvasLoaded (hex_grid); _ } ->
-        (Some (hex_grid), counter), true
-
-    | Event.Frame _ when fst state <> None ->
-        let hex_grid =
-          match fst state with
-          | Some (hex_grid) -> hex_grid
-          | None -> assert false
-        in
-        let counter = counter +. 3.0 in
-        let g = Canvas.createRadialGradient hex_grid
-                  ~center1:(400.0, 300.0) ~rad1:(counter *. 0.4)
-                  ~center2:(400.0, 300.0) ~rad2:counter in
-        Gradient.addColorStop g Color.orange 0.0;
-        Gradient.addColorStop g (Color.of_argb 64 0 0 255) 0.25;
-        Gradient.addColorStop g Color.transpBlack 0.5;
-        Canvas.setFillColor c Color.black;
-        Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(800.0, 696.0);
-        Canvas.setFillGradient hex_grid g;
+  let event_hex_grid = Canvas.createOffscreenFromPNG "./assets/hexagon.png" in
+  retain_event @@
+    React.E.map (fun hex_grid ->
         Canvas.setGlobalCompositeOperation hex_grid SourceAtop;
-        Canvas.fillRect hex_grid
-          ~pos:(400.0 -. counter /. 2.0, 300.0 -. counter /. 2.0)
-          ~size:(100.0, 100.0);
-        Canvas.fillRect hex_grid
-          ~pos:(400.0 +. counter /. 2.0, 300.0 +. counter /. 2.0)
-          ~size:(100.0, 100.0);
-        Canvas.blit ~dst:c ~dpos:(0, 0) ~src:hex_grid
-          ~spos:(0, 0) ~size:(800, 696);
-        (hex_grid_opt, counter), true
+        Canvas.setFillColor hex_grid Color.orange;
+        state.hex_grid_opt <- Some (hex_grid)
+      ) event_hex_grid;
 
-    | _ ->
-        state, false
+  retain_event @@
+    React.E.map (fun _ ->
+        Backend.stop ()
+      ) Event.close;
 
-    ) (fun _state ->
-         Printf.printf "Goodbye !\n"
-    ) (None, 0.0)
+  retain_event @@
+    React.E.map (fun { Event.data = { Event.key; _ }; _ } ->
+        if key = KeyEscape then
+          Backend.stop ()
+      ) Event.key_down;
+
+  retain_event @@
+    React.E.map (fun _ ->
+        match state.hex_grid_opt with
+        | None ->
+            ()
+        | Some (hex_grid) ->
+            state.counter <- state.counter +. 3.0;
+            let g = Canvas.createRadialGradient hex_grid
+                      ~center1:(400.0, 300.0) ~rad1:(state.counter *. 0.4)
+                      ~center2:(400.0, 300.0) ~rad2:state.counter in
+            Gradient.addColorStop g Color.orange 0.0;
+            Gradient.addColorStop g (Color.of_argb 64 0 0 255) 0.25;
+            Gradient.addColorStop g Color.transpBlack 0.5;
+            Canvas.setFillColor c Color.black;
+            Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(800.0, 696.0);
+            Canvas.setFillGradient hex_grid g;
+            Canvas.setGlobalCompositeOperation hex_grid SourceAtop;
+            Canvas.fillRect hex_grid
+              ~pos:(400.0 -. state.counter /. 2.0,
+                    300.0 -. state.counter /. 2.0)
+              ~size:(100.0, 100.0);
+            Canvas.fillRect hex_grid
+              ~pos:(400.0 +. state.counter /. 2.0,
+                    300.0 +. state.counter /. 2.0)
+              ~size:(100.0, 100.0);
+            Canvas.blit ~dst:c ~dpos:(0, 0) ~src:hex_grid
+              ~spos:(0, 0) ~size:(800, 696)) Event.frame;
+
+  Backend.run (fun () ->
+      clear_events ();
+      Printf.printf "Goodbye !\n")

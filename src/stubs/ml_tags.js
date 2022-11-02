@@ -8,20 +8,6 @@
 /*                                                                        */
 /**************************************************************************/
 
-//Provides: PROMISE_TAG
-var PROMISE_TAG = {
-  ALIAS     : 0,
-  REJECTED  : 1,
-  FULFILLED : 2,
-  PENDING   : 3
-};
-
-//Provides: RESOLUTION_TAG
-var RESOLUTION_TAG = {
-  FULFILL : 0,
-  REJECT  : 1
-};
-
 //Provides: FOCUS_TAG
 var FOCUS_TAG = {
   OUT : 0,

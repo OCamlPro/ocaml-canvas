@@ -10,15 +10,10 @@ let () =
 
   Canvas.show c;
 
-  Backend.run (fun state event ->
+  let e =
+    React.E.map (fun { Event.canvas = _; timestamp = _; data = () } ->
+        Backend.stop ()
+      ) Event.close
+  in
 
-    match event with
-
-    | Event.CanvasClosed { canvas = _; timestamp = _ } ->
-        Backend.stop ();
-        state, true
-
-    | _ ->
-        state, false
-
-    ) (fun _state -> ()) ()
+  Backend.run (fun () -> ignore e)

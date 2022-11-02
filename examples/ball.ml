@@ -10,11 +10,26 @@
 
 open OcamlCanvas.V1
 
+let events = ref []
+
+let retain_event e =
+  events := e :: !events
+
+let clear_events () =
+  events := []
+
 type state = {
-  pos : Point.t;
-  vec : float * float;
-  m_pos : Point.t;
-  pressing : bool;
+  mutable pos : Point.t;
+  mutable vec : float * float;
+  mutable m_pos : Point.t;
+  mutable pressing : bool;
+}
+
+let state = {
+  pos = (260.0, 100.0);
+  vec = (0.0, 0.0);
+  m_pos = (0.0, 0.0);
+  pressing = false
 }
 
 let () =
@@ -38,28 +53,34 @@ let () =
 
   Canvas.show c;
 
-  let initial_state = {
-    pos = (260.0, 100.0);
-    vec = (0.0, 0.0);
-    m_pos = (0.0, 0.0);
-    pressing = false
-  }
-  in
+  retain_event @@
+    React.E.map (fun _ ->
+        Backend.stop ()
+      ) Event.close;
 
-  Backend.run (fun state -> function
+  retain_event @@
+    React.E.map (fun { Event.data = { Event.key; _ }; _ } ->
+        if key = KeyEscape then
+          Backend.stop ()
+      ) Event.key_down;
 
-    | Event.CanvasClosed _
-    | Event.KeyAction { key = KeyEscape; state = Down; _ } ->
-        Backend.stop ();
-        state, true
+  retain_event @@
+    React.E.map (fun { Event.data = position; _ } ->
+        state.m_pos <- Point.of_ints position
+      ) Event.mouse_move;
 
-    | Event.MouseMove { position; _ } ->
-        { state with m_pos = Point.of_ints position }, true
+  retain_event @@
+    React.E.map (fun _ ->
+        state.pressing <- true
+      ) Event.button_down;
 
-    | Event.ButtonAction { state = s; _ } ->
-        { state with pressing = (s = Down) }, true
+  retain_event @@
+    React.E.map (fun _ ->
+        state.pressing <- false
+      ) Event.button_up;
 
-    | Event.Frame { canvas = _; timestamp = _ } ->
+  retain_event @@
+    React.E.map (fun _ ->
         let dt = 0.033 and r = 30.0 and damp = 0.99 in
         let dir = Point.sub state.m_pos state.pos in
         let force =
@@ -105,11 +126,10 @@ let () =
           ~theta1:0.0 ~theta2:(2.0 *. Const.pi) ~ccw:false;
         Canvas.fill c ~nonzero:true;
 
-        { state with pos; vec }, true
+        state.pos <- pos;
+        state.vec <- vec
+      ) Event.frame;
 
-    | _ ->
-        state, false
-
-    ) (fun _state ->
-         Printf.printf "Goodbye !\n"
-    ) initial_state
+  Backend.run (fun () ->
+      clear_events ();
+      Printf.printf "Goodbye !\n")

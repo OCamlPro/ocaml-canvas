@@ -19,7 +19,7 @@ let () =
  (public_name ocaml-canvas)
  (synopsis "Portable OCaml Canvas library")
  (wrapped false)
- (libraries bigarray)
+ (libraries bigarray react)
  (modules ocamlCanvas)
  (foreign_stubs
   (language c)

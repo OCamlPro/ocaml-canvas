@@ -10,6 +10,14 @@
 
 open OcamlCanvas.V1
 
+let events = ref []
+
+let retain_event e =
+  events := e :: !events
+
+let clear_events () =
+  events := []
+
 let () =
 
   Backend.init ();
@@ -64,33 +72,27 @@ let () =
 
   Canvas.putImageData c ~dpos:(0, 0) img ~spos:(0, 0) ~size:(300, 200);
 
-  Backend.run (fun state -> function
+  retain_event @@
+    React.E.map (fun _ ->
+        Backend.stop ()
+      ) Event.close;
 
-    | Event.KeyAction { canvas = _; timestamp = _;
-                        key; char = _; flags = _; state = Down } ->
-        if key = Event.KeyEscape then
-          Backend.stop ();
-        state, true
+  retain_event @@
+    React.E.map (fun { Event.data = { Event.key; _ }; _ } ->
+        if key = KeyEscape then
+          Backend.stop ()
+      ) Event.key_down;
 
-    | Event.CanvasClosed { canvas = _; timestamp = _ } ->
-        Backend.stop ();
-        state, true
-
-    | Event.ButtonAction { canvas = _; timestamp = _;
-                           position = (x, y); button = _; state = Down } ->
+  retain_event @@
+    React.E.map (fun { Event.canvas = _; timestamp = _;
+                       data = { Event.position = (x, y); button = _ } } ->
         Canvas.setFillColor c Color.red;
         Canvas.clearPath c;
         Canvas.arc c ~center:(float_of_int x, float_of_int y)
           ~radius:5.0 ~theta1:0.0 ~theta2:(2.0 *. Const.pi) ~ccw:false;
         Canvas.fill c ~nonzero:false;
-        state, true
+      ) Event.button_down;
 
-    | Event.Frame { canvas = _; timestamp = _ } ->
-        state, true
-
-    | _ ->
-        state, false
-
-    ) (function _state ->
-         Printf.printf "Goodbye !\n"
-    ) ()
+  Backend.run (fun () ->
+      clear_events ();
+      Printf.printf "Goodbye !\n")

@@ -10,17 +10,45 @@
 
 open OcamlCanvas.V1
 
-type Event.payload += CanvasLoaded of [`Offscreen] Canvas.t
+let events = ref []
+
+let retain_event e =
+  events := e :: !events
+
+let clear_events () =
+  events := []
+
+type look_dir =
+  | Down
+  | Up
+  | Left
+  | Right
 
 type state = {
-  sprite_sheet_opt : [`Offscreen] Canvas.t option;
-  look_direction : int;
-  animation_frame : int;
-  clock : Int64.t;
-  old_time : Int64.t;
-  x : float;
-  y : float;
+  mutable sprite_sheet_opt : [`Offscreen] Canvas.t option;
+  mutable look_direction : look_dir;
+  mutable animation_frame : int;
+  mutable clock : Int64.t;
+  mutable old_time : Int64.t;
+  mutable x : float;
+  mutable y : float;
 }
+
+let state = {
+  sprite_sheet_opt = None;
+  look_direction = Up;
+  animation_frame = 0;
+  clock = Int64.zero;
+  old_time = Int64.zero;
+  x = 300.0;
+  y = 300.0;
+}
+
+let int_of_look_dir = function
+  | Down -> 0
+  | Up -> 1
+  | Left -> 2
+  | Right -> 3
 
 let clamp v low high =
   if v < low then low
@@ -33,89 +61,71 @@ let () =
 
   let c = Canvas.createFramed "Spritesheet"
             ~pos:(300, 200) ~size:(1024, 1024) in
-  Canvas.setFillColor c Color.white;
 
-  let p_sprite_sheet =
-    Canvas.createOffscreenFromPNG "./assets/spritesheet.png" in
-  ignore @@
-    Promise.bind p_sprite_sheet (fun sprite_sheet ->
-      Backend.postCustomEvent (CanvasLoaded (sprite_sheet));
-      Promise.return ());
+  Canvas.setFillColor c Color.white;
 
   Canvas.show c;
 
-  let initial_state = {
-    sprite_sheet_opt = None;
-    look_direction = 0;
-    animation_frame = 0;
-    clock = Int64.zero;
-    old_time = Int64.zero;
-    x = 300.0;
-    y = 300.0;
-  }
-  in
+  let event_sprite_sheet =
+    Canvas.createOffscreenFromPNG "./assets/spritesheet.png" in
+  retain_event @@
+    React.E.map (fun sprite_sheet ->
+        state.sprite_sheet_opt <- Some (sprite_sheet)
+      ) event_sprite_sheet;
 
-  Backend.run (fun state -> function
+  retain_event @@
+    React.E.map (fun _ ->
+        Backend.stop ()
+      ) Event.close;
 
-    | Event.CanvasClosed _
-    | Event.KeyAction { key = KeyEscape; state = Down; _ } ->
-        Backend.stop ();
-        state, true
+  retain_event @@
+    React.E.map (fun { Event.data = { Event.key; _ }; _ } ->
+        if key = KeyEscape then
+          Backend.stop ()
+        else
+          state.look_direction <-
+            match key with
+            | KeyDownArrow -> Down
+            | KeyUpArrow -> Up
+            | KeyLeftArrow -> Left
+            | KeyRightArrow -> Right
+            | _ -> state.look_direction
+      ) Event.key_down;
 
-    | Event.KeyAction { key; state = Down; _ } ->
-        let look_direction =
-          match key with
-          | Event.KeyDownArrow -> 0
-          | Event.KeyUpArrow -> 1
-          | Event.KeyLeftArrow -> 2
-          | Event.KeyRightArrow -> 3
-          | _ -> state.look_direction
-        in
-        { state with look_direction }, true
+  retain_event @@
+    React.E.map (fun { Event.timestamp = t; _ } ->
+        match state.sprite_sheet_opt with
+        | None ->
+            ()
+        | Some (sprite_sheet) ->
+            let (w, h) = Canvas.getSize sprite_sheet in
+            let step_size = Int64.of_int 50000 in
+            let dt = Int64.sub t state.old_time in
+            let speed =
+              30.0 *. (Int64.to_float dt) /. (Int64.to_float step_size) in
+            state.clock <- Int64.add state.clock dt;
+            state.old_time <- t;
+            if Int64.compare state.clock step_size > 0 then
+              begin
+                state.clock <- Int64.zero;
+                state.animation_frame <- (state.animation_frame + 1) mod 4
+              end;
+            begin
+              match state.look_direction with
+              | Down -> state.y <- state.y +. speed
+              | Up -> state.y <- state.y -. speed
+              | Left -> state.x <- state.x -. speed
+              | Right -> state.x <- state.x +. speed
+            end;
+            state.x <- clamp state.x 0.0 (1024.0 -. (float_of_int w) /. 4.0);
+            state.y <- clamp state.y 0.0 (1024.0 -. (float_of_int h) /. 4.0);
+            Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(1024.0, 1024.0);
+            let pos_x = state.animation_frame * w / 4 in
+            let pos_y = (int_of_look_dir state.look_direction) * h / 4 in
+            Canvas.blit ~dst:c ~dpos:(int_of_float state.x,int_of_float state.y)
+              ~src:sprite_sheet ~spos:(pos_x, pos_y) ~size:(w / 4, h / 4)
+      ) Event.frame;
 
-    | Event.Custom { payload = CanvasLoaded (sprite_sheet); _ } ->
-        { state with sprite_sheet_opt = Some (sprite_sheet) }, true
-
-    | Event.Frame { timestamp = t; _ } when state.sprite_sheet_opt <> None ->
-        let sprite_sheet =
-          match state.sprite_sheet_opt with
-          | Some (sprite_sheet) -> sprite_sheet
-          | None -> assert false
-        in
-        let dt = Int64.sub t state.old_time in
-        let step_size = Int64.of_int 50000 in
-        let speed = 30.0 *. (Int64.to_float dt) /. (Int64.to_float step_size) in
-        let clock = Int64.add state.clock dt in
-        let old_time = t in
-        let (w, h) = Canvas.getSize sprite_sheet in
-        let clock, animation_frame =
-          if Int64.compare clock step_size > 0 then
-            Int64.zero, (state.animation_frame + 1) mod 4
-          else
-            clock, state.animation_frame
-        in
-        let x =
-          if state.look_direction = 2 then state.x -. speed
-          else if state.look_direction = 3 then state.x +. speed
-          else state.x
-        in
-        let y =
-          if state.look_direction = 0 then state.y +. speed
-          else if state.look_direction = 1 then state.y -. speed
-          else state.y
-        in
-        let x = clamp x 0.0 (1024.0 -. (float_of_int w) /. 4.0) in
-        let y = clamp y 0.0 (1024.0 -. (float_of_int h) /. 4.0) in
-        Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(1024.0, 1024.0);
-        let pos_x = animation_frame * w / 4 in
-        let pos_y = state.look_direction * h / 4 in
-        Canvas.blit ~dst:c ~dpos:(int_of_float x,int_of_float y)
-          ~src:sprite_sheet ~spos:(pos_x, pos_y) ~size:(w / 4, h / 4);
-        { state with animation_frame; clock; old_time; x; y }, true
-
-    | _ ->
-        state, false
-
-    ) (fun _state ->
-         Printf.printf "Goodbye !\n"
-    ) initial_state
+  Backend.run (fun () ->
+      clear_events ();
+      Printf.printf "Goodbye !\n")

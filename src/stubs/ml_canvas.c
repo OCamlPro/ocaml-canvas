@@ -60,35 +60,21 @@ CAMLprim value name(value *a, int n) \
 
 
 
-/* Promises */
-static CAMLprim value
-_ml_canvas_promise_return(
-  value mlValue)
-{
-  CAMLparam1(mlValue);
-  CAMLlocal2(mlStatus,mlPromise);
-  mlStatus = caml_alloc(1, TAG_PROMISE_FULFILLED);
-  Store_field(mlStatus, 0, mlValue);
-  mlPromise = caml_alloc_tuple(1);
-  Store_field(mlPromise, 0, mlStatus);
-  CAMLreturn(mlPromise);
-}
-
-
-
 /* Image Data (aka Pixmaps) */
 
 CAMLprim value
 ml_canvas_image_data_create_from_png(
-  value mlFilename)
+  value mlFilename,
+  value mlOnLoad)
 {
-  CAMLparam1(mlFilename);
+  CAMLparam2(mlFilename, mlOnLoad);
   pixmap_t pixmap = { 0 };
   bool res = impexp_import_png(&pixmap, 0, 0, String_val(mlFilename));
   if ((res == false) || (pixmap_valid(pixmap) == false)) {
     caml_failwith("unable to create pixmap from PNG file");
   }
-  CAMLreturn(_ml_canvas_promise_return(Val_pixmap(&pixmap)));
+  caml_callback(mlOnLoad, Val_pixmap(&pixmap));
+  CAMLreturn(Val_unit);
 }
 
 CAMLprim value
@@ -190,9 +176,10 @@ CAMLprim value
 ml_canvas_image_data_import_png(
   value mlPixmap,
   value mlDPos,
-  value mlFilename)
+  value mlFilename,
+  value mlOnLoad)
 {
-  CAMLparam3(mlPixmap, mlDPos, mlFilename);
+  CAMLparam4(mlPixmap, mlDPos, mlFilename, mlOnLoad);
   pixmap_t pixmap = Pixmap_val(mlPixmap);
   bool res = impexp_import_png(&pixmap,
                                Int32_val_clip(Field(mlDPos, 0)),
@@ -201,8 +188,11 @@ ml_canvas_image_data_import_png(
   if ((res == false) || (pixmap_valid(pixmap) == false)) {
     caml_failwith("unable to import PNG file into pixmap");
   }
-  CAMLreturn(_ml_canvas_promise_return(Val_unit));
+  caml_callback(mlOnLoad, mlPixmap);
+  CAMLreturn(Val_unit);
 }
+
+
 
 CAMLprim value
 ml_canvas_image_data_export_png(
@@ -728,9 +718,10 @@ ml_canvas_create_offscreen_from_image_data(
 
 CAMLprim value
 ml_canvas_create_offscreen_from_png(
-  value mlFilename)
+  value mlFilename,
+  value mlOnLoad)
 {
-  CAMLparam1(mlFilename);
+  CAMLparam2(mlFilename, mlOnLoad);
   CAMLlocal1(mlCanvas);
   canvas_t *canvas = canvas_create_offscreen_from_png(String_val(mlFilename));
   if (canvas == NULL) {
@@ -738,7 +729,8 @@ ml_canvas_create_offscreen_from_png(
   }
   mlCanvas = Val_canvas(canvas);
   canvas_release(canvas); /* Because Val_canvas retains it */
-  CAMLreturn(_ml_canvas_promise_return(mlCanvas));
+  caml_callback(mlOnLoad, mlCanvas);
+  CAMLreturn(Val_unit);
 }
 
 
@@ -1717,9 +1709,10 @@ CAMLprim value
 ml_canvas_import_png(
   value mlCanvas,
   value mlDPos,
-  value mlFilename)
+  value mlFilename,
+  value mlOnLoad)
 {
-  CAMLparam3(mlCanvas, mlDPos, mlFilename);
+  CAMLparam4(mlCanvas, mlDPos, mlFilename, mlOnLoad);
   bool res =
     canvas_import_png(Canvas_val(mlCanvas),
                       Int32_val_clip(Field(mlDPos, 0)),
@@ -1728,7 +1721,8 @@ ml_canvas_import_png(
   if (res == false) {
     caml_failwith("unable to import PNG");
   }
-  CAMLreturn(_ml_canvas_promise_return(Val_unit));
+  caml_callback(mlOnLoad, mlCanvas);
+  CAMLreturn(Val_unit);
 }
 
 CAMLprim value

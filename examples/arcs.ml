@@ -10,6 +10,14 @@
 
 open OcamlCanvas.V1
 
+let events = ref []
+
+let retain_event e =
+  events := e :: !events
+
+let clear_events () =
+  events := []
+
 let arc c (x, y) t1 t2 r ccw =
   Canvas.clearPath c;
   Canvas.moveTo c (x, y);
@@ -136,24 +144,17 @@ let () =
 
   Canvas.show c;
 
-  Backend.run (fun state -> function
+  retain_event @@
+    React.E.map (fun _ ->
+        Backend.stop ()
+      ) Event.close;
 
-    | Event.KeyAction { canvas = _; timestamp = _;
-                        key; char = _; flags = _; state = Down } ->
-        if key = Event.KeyEscape then
-          Backend.stop ();
-        state, true
+  retain_event @@
+    React.E.map (fun { Event.data = { Event.key; _ }; _ } ->
+        if key = KeyEscape then
+          Backend.stop ()
+      ) Event.key_down;
 
-    | Event.CanvasClosed { canvas = _; timestamp = _ } ->
-        Backend.stop ();
-        state, true
-
-    | Event.Frame { canvas = _; timestamp = _ } ->
-        state, true
-
-    | _ ->
-        state, false
-
-    ) (function _state ->
-         Printf.printf "Goodbye !\n"
-    ) ()
+  Backend.run (fun () ->
+      clear_events ();
+      Printf.printf "Goodbye !\n")

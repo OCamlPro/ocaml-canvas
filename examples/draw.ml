@@ -10,20 +10,40 @@
 
 open OcamlCanvas.V1
 
-type Event.payload += CanvasLoaded of [`Offscreen] Canvas.t
+let events = ref []
+
+let retain_event e =
+  events := e :: !events
+
+let clear_events () =
+  events := []
 
 type state = {
-  selecting : bool;
-  selection : Path.t;
-  first_pos : Point.t;
-  m_pos : Point.t;
-  old_m_pos : Point.t;
-  pressing_button : bool;
-  proper_path : bool;
-  line_width : float;
-  selected_color : Color.t;
-  selecting_color : bool;
-  color_map_opt : [`Offscreen] Canvas.t option;
+  mutable selecting : bool;
+  mutable selection : Path.t;
+  mutable first_pos : Point.t;
+  mutable m_pos : Point.t;
+  mutable old_m_pos : Point.t;
+  mutable pressing_button : bool;
+  mutable proper_path : bool;
+  mutable line_width : float;
+  mutable selected_color : Color.t;
+  mutable selecting_color : bool;
+  mutable color_map_opt : [`Offscreen] Canvas.t option;
+}
+
+let state = {
+  selecting = false;
+  selection = Path.create ();
+  first_pos = (-1.0, -1.0);
+  m_pos = (0.0, 0.0);
+  old_m_pos = (0.0 -. 1.0, 0.0);
+  pressing_button = false;
+  proper_path = false;
+  line_width = 20.0;
+  selected_color = Color.white;
+  selecting_color = false;
+  color_map_opt = None
 }
 
 let () =
@@ -49,126 +69,111 @@ let () =
   Canvas.setFillColor draw Color.black;
   Canvas.fillRect draw ~pos:(0.0, 0.0) ~size:size_f;
 
-  let p_color_map = Canvas.createOffscreenFromPNG "assets/colors.png" in
-  ignore @@
-    Promise.bind p_color_map (fun color_map ->
-      Backend.postCustomEvent (CanvasLoaded (color_map));
-      Promise.return ());
+  let event_color_map = Canvas.createOffscreenFromPNG "assets/colors.png" in
+  retain_event @@
+    React.E.map (fun color_map ->
+        state.color_map_opt <- Some (color_map)
+      ) event_color_map;
 
-  let initial_state = {
-    selecting = false;
-    selection = Path.create ();
-    first_pos = (-1.0, -1.0);
-    m_pos = (0.0, 0.0);
-    old_m_pos = (0.0 -. 1.0, 0.0);
-    pressing_button = false;
-    proper_path = false;
-    line_width = 20.0;
-    selected_color = Color.white;
-    selecting_color = false;
-    color_map_opt = None;
-  }
-  in
+  retain_event @@
+    React.E.map (fun _ ->
+        Backend.stop ()
+      ) Event.close;
 
-  Backend.run (fun state -> function
-
-    | Event.CanvasClosed _
-    | Event.KeyAction { key = KeyEscape; state = Down; _ } ->
-        Backend.stop ();
-        state, true
-
-    | Event.Custom { payload = CanvasLoaded (color_map); _ } ->
-        { state with color_map_opt = Some (color_map) }, true
-
-    | Event.KeyAction { key; state = Down; _ }
-          when not state.selecting_color ->
-        let state =
+  retain_event @@
+    React.E.map (fun { Event.data = { Event.key; _ }; _ } ->
+        if key = KeyEscape then
+          Backend.stop ()
+        else if not state.selecting_color then
           match key with
-          | Event.KeyS ->
+          | KeyS ->
               Canvas.restore draw;
-              { state with first_pos = (-1.0, -1.0);
-                           selection = Path.create ();
-                           selecting = true; proper_path = false }
-          | Event.KeyD ->
+              state.first_pos <- (-1.0, -1.0);
+              state.selection <- Path.create ();
+              state.selecting <- true;
+              state.proper_path <- false
+          | KeyD ->
               Canvas.restore draw;
-              { state with selection = Path.create ();
-                           selecting = false; proper_path = false }
-          | Event.KeyF when state.proper_path && not state.selecting ->
+              state.selection <- Path.create ();
+              state.selecting <- false;
+              state.proper_path <- false
+          | KeyF when state.proper_path && not state.selecting ->
               Canvas.setFillColor draw state.selected_color;
-              Canvas.fillRect draw ~pos:(0.0, 0.0) ~size:size_f;
-              state
-          | Event.KeyUpArrow ->
-              { state with line_width = state.line_width +. 4.0 }
-          | Event.KeyDownArrow when state.line_width > 4.0 ->
-              { state with line_width = state.line_width -. 4.0 }
-          | Event.KeyC ->
-              { state with selecting_color = true }
+              Canvas.fillRect draw ~pos:(0.0, 0.0) ~size:size_f
+          | KeyUpArrow ->
+              state.line_width <- state.line_width +. 4.0
+          | KeyDownArrow when state.line_width > 4.0 ->
+              state.line_width <- state.line_width -. 4.0
+          | KeyC ->
+              state.selecting_color <- true
           | _ ->
-              state
-        in
-        state, true
+              ()
+      ) Event.key_down;
 
-    | Event.MouseMove { position; _ } ->
-        { state with m_pos = Point.of_ints position }, true
+  retain_event @@
+    React.E.map (fun { Event.data = position; _ } ->
+        state.m_pos <- Point.of_ints position
+      ) Event.mouse_move;
 
-    | Event.ButtonAction { position; button = ButtonLeft; state = Down; _ }
-          when state.selecting_color ->
-        let selected_color =
-          match state.color_map_opt with
-          | Some (color_map) -> Canvas.getPixel color_map position
-          | _ -> state.selected_color
-        in
-        { state with selected_color; selecting_color = false;
-                     old_m_pos = Point.of_ints position }, true
+  retain_event @@
+    React.E.map (fun { Event.data = { Event.position; button }; _ } ->
+        match button with
+        | ButtonLeft when state.selecting_color ->
+            let selected_color =
+              match state.color_map_opt with
+              | Some (color_map) -> Canvas.getPixel color_map position
+              | _ -> state.selected_color
+            in
+            state.selected_color <- selected_color;
+            state.selecting_color <- false;
+            state.old_m_pos <- Point.of_ints position
+        | ButtonLeft when state.selecting ->
+            let pos = Point.of_ints position in
+            if fst state.first_pos < 0.0 then
+              begin
+                Path.lineTo state.selection pos;
+                state.first_pos <- pos
+              end
+            else if Point.distance pos state.first_pos >= 15.0 then
+              Path.lineTo state.selection pos
+            else
+              begin
+                Path.close state.selection;
+                Canvas.save draw;
+                Canvas.clipPath draw state.selection ~nonzero:false;
+                state.selecting <- false;
+                state.proper_path <- true;
+                state.pressing_button <- false
+              end
+        | ButtonLeft ->
+            state.pressing_button <- true;
+            state.old_m_pos <- Point.of_ints position
+        | _ ->
+            ()
+      ) Event.button_down;
 
-    | Event.ButtonAction { position; button = ButtonLeft; state = Down; _ }
-          when state.selecting ->
-        let pos = Point.of_ints position in
-        let state =
-          if fst state.first_pos < 0.0 then
-            begin
-              Path.lineTo state.selection pos;
-              { state with first_pos = pos }
-            end
-          else if Point.distance pos state.first_pos >= 15.0 then
-            begin
-              Path.lineTo state.selection pos;
-              state
-            end
-          else
-            begin
-              Path.close state.selection;
-              Canvas.save draw;
-              Canvas.clipPath draw state.selection ~nonzero:false;
-              { state with selecting = false; proper_path = true;
-                           pressing_button = false }
-            end
-        in
-        state, true
+  retain_event @@
+    React.E.map (fun { Event.data = { Event.position = _; button }; _ } ->
+        match button with
+        | ButtonLeft ->
+            state.pressing_button <- false
+        | _ ->
+            ()
+      ) Event.button_up;
 
-    | Event.ButtonAction { position; button = ButtonLeft; state = Down; _ } ->
-        { state with pressing_button = true;
-                     old_m_pos = Point.of_ints position }, true
-
-    | Event.ButtonAction { button = ButtonLeft; state = Up; _ } ->
-        { state with pressing_button = false }, true
-
-    | Event.Frame { canvas = _; timestamp = t; _ } ->
-        let state =
-          if state.pressing_button &&
-               not (state.selecting || state.selecting_color) then
-            begin
-              Canvas.clearPath draw;
-              Canvas.setStrokeColor draw state.selected_color;
-              Canvas.setLineWidth draw state.line_width;
-              Canvas.moveTo draw state.old_m_pos;
-              Canvas.lineTo draw state.m_pos;
-              Canvas.stroke draw;
-              { state with old_m_pos = state.m_pos }
-            end
-          else
-            state
-        in
+  retain_event @@
+    React.E.map (fun { Event.timestamp = t; _ } ->
+        if state.pressing_button &&
+             not (state.selecting || state.selecting_color) then
+          begin
+            Canvas.clearPath draw;
+            Canvas.setStrokeColor draw state.selected_color;
+            Canvas.setLineWidth draw state.line_width;
+            Canvas.moveTo draw state.old_m_pos;
+            Canvas.lineTo draw state.m_pos;
+            Canvas.stroke draw;
+            state.old_m_pos <- state.m_pos
+          end;
         Canvas.setLineDashOffset c (Int64.to_float (Int64.neg t) /. (10000.0));
         Canvas.setGlobalCompositeOperation c Copy;
         Canvas.blit ~dst:c ~dpos:(0, 0) ~src:draw ~spos:(0, 0) ~size:size_i;
@@ -182,12 +187,9 @@ let () =
                 ~spos:(0, 0) ~size:size_i
           | _ ->
               ()
-        end;
-        state, true
+        end
+      ) Event.frame;
 
-    | _ ->
-        state, false
-
-    ) (fun _state ->
-         Printf.printf "Goodbye !\n"
-    ) initial_state
+  Backend.run (fun () ->
+      clear_events ();
+      Printf.printf "Goodbye !\n")

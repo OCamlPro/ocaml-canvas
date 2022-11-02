@@ -248,150 +248,48 @@ module V1 = struct
 
   end
 
-  module Promise = struct
+  type 'kind canvas
 
-    type 'a t = {
-      mutable status: 'a status
-    }
+  type image_data =
+    (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array3.t
 
-    and 'a status =
-      | Alias of 'a t
-      | Rejected of exn
-      | Fulfilled of 'a
-      | Pending of 'a callback list * exn callback list
+  module Pending = struct
 
-    and 'a callback =
-      | Callback : (('a -> 'b t) * 'b t) -> 'a callback
+    type t =
+      | ImageData :
+          image_data React.event *
+            (?step:React.step -> image_data -> unit) * image_data -> t
+      | Canvas :
+          'kind canvas React.event *
+            (?step:React.step -> 'kind canvas -> unit) * 'kind canvas -> t
 
+    let list : t list ref = ref []
 
-    type 'a resolution =
-      | Fulfill of 'a
-      | Reject of exn
+    let add_image_data event send_event c =
+      list := ImageData (event, send_event, c) :: !list
 
-    let create () = { status = Pending ([], []) }
-    let return v = { status = Fulfilled v }
-    let fail e = { status = Rejected e }
+    let add_canvas event send_event c =
+      list := Canvas (event, send_event, c) :: !list
 
-    let rec resolve_alias p =
-      match p.status with
-      | Alias ({ status = Alias _ } as p') -> (* p' is an alias *)
-          let p'' = resolve_alias p' in
-          p.status <- Alias p'';
-          p''
-      | Alias p' -> p' (* p' is not an alias *)
-      | _ -> p
-
-    let bind : type a b . a t -> (a -> b t) -> b t =
-      fun p f ->
-      let p = resolve_alias p in
-      match p.status with
-      | Alias _ -> assert false
-      | Rejected e -> fail e
-      | Fulfilled v -> (try f v with e -> fail e)
-      | Pending (cb, ecb) ->
-          let p' = create () in
-          p.status <- Pending (Callback (f, p') :: cb, ecb);
-          p'
-
-    let catch : type a . (unit -> a t) -> (exn -> a t) -> a t =
-      fun pf f ->
-      let p = resolve_alias (try pf () with e -> fail e) in
-      match p.status with
-      | Alias _ -> assert false
-      | Rejected e -> (try f e with e -> fail e)
-      | Fulfilled v -> return v
-      | Pending (cb, ecb) ->
-          let p' = create () in
-          p.status <- Pending (cb, Callback (f, p') :: ecb);
-          p'
-
-    let rec resolve : type a . a t -> a resolution -> unit =
-      fun p r ->
-      let p = resolve_alias p in
-      match p.status with
-      | Alias _ -> assert false
-      | Rejected _e -> failwith "can't resolve rejected"
-      | Fulfilled _v -> failwith "can't resolve fulfilled"
-      | Pending (cb, ecb) ->
-          match r with
-          | Fulfill v ->
-              let cb = List.rev cb in
-              p.status <- Fulfilled v;
-              callback cb v
-          | Reject e ->
-              let ecb = List.rev ecb in
-              p.status <- Rejected e;
-              if ecb = [] then raise e;
-              callback ecb e
-
-    and callback : type a . a callback list -> a -> unit =
-      fun cb r ->
-      List.iter (function
-          | Callback (f, p'') -> (* p'' pending *)
-              let p'' = resolve_alias p'' in
-              let p' = resolve_alias (try f r with e -> fail e) in
-              match p'.status with (* new or exist *)
-              | Alias _ -> assert false
-              | Rejected e -> resolve p'' (Reject e)
-              | Fulfilled v' -> resolve p''(Fulfill v')
-              | Pending (cb', ecb') ->
-                  match p''.status with
-                  | Alias _ -> assert false
-                  | Rejected _e -> failwith "already failed"
-                  | Fulfilled _v -> failwith "already resolved"
-                  | Pending (cb'', ecb'') ->
-                      p'.status <- Pending (cb'' @ cb', ecb'' @ ecb');
-                      p''.status <- Alias p'
-        ) cb
-
-    let () = Callback.register "ml_canvas_promise_resolve" resolve
-
-    let join : unit t list -> unit t =
-      fun pl ->
-      let pl = List.map resolve_alias pl in
-      let p' = create () in
-      let nb_pending = ref (List.length pl) in
-      let first_rej_opt = ref None in
-      let decrement_pending () =
-        assert (!nb_pending > 0);
-        nb_pending := !nb_pending - 1;
-        if !nb_pending = 0 then
-          match !first_rej_opt with
-          | None -> resolve (resolve_alias p') (Fulfill ())
-          | Some e -> resolve (resolve_alias p') (Reject e)
-      in
-      let ff () =
-        decrement_pending ();
-        return ();
-      in
-      let fr e =
-        begin
-          match !first_rej_opt with
-          | Some _e -> ()
-          | None -> first_rej_opt := Some e
-        end;
-        decrement_pending ();
-        return ();
-      in
-      try
-        List.iter (fun p ->
-            match p.status with
-            | Alias _ -> assert false
-            | Rejected e -> ignore @@ fr e
-            | Fulfilled () -> ignore @@ ff ()
-            | Pending (cb, ecb) ->
-                p.status <- Pending (Callback (ff, create ()) :: cb,
-                                     Callback (fr, create ()) :: ecb)
-          ) pl;
-        p'
-      with e -> fail e
+    let process () =
+      match !list with
+      | [] -> ()
+      | _ ->
+          List.iter (function
+              | ImageData (event, send_event, id) ->
+                  send_event ?step:None id;
+                  React.E.stop event
+              | Canvas (event, send_event, c) ->
+                  send_event ?step:None c;
+                  React.E.stop event
+            ) (List.rev !list);
+          list := []
 
   end
 
   module ImageData = struct
 
-    type t =
-      (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array3.t
+    type t = image_data
 
     let create (width, height) =
       let a = Bigarray.Array3.create Bigarray.int8_unsigned
@@ -399,8 +297,14 @@ module V1 = struct
       Bigarray.Array3.fill a 0;
       a
 
-    external createFromPNG : string -> t Promise.t
+    external createFromPNG_internal : string -> (t -> unit) -> unit
       = "ml_canvas_image_data_create_from_png"
+
+    let createFromPNG filename : t React.event =
+      let event, send_event = React.E.create () in
+      createFromPNG_internal filename
+        (fun id -> Pending.add_image_data event send_event id);
+      event
 
     external getSize : t -> (int * int)
       = "ml_canvas_image_data_get_size"
@@ -422,8 +326,15 @@ module V1 = struct
     external putPixel : t -> (int * int) -> Color.t -> unit
       = "ml_canvas_image_data_put_pixel"
 
-    external importPNG : t -> pos:(int * int) -> string -> unit Promise.t
+    external importPNG_internal :
+      t -> pos:(int * int) -> string -> (t -> unit) -> unit
       = "ml_canvas_image_data_import_png"
+
+    let importPNG id ~pos filename : t React.event =
+      let event, send_event = React.E.create () in
+      importPNG_internal id ~pos filename
+        (fun id -> Pending.add_image_data event send_event id);
+      event
 
     external exportPNG : t -> string -> unit
       = "ml_canvas_image_data_export_png"
@@ -559,7 +470,7 @@ module V1 = struct
 
   module Canvas = struct
 
-    type 'kind t
+    type 'kind t = 'kind canvas
 
     (* Gradients *)
 
@@ -618,8 +529,15 @@ module V1 = struct
     external createOffscreenFromImageData : ImageData.t -> [> `Offscreen] t
       = "ml_canvas_create_offscreen_from_image_data"
 
-    external createOffscreenFromPNG : string -> [> `Offscreen] t Promise.t
+    external createOffscreenFromPNG_internal :
+      string -> ([> `Offscreen] t -> unit) -> unit
       = "ml_canvas_create_offscreen_from_png"
+
+    let createOffscreenFromPNG filename : [> `Offscreen] t React.event =
+      let event, send_event = React.E.create () in
+      createOffscreenFromPNG_internal filename
+        (fun c -> Pending.add_canvas event send_event c);
+      event
 
     (* Visibility *)
 
@@ -876,8 +794,15 @@ module V1 = struct
       spos:(int * int) -> size:(int * int) -> unit
       = "ml_canvas_put_image_data"
 
-    external importPNG : 'kind t -> pos:(int * int) -> string -> unit Promise.t
+    external importPNG_internal :
+      'kind t -> pos:(int * int) -> string -> ('kind t -> unit) -> unit
       = "ml_canvas_import_png"
+
+    let importPNG (c : 'kind t) ~pos filename : 'kind t React.event =
+      let event, send_event = React.E.create () in
+      importPNG_internal c ~pos filename
+        (fun c -> Pending.add_canvas event send_event c);
+      event
 
     external exportPNG : 'kind t -> string -> unit
       = "ml_canvas_export_png"
@@ -888,37 +813,15 @@ module V1 = struct
 
     type timestamp = Int64.t
 
-    type frame_event = {
+    type 'a canvas_event = {
       canvas: [`Onscreen] Canvas.t;
       timestamp: timestamp;
+      data: 'a;
     }
 
-    type focus_direction =
-      | Out
-      | In
+    type position = int * int
 
-    type canvas_focused_event = {
-      canvas: [`Onscreen] Canvas.t;
-      timestamp: timestamp;
-      focus: focus_direction;
-    }
-
-    type canvas_resized_event = {
-      canvas: [`Onscreen] Canvas.t;
-      timestamp: timestamp;
-      size: int * int;
-    }
-
-    type canvas_moved_event = {
-      canvas: [`Onscreen] Canvas.t;
-      timestamp: timestamp;
-      position: int * int;
-    }
-
-    type canvas_closed_event = {
-      canvas: [`Onscreen] Canvas.t;
-      timestamp: timestamp;
-    }
+    type size = int * int
 
     type key =
       (* Function *)
@@ -1084,8 +987,6 @@ module V1 = struct
       | KeyVolumeUp
       | KeyVolumeDown
 
-      | DON'T_MATCH_THIS__USE_CATCH_ALL
-
     type flags = {
       flag_shift : bool;
       flag_alt : bool;
@@ -1094,6 +995,99 @@ module V1 = struct
       flag_capslock : bool;
       flag_numlock : bool;
       flag_dead : bool;
+    }
+
+    type key_data = {
+      key: key;
+      char: Uchar.t;
+      flags: flags;
+    }
+
+    type button =
+      | ButtonNone
+      | ButtonLeft
+      | ButtonMiddle
+      | ButtonRight
+      | ButtonWheelUp
+      | ButtonWheelDown
+
+    type button_data = {
+      position: position;
+      button: button;
+    }
+
+    type 'a ev = 'a React.event * (?step:React.step -> 'a -> unit)
+
+    let frame, send_frame =
+      (React.E.create () : unit canvas_event ev)
+    let focus_in, send_focus_in =
+      (React.E.create () : unit canvas_event ev)
+    let focus_out, send_focus_out =
+      (React.E.create () : unit canvas_event ev)
+    let resize, send_resize =
+      (React.E.create () : size canvas_event ev)
+    let move, send_move =
+      (React.E.create () : position canvas_event ev)
+    let close, send_close =
+      (React.E.create () : unit canvas_event ev)
+    let key_down, send_key_down =
+      (React.E.create () : key_data canvas_event ev)
+    let key_up, send_key_up =
+      (React.E.create () : key_data canvas_event ev)
+    let button_down, send_button_down =
+      (React.E.create () : button_data canvas_event ev)
+    let button_up, send_button_up =
+      (React.E.create () : button_data canvas_event ev)
+    let mouse_move, send_mouse_move =
+      (React.E.create () : position canvas_event ev)
+    (* let backend_stop, send_backend_stop =
+       (React.E.create () : backend_stop_event ev) *)
+
+    let event_timestamp, set_event_timestamp =
+      React.S.create 0L
+
+    external int_of_key : key -> int
+      = "ml_canvas_int_of_key"
+
+    external key_of_int : int -> key
+      = "ml_canvas_key_of_int"
+
+  end
+
+  module InternalEvent = struct
+
+    open Event
+
+    type frame_event = {
+      canvas: [`Onscreen] Canvas.t;
+      timestamp: timestamp;
+    }
+
+    type focus_direction =
+      | Out
+      | In
+
+    type canvas_focused_event = {
+      canvas: [`Onscreen] Canvas.t;
+      timestamp: timestamp;
+      focus: focus_direction;
+    }
+
+    type canvas_resized_event = {
+      canvas: [`Onscreen] Canvas.t;
+      timestamp: timestamp;
+      size: int * int;
+    }
+
+    type canvas_moved_event = {
+      canvas: [`Onscreen] Canvas.t;
+      timestamp: timestamp;
+      position: int * int;
+    }
+
+    type canvas_closed_event = {
+      canvas: [`Onscreen] Canvas.t;
+      timestamp: timestamp;
     }
 
     type state =
@@ -1109,15 +1103,6 @@ module V1 = struct
       state: state;
     }
 
-    type button =
-      | ButtonNone
-      | ButtonLeft
-      | ButtonMiddle
-      | ButtonRight
-      | ButtonWheelUp
-      | ButtonWheelDown
-      | DON'T_MATCH_THIS__USE_CATCH_ALL
-
     type button_action_event = {
       canvas: [`Onscreen] Canvas.t;
       timestamp: timestamp;
@@ -1132,13 +1117,6 @@ module V1 = struct
       position: int * int;
     }
 
-    type payload = ..
-
-    type custom_event = {
-      timestamp: timestamp;
-      payload: payload;
-    }
-
     type t =
       | Frame of frame_event
       | CanvasFocused of canvas_focused_event
@@ -1148,14 +1126,6 @@ module V1 = struct
       | KeyAction of key_action_event
       | ButtonAction of button_action_event
       | MouseMove of mouse_move_event
-      | Custom of custom_event
-      | DON'T_MATCH_THIS__USE_CATCH_ALL
-
-    external int_of_key : key -> int
-      = "ml_canvas_int_of_key"
-
-    external key_of_int : int -> key
-      = "ml_canvas_key_of_int"
 
   end
 
@@ -1164,8 +1134,8 @@ module V1 = struct
     external init : unit -> unit
       = "ml_canvas_init"
 
-    external run :
-      ('state -> Event.t -> 'state * bool) ->
+    external run_internal :
+      ('state -> InternalEvent.t -> 'state * bool) ->
       ('state -> 'dummy1) -> 'state -> 'dummy2
       = "ml_canvas_run"
 
@@ -1178,26 +1148,48 @@ module V1 = struct
     external getCanvas : int -> 'kind Canvas.t option
       = "ml_canvas_get_canvas"
 
-    let pending_custom = ref []
-
-    let postCustomEvent payload =
-      pending_custom := payload :: !pending_custom
-
-    let run h k s =
+    let run k =
+      let open InternalEvent in
+      let open Event in
       let h s e =
-        let s, b = h s e in
-        let pc = List.rev !pending_custom in
-        pending_custom := [];
-        let s =
-          List.fold_left (fun s p ->
-              fst (h s (Event.Custom { timestamp = getCurrentTimestamp ();
-                                       payload = p }))
-            ) s pc
-        in
-        s, b
+        (match e with
+        | Frame { canvas; timestamp } ->
+            let e = { canvas; timestamp; data = () } in
+            set_event_timestamp e.timestamp; send_frame e
+        | CanvasFocused { canvas; timestamp; focus = In } ->
+            let e = { canvas; timestamp; data = () } in
+            set_event_timestamp e.timestamp; send_focus_in e
+        | CanvasFocused { canvas; timestamp; focus = Out } ->
+            let e = { canvas; timestamp; data = () } in
+            set_event_timestamp e.timestamp; send_focus_out e
+        | CanvasResized { canvas; timestamp; size } ->
+            let e = { canvas; timestamp; data = size } in
+            set_event_timestamp e.timestamp; send_resize e
+        | CanvasMoved { canvas; timestamp; position } ->
+            let e = { canvas; timestamp; data = position } in
+            set_event_timestamp e.timestamp; send_move e
+        | CanvasClosed { canvas; timestamp } ->
+            let e = { canvas; timestamp; data = () } in
+            set_event_timestamp e.timestamp; send_close e
+        | KeyAction { canvas; timestamp; key; char; flags; state = Down } ->
+            let e = { canvas; timestamp; data = { key; char; flags } } in
+            set_event_timestamp e.timestamp; send_key_down e
+        | KeyAction { canvas; timestamp; key; char; flags; state = Up } ->
+            let e = { canvas; timestamp; data = { key; char; flags } } in
+            set_event_timestamp e.timestamp; send_key_up e
+        | ButtonAction { canvas; timestamp; position; button; state = Down } ->
+            let e = { canvas; timestamp; data = { position; button } } in
+            set_event_timestamp e.timestamp; send_button_down e
+        | ButtonAction { canvas; timestamp; position; button; state = Up } ->
+            let e = { canvas; timestamp; data = { position; button } } in
+            set_event_timestamp e.timestamp; send_button_up e
+        | MouseMove { canvas; timestamp; position } ->
+            let e = { canvas; timestamp; data = position } in
+            set_event_timestamp e.timestamp; send_mouse_move e);
+        Pending.process ();
+        s, true
       in
-      let k s = k s in
-      run h k s
+      run_internal h k ()
 
   end
 

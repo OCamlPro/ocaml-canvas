@@ -10,6 +10,16 @@
 
 open OcamlCanvas.V1
 
+let events = ref []
+
+let retain_event e =
+  events := e :: !events
+
+let clear_events () =
+  events := []
+
+let state = ref 0.0
+
 let () =
 
   Backend.init ();
@@ -39,28 +49,25 @@ let () =
   Canvas.lineTo c (300.0, 400.0);
   Canvas.stroke c;
 
-  Backend.run (fun state -> function
+  retain_event @@
+    React.E.map (fun _ ->
+        Backend.stop ()
+      ) Event.close;
 
-    | Event.KeyAction { canvas = _; timestamp = _;
-                        key; char = _; flags = _; state = Down } ->
-        if key = Event.KeyEscape then
-          Backend.stop ();
-        state, true
+  retain_event @@
+    React.E.map (fun { Event.data = { Event.key; _ }; _ } ->
+        if key = KeyEscape then
+          Backend.stop ()
+      ) Event.key_down;
 
-    | Event.CanvasClosed { canvas = _; timestamp = _ } ->
-        Backend.stop ();
-        state, true
-
-    | Event.Frame { canvas = _; timestamp = _ } ->
-        let state = state +. 1.0 in
+  retain_event @@
+    React.E.map (fun _ ->
+        state := !state +. 1.0;
         Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(400.0, 650.0);
-        Canvas.setLineDashOffset c state;
-        Canvas.stroke c;
-        state, true
+        Canvas.setLineDashOffset c !state;
+        Canvas.stroke c
+      ) Event.frame;
 
-    | _ ->
-        state, false
-
-    ) (function _state ->
-         Printf.printf "Goodbye !\n"
-    ) 0.0
+  Backend.run (fun () ->
+      clear_events ();
+      Printf.printf "Goodbye !\n")

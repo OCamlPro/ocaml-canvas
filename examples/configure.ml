@@ -18,7 +18,7 @@ let add_executable name assets =
  (public_name ocaml-canvas-%s)
  (modes byte_complete native%s)
  (modules %s)
- (libraries ocaml-canvas)|} name name (if has_jsoo then " js" else "") name;
+ (libraries ocaml-canvas react)|} name name (if has_jsoo then " js" else "") name;
   if has_jsoo && assets <> [] then
     Printf.printf {|
  (js_of_ocaml (javascript_files %s-extfs.js)))
@@ -46,7 +46,6 @@ let () =
   (action (run ./make_index/make_index.exe %%{target})))
 
 |};
-  (* add_executable "test_canvas" []; *) (* optional *)
   add_executable "hello" [ "frog.png" ];
   add_executable "ppm_dump" [];
   add_executable "arcs" [];

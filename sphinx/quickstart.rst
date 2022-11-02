@@ -48,20 +48,14 @@ Handling canvas events
 
 Once the canvases are ready, we may start handling events for these canvases.
 To do so, we use the :code:`Backend.run` function, which runs an event loop.
-**This function MUST be the last instruction of the program**. It takes three
-arguments: the first one is an event handler function, the second one is
-is executed when the event loop has finished running, and the third one
-is an initial state of an arbitrary type. The event loop may be stopped
-by calling :code:`Backend.stop` from the event handler.
+**This function MUST be the last instruction of the program**. It takes a
+single argument, which is a function to be executed when the event loop has
+finished running. The event loop may be stopped by calling
+:code:`Backend.stop` from the event handler.
 
-The event handler function takes two arguments: a state, and an event
-description. It should pattern-match the event against the various
-constructors of the :code:`Event.t` type it is interested in, and return a
-pair consisting of the new state and a boolean value indicating whether
-the event was processed (for some events, this may have some side-effect,
-indicated in the event's description). Each event reports at least the
-canvas on which it occured, and its timestamp. It may also report mouse
-coordinates for mouse events, or keyboard status for keyboard events.
+Each event reports at least the canvas on which it occured, and its
+timestamp. It may also report mouse coordinates for mouse events,
+or keyboard status for keyboard events.
 
 An actual example
 -----------------
@@ -106,33 +100,39 @@ program. It will show the number of frames displayed when quitting.
 
       Canvas.show c;
 
-      Backend.run (fun state -> function
+      let e1 =
+        React.E.map (fun { Event.canvas = _; timestamp = _; data = () } ->
+            Backend.stop ()
+          ) Event.close
+      in
 
-        | Event.CanvasClosed { canvas = _; timestamp = _ } ->
-            Backend.stop ();
-            state, true
+      let e2 =
+        React.E.map (fun { Event.canvas = _; timestamp = _;
+                           data = { Event.key; char = _; flags = _ }; _ } ->
+            if key = KeyEscape then
+              Backend.stop ()
+          ) Event.key_down
+      in
 
-        | Event.KeyAction { canvas = _; timestamp = _; key;
-                            char = _; flags = _; state = Down } ->
-            if key = Event.KeyEscape then
-              Backend.stop ();
-            state, true
-
-        | Event.ButtonAction { canvas = _; timestamp = _; position = (x, y);
-                               button = _; state = Down } ->
+      let e3 =
+        React.E.map (fun { Event.canvas = _; timestamp = _;
+                           data = { Event.position = (x, y); button } } ->
             Canvas.setFillColor c Color.red;
             Canvas.clearPath c;
             Canvas.arc c ~center:(float_of_int x, float_of_int y)
-              ~radius:5.0 ~theta1:0.0 ~theta2:(2.0 *. Const.pi) ~ccw:false;
-            Canvas.fill c ~nonzero:false;
-            state, true
+              ~radius:5.0 ~theta1:0.0 ~theta2:(2.0 * Const.pi) ~ccw:false;
+            Canvas.fill c ~nonzero:false
+          ) Event.button_down
+      in
 
-        | Event.Frame { canvas = _; timestamp = _ } ->
-            Int64.add state Int64.one, true
+      let frames = ref 0 in
 
-        | _ ->
-            state, false
+      let e4 =
+        React.E.map (fun { Event.canvas = _; timestamp = _ } ->
+            frames := Int64.add !frames Int64.one
+          ) Event.frame
+      in
 
-      ) (fun state ->
-          Printf.printf "Displayed %Ld frames. Goodbye !\n" state
-      ) 0L
+      Backend.run (fun () ->
+          ignore e1; ignore e2; ignore e3; ignore e4;
+          Printf.printf "Displayed %Ld frames. Goodbye !\n" !frames)

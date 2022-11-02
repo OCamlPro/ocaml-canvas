@@ -54,19 +54,13 @@
     Once the canvases are ready, we may start handling events for these
     canvases. To do so, we use the {!Backend.run} function, which runs an
     event loop. This function MUST be the last instruction of the program.
-    It takes three arguments: the first one is an event handler function,
-    the second one is executed when the event loop has finished running, and
-    the third one is an initial state of an arbitrary type. The event loop
-    may be stopped by calling {!Backend.stop} from the event handler.
+    It takes a single argument, which is a function to be executed when the
+    event loop has finished running. The event loop may be stopped by calling
+    {!Backend.stop} from any update function.
 
-    The event handler function takes two arguments: a state, and an event
-    description. It should pattern-match the event against the various
-    constructors of the {!Event.t} type it is interested in, and return a
-    pair consisting of the new state and a boolean value indicating whether
-    the event was processed (for some events, this may have some side-effect,
-    indicated in the event's description). Each event reports at least the
-    canvas on which it occured, and its timestamp. It may also report mouse
-    coordinates for mouse events, or keyboard status for keyboard events.
+    Each event reports at least the canvas on which it occured, and its
+    timestamp. It may also report mouse coordinates for mouse events,
+    or keyboard status for keyboard events.
 
     {1 An actual example}
 
@@ -111,51 +105,56 @@
 
       Canvas.show c;
 
-      Backend.run (fun state -> function
+      let e1 =
+        React.E.map (fun { Event.canvas = _; timestamp = _; data = () } ->
+            Backend.stop ()
+          ) Event.close
+      in
 
-        | Event.CanvasClosed { canvas = _; timestamp = _ } ->
-            Backend.stop ();
-            state, true
+      let e2 =
+        React.E.map (fun { Event.canvas = _; timestamp = _;
+                           data = { Event.key; char = _; flags = _ }; _ } ->
+            if key = KeyEscape then
+              Backend.stop ()
+          ) Event.key_down
+      in
 
-        | Event.KeyAction { canvas = _; timestamp = _; key;
-                            char = _; flags = _; state = Down } ->
-            if key = Event.KeyEscape then
-              Backend.stop ();
-            state, true
-
-        | Event.ButtonAction { canvas = _; timestamp = _; position = (x, y);
-                               button = _; state = Down } ->
+      let e3 =
+        React.E.map (fun { Event.canvas = _; timestamp = _;
+                           data = { Event.position = (x, y); button } } ->
             Canvas.setFillColor c Color.red;
             Canvas.clearPath c;
             Canvas.arc c ~center:(float_of_int x, float_of_int y)
               ~radius:5.0 ~theta1:0.0 ~theta2:(2.0 * Const.pi) ~ccw:false;
-            Canvas.fill c ~nonzero:false;
-            state, true
+            Canvas.fill c ~nonzero:false
+          ) Event.button_down
+      in
 
-        | Event.Frame { canvas = _; timestamp = _ } ->
-            Int64.add state Int64.one, true
+      let frames = ref 0 in
 
-        | _ ->
-            state, false
+      let e4 =
+        React.E.map (fun { Event.canvas = _; timestamp = _ } ->
+            frames := Int64.add !frames Int64.one
+          ) Event.frame
+      in
 
-      ) (fun state ->
-          Printf.printf "Displayed %Ld frames. Goodbye !\n" state
-      ) 0L
+      Backend.run (fun () ->
+          ignore e1; ignore e2; ignore e3; ignore e4;
+          Printf.printf "Displayed %Ld frames. Goodbye !\n" !frames)
 ]}
 *)
 
 module V1 : sig
 (** The OCaml-Canvas module is versioned. This is version 1.
     It is guaranteed that this interface will remain compatible with
-    existing programs, provided the two following rules are followed:
-    - pattern matching over Event.t MUST always include a catch-all case
-    - modules defined here MUST NOT be opened nor included in other modules
-    This second rule can actually be weakened a bit as follows, if needed:
-    such module opening or inclusion may only be performed if and only if
-    no identifier visible before the open or include directive is used
-    in the scope where the contents of the open or include directive is
-    visible, or if such identifiers are used, they only consist of a
-    single character
+    existing programs, provided that the modules defined here ARE NEVER
+    included in other modules nor opened globally.
+    Local opens should be performed very carefully, as new identifiers
+    may be introduced in modules and thus shadow any identifier defined
+    before the open directive. An effort will be made to avoid introducing
+    new identifiers that are of length 3 of less, or starting with a single
+    character followed by an underscore. Hence such identifiers should be
+    safe to use without risking to be shadowed.
  *)
 
   module Const : sig
@@ -433,31 +432,6 @@ module V1 : sig
 
   end
 
-  module Promise : sig
-  (** Simple promise handling *)
-
-    type 'a t
-    (** Promises have an abstract type *)
-
-    val return : 'a -> 'a t
-    (** [return v] creates a fulfilled promise with value [v] *)
-
-    val fail : exn -> 'a t
-    (** [fail e] creates a rejected promise with exception [e] *)
-
-    val bind : 'a t -> ('a -> 'b t) -> 'b t
-    (** [bind p f] attaches the callback [f] to promise [p]  *)
-
-    val catch : (unit -> 'a t) -> (exn -> 'a t) -> 'a t
-    (** [catch f h] calls [f], returning a promise, and sets [h]
-        to be called if that promise becomes rejected *)
-
-    val join : unit t list -> unit t
-    (** [join pl] creates a promise that is fulfilled when all promises in
-        [pl] are fulfilled, or rejected if a promise in [pl] is rejected *)
-
-  end
-
   module ImageData : sig
   (** Image data manipulation functions *)
 
@@ -469,7 +443,7 @@ module V1 : sig
     val create : (int * int) -> t
     (** [create size] creates an empty image data of the given [size] *)
 
-    val createFromPNG : string -> t Promise.t
+    val createFromPNG : string -> t React.event
     (** [createFromPNG filename] creates an image data
         with the contents of PNG file [filename] *)
 
@@ -498,7 +472,7 @@ module V1 : sig
     (** [putPixel id pos c] sets the color of the pixel
         at position [pos] in image data [id] to color [c] *)
 
-    val importPNG : t -> pos:(int * int) -> string -> unit Promise.t
+    val importPNG : t -> pos:(int * int) -> string -> t React.event
     (** [importPNG id ~pos filename] loads the file [filename]
         into image data [id] at position [pos] *)
 
@@ -758,7 +732,7 @@ module V1 : sig
     (** [createOffscreenFromImageData id] creates an offscreen
         canvas with the contents of image data [id] *)
 
-    val createOffscreenFromPNG : string -> [> `Offscreen] t Promise.t
+    val createOffscreenFromPNG : string -> [`Offscreen] t React.event
     (** [createOffscreen filename] creates an offscreen
         canvas with the contents of PNG file [filename] *)
 
@@ -1099,7 +1073,8 @@ module V1 : sig
         at position [dpos] in canvas [c] with the provided pixel
         data starting at position [spos] and of size [size] *)
 
-    val importPNG : 'kind t -> pos:(int * int) -> string -> unit Promise.t
+    val importPNG :
+      'kind t -> pos:(int * int) -> string -> 'kind t React.event
     (** [importPNG c ~pos filename] loads the file
         [filename] into canvas [c] at position [pos] *)
 
@@ -1119,43 +1094,18 @@ module V1 : sig
     (** Timestamps represent the time in microseconds,
         from an arbitrary starting point *)
 
-    type frame_event = {
+    type 'a canvas_event = {
       canvas: [`Onscreen] Canvas.t;
       timestamp: timestamp;
+      data: 'a;
     }
-    (** Describes a frame event *)
+    (** Generic description of events occurring on canvases *)
 
-    type focus_direction =
-      | Out
-      | In (** *)
-    (** Focus direction *)
+    type position = int * int
+    (** A position is a pair of integers *)
 
-    type canvas_focused_event = {
-      canvas: [`Onscreen] Canvas.t;
-      timestamp: timestamp;
-      focus: focus_direction; (** Whether the focus was taken or lost *)
-    }
-    (** Describes a canvas focus event *)
-
-    type canvas_resized_event = {
-      canvas: [`Onscreen] Canvas.t;
-      timestamp: timestamp;
-      size: int * int; (** New canvas size *)
-    }
-    (** Describes a canvas resize event *)
-
-    type canvas_moved_event = {
-      canvas: [`Onscreen] Canvas.t;
-      timestamp: timestamp;
-      position: int * int; (** New canvas position *)
-    }
-    (** Describes a canvas motion event *)
-
-    type canvas_closed_event = {
-      canvas: [`Onscreen] Canvas.t;
-      timestamp: timestamp;
-    }
-    (** Describes a canvas closure event *)
+    type size = int * int
+    (** A size is a pair of integers *)
 
     type key =
       (* Function *)
@@ -1320,10 +1270,6 @@ module V1 : sig
       | KeyMute
       | KeyVolumeUp
       | KeyVolumeDown
-
-      | DON'T_MATCH_THIS__USE_CATCH_ALL (** *)
-      (* Never match on this constructor; always
-         add a catch-all case when matching events *)
     (** A physical keyboard key, assuming an ideal "extended" QWERTY keyboard
         that synthetizes various layouts, including ANSI, ISO and JIS.
         Note that the symbol on the key may be different from the symbolic
@@ -1341,18 +1287,10 @@ module V1 : sig
     }
     (** The state of various keyboard flags *)
 
-    type state =
-      | Up
-      | Down (** *)
-    (** A keyboard key or mouse button state *)
-
-    type key_action_event = {
-      canvas: [`Onscreen] Canvas.t;
-      timestamp: timestamp;
+    type key_data = {
       key: key;      (** Physical key that was pressed/released *)
       char: Uchar.t; (** Equivalent Unicode character in the current layout *)
       flags: flags;  (** State of various modifier keys when the event occured*)
-      state: state;  (** Whether the key was pressed or released *)
     }
     (** Describes a keyboard event *)
 
@@ -1363,68 +1301,58 @@ module V1 : sig
       | ButtonRight
       | ButtonWheelUp
       | ButtonWheelDown
-      | DON'T_MATCH_THIS__USE_CATCH_ALL (** *)
-      (* Never match on this constructor; always
-         add a catch-all case when matching events *)
     (** A mouse button *)
 
-    type button_action_event = {
-      canvas: [`Onscreen] Canvas.t;
-      timestamp: timestamp;
-      position: int * int; (** Cursor position when the event occured *)
-      button: button;      (** Button that was pressed/released *)
-      state: state;        (** Whether the button was pressed or released *)
+    type button_data = {
+      position: position; (** Cursor position when the event occured *)
+      button: button;     (** Button that was pressed/released *)
     }
     (** Describes a mouse button event *)
 
-    type mouse_move_event = {
-      canvas: [`Onscreen] Canvas.t;
-      timestamp: timestamp;
-      position: int * int; (** Cursor position when the event occured *)
-    }
-    (** Describes a mouse motion event *)
+    val frame : unit canvas_event React.event
+    (** Occurs when the backend determines it is time to draw a new frame.
+        A typical frequency is 60 times per second, though this varies
+        depending on the platform. *)
 
-    type payload = ..
-    (** An extensible type so you can declare your own events,
-        for use with {!Backend.postCustomEvent} *)
+    val focus_in : unit canvas_event React.event
+    (** Occurs when the canvas becomes active as a
+        result of being clicked or tabbed-into *)
 
-    type custom_event = {
-      timestamp: timestamp;
-      payload: payload; (** Arbitrary payload *)
-    }
-    (** Describes a custom event *)
+    val focus_out : unit canvas_event React.event
+    (** Occurs when the canvas becomes inactive as a result
+        of another canvas being clicked or tabbed-into *)
 
-    type t =
-      | Frame of frame_event
-      (** Occurs 60 times per second. If you actually draw something to the
-          canvas when handling this event, you should return true to let the
-          library know that the contents of the canvas changed, so that the
-          display can be refreshed. *)
-      | CanvasFocused of canvas_focused_event
-      (** Occurs when the canvas becomes active or inactive,
-          as a result of being clicked or tabbed-into *)
-      | CanvasResized of canvas_resized_event
-      (** Occurs when the canvas is resized by a user action *)
-      | CanvasMoved of canvas_moved_event
-      (** Occurs when the canvas is moved by a user action *)
-      | CanvasClosed of canvas_closed_event
-      (** Occurs when the user clicks the close button *)
-      | KeyAction of key_action_event
-      (** Occurs when the user presses a key on the keyboard. The event
-          description contains both the physical key (of type {!Event.key}
-          and the Unicode character corresponding to that key (if any),
-          according to the current keyboard layout. For instance, pressing
-          the "A" key on an AZERTY keyboard will yield a physical key
-          [Event.KeyQ] and the Unicode code point for character "A". *)
-      | ButtonAction of button_action_event
-      (** Occurs when the user presses a mouse button *)
-      | MouseMove of mouse_move_event
-      (** Occurs when the user moves the mouse cursor *)
-      | Custom of custom_event
-      (** Occurs as a response to a call to {!Backend.postCustomEvent} *)
-      | DON'T_MATCH_THIS__USE_CATCH_ALL (** *)
-      (* Never match on this constructor; always
-         add a catch-all case when matching events *)
+    val resize : size canvas_event React.event
+    (** Occurs when the canvas is resized by a user action *)
+
+    val move : position canvas_event React.event
+    (** Occurs when the canvas is moved by a user action *)
+
+    val close : unit canvas_event React.event
+    (** Occurs when the user clicks the close button *)
+
+    val key_down : key_data canvas_event React.event
+    (** Occurs when the user presses a key on the keyboard. The event
+        description contains both the physical key (of type {!Event.key}
+        and the Unicode character corresponding to that key (if any),
+        according to the current keyboard layout. For instance, pressing
+        the "A" key on an AZERTY keyboard will yield a physical key
+        [Event.KeyQ] and the Unicode code point for character "A". *)
+
+    val key_up : key_data canvas_event React.event
+    (** Occurs when the user releases a key on the keyboard *)
+
+    val button_down : button_data canvas_event React.event
+    (** Occurs when the user presses a mouse button *)
+
+    val button_up : button_data canvas_event React.event
+    (** Occurs when the user releases a mouse button *)
+
+    val mouse_move : size canvas_event React.event
+    (** Occurs when the user moves the mouse cursor *)
+
+    val event_timestamp : Int64.t React.signal
+    (** The timestamp of the last canvas event that occurred *)
 
     val int_of_key : key -> int
     (** [int_of_key k] returns a platform-independent integer representation
@@ -1434,8 +1362,8 @@ module V1 : sig
     *)
 
     val key_of_int : int -> key
-  (** [key_of_int i] returns the key corresponding to the
-      platform-independent integer [i]. *)
+    (** [key_of_int i] returns the key corresponding to the
+        platform-independent integer [i]. *)
 
   end
 
@@ -1445,34 +1373,23 @@ module V1 : sig
     val init : unit -> unit
     (** [init ()] initializes the backend *)
 
-    val run :
-      ('state -> Event.t -> 'state * bool) ->
-      ('state -> 'dummy1) -> 'state -> 'dummy2
-    (** [run h k s] executes the backend event loop, calling the event handler
-        function [h] when an event occurs, and calling the continuation
-        function [k] when the event loop terminates, passing the given
-        state [s] to these functions as needed. The event handler function
-        should return the new state, and a boolean indicating whether the
-        event was actually handled. The backend uses this information to
-        determine whether further actions need to be performed (eg. presenting
-        the contents of a canvas when returning true in a frame event), or
-        whether a default action should be performed (as of now, no default
-        action is performed, but this may change in the future). Simply put,
-        just return true in events you actually handle, and false otherwise.
-        Note that the call to [run] MUST be the last instruction in your
-        program (to avoid different behaviors between the native and javascript
-        backends). If you need to perform additional stuff when the program
-        terminates, yout MUST use the [k] function: it is meant for that.
-        Note that calling [run] from the event handler function [h] will
-        just be ignored (though this should not be done). However, [run]
-        may be called from the [k] function, if needed. *)
+    val run : (unit -> 'dummy1) -> 'dummy2
+    (** [run k] executes the backend event loop, calling update functions as
+        needed, and calling the continuation function [k] when the event loop
+        terminates. Note that the call to [run] MUST be the last instruction
+        in your program (to avoid different behaviors between the native and
+        javascript backends). If you need to perform additional stuff when
+        the program terminates, you MUST use the [k] function: it is meant
+        for that. Note that calling [run] from an update function will just
+        be ignored (though this should not be done). However, [run] may
+        be called from the [k] function, if needed. *)
 
     val stop : unit -> unit
     (** [stop ()] requests termination of the currently running event
-        loop, if any. It should be called from an event handler function.
+        loop, if any. It should be called from an update function.
         Actual termination of the event loop will occur at the end of
         the current iteration of the event loop, so after calling [stop]
-        an event handler should proceed normally until it returns. *)
+        an update function should proceed normally until it returns. *)
 
     val getCanvas : int -> 'a Canvas.t option
     (** [getCanvas i] returns the canvas that has id [i], if it exists *)
@@ -1480,12 +1397,6 @@ module V1 : sig
     val getCurrentTimestamp : unit -> Event.timestamp
     (** [getCurrentTimestamp ()] returns the current timestamp
         in microseconds, from an arbitrary starting point *)
-
-    val postCustomEvent : Event.payload -> unit
-    (** [postCustomEvent p] requests the backend to process a custom event
-        with payload [p] ; if called within an event handler, this event
-        will be processed after processing of the current event is done.
-        This ensures the state remains consistent accross events. *)
 
   end
 

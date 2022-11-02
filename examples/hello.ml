@@ -10,15 +10,29 @@
 
 open OcamlCanvas.V1
 
-type Event.payload += CanvasBlit of [`Offscreen] Canvas.t *
-                                      [`Onscreen] Canvas.t * (int * int)
+let events = ref []
+
+let retain_event e =
+  events := e :: !events
+
+let clear_events () =
+  events := []
+
+type state = {
+  mutable frog_opt : [`Offscreen] Canvas.t option;
+  mutable frames : Int64.t
+}
+
+let state = {
+  frog_opt = None;
+  frames = 0L;
+}
 
 let () =
 
   Backend.init ();
 
-  let c = Canvas.createFramed "Hello world"
-            ~pos:(300, 200) ~size:(300, 200) in
+  let c = Canvas.createFramed "Hello world" ~pos:(300, 200) ~size:(300, 200) in
 
   Canvas.setFillColor c Color.orange;
   Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(300.0, 200.0);
@@ -55,65 +69,59 @@ let () =
   Canvas.blit ~dst:c ~dpos:(10, 0) ~src:c2 ~spos:(0, 0) ~size:(15, 15);
   Canvas.restore c;
 
-  let p_c3 = Canvas.createOffscreenFromPNG "assets/frog.png" in
-  ignore @@
-    Promise.bind p_c3 (fun c3 ->
-        let size = Canvas.getSize c3 in
+  let event_frog = Canvas.createOffscreenFromPNG "assets/frog.png" in
+  retain_event @@
+    React.E.map (fun frog ->
+        state.frog_opt <- Some (frog);
+        let size = Canvas.getSize frog in
         Canvas.save c;
         Canvas.setTransform c Transform.id;
         Canvas.scale c (0.25, 0.25);
-        Canvas.blit ~dst:c ~dpos:(750, 400) ~src:c3 ~spos:(0, 0) ~size;
-        Canvas.restore c;
-        Promise.return ());
+        Canvas.blit ~dst:c ~dpos:(750, 400) ~src:frog ~spos:(0, 0) ~size;
+        Canvas.restore c
+      ) event_frog;
 
-  Backend.run (fun state -> function
+  retain_event @@
+    React.E.map (fun { Event.canvas = _; timestamp = _; data = () } ->
+        Backend.stop ()
+      ) Event.close;
 
-    | Event.Custom { timestamp = _; payload = CanvasBlit (c', c, (x, y)) } ->
-        let size = Canvas.getSize c' in
-        Canvas.save c;
-        Canvas.setTransform c Transform.id;
-        let (w, h) = Canvas.getSize c' in
-        Canvas.translate c (float_of_int x, float_of_int y);
-        Canvas.scale c (0.25, 0.25);
-        Canvas.translate c (-. 0.5 *. float_of_int w, - 0.5 *. float_of_int h);
-        Canvas.blit ~dst:c ~dpos:(0, 0) ~src:c' ~spos:(0, 0) ~size;
-        Canvas.restore c;
-        state, true
+  retain_event @@
+    React.E.map (fun { Event.canvas = _; timestamp = _;
+                       data = { Event.key; char = _; flags = _ }; _ } ->
+        if key = KeyEscape then
+          Backend.stop ()
+      ) Event.key_down;
 
-    | Event.ButtonAction { canvas = _c; timestamp = _; position = (x, y);
-                           button = ButtonRight; state = Down } ->
-        let p_c = Canvas.createOffscreenFromPNG "assets/frog.png" in
-        ignore @@
-          Promise.bind p_c (fun c' ->
-              Backend.postCustomEvent (CanvasBlit (c', c, (x, y)));
-              Promise.return ());
-        state, true
+  retain_event @@
+    React.E.map (fun { Event.canvas = c; timestamp = _;
+                       data = { Event.position = (x, y); button } } ->
+        match button, state.frog_opt with
+        | ButtonRight, Some (frog) ->
+            let size = Canvas.getSize frog in
+            let w, h = size in
+            Canvas.save c;
+            Canvas.setTransform c Transform.id;
+            Canvas.translate c (float_of_int x, float_of_int y);
+            Canvas.scale c (0.25, 0.25);
+            Canvas.translate c (-0.5 *. float_of_int w, -0.5 *. float_of_int h);
+            Canvas.blit ~dst:c ~dpos:(0, 0) ~src:frog ~spos:(0, 0) ~size;
+            Canvas.restore c
+        | ButtonLeft, _ ->
+            Canvas.setFillColor c Color.red;
+            Canvas.clearPath c;
+            Canvas.arc c ~center:(float_of_int x, float_of_int y)
+              ~radius:5.0 ~theta1:0.0 ~theta2:(2.0 *. Const.pi) ~ccw:false;
+            Canvas.fill c ~nonzero:false;
+        | _ ->
+            ()
+      ) Event.button_down;
 
-    | Event.ButtonAction { canvas = c; timestamp = _;
-                           position = (x, y); button = _; state = Down } ->
-        Canvas.setFillColor c Color.red;
-        Canvas.clearPath c;
-        Canvas.arc c ~center:(float_of_int x, float_of_int y)
-          ~radius:5.0 ~theta1:0.0 ~theta2:(2.0 *. Const.pi) ~ccw:false;
-        Canvas.fill c ~nonzero:false;
-        state, true
+  retain_event @@
+    React.E.map (fun { Event.canvas = _; timestamp = _ } ->
+        state.frames <- Int64.add state.frames Int64.one
+      ) Event.frame;
 
-    | Event.KeyAction { canvas = _; timestamp = _; key;
-                        char = _; flags = _; state = Down } ->
-        if key = Event.KeyEscape then
-          Backend.stop ();
-        state, true
-
-    | Event.CanvasClosed { canvas = _; timestamp = _ } ->
-        Backend.stop ();
-        state, true
-
-    | Event.Frame { canvas = _; timestamp = _ } ->
-        Int64.add state Int64.one, true
-
-    | _ ->
-        state, false
-
-    ) (fun state ->
-         Printf.printf "Displayed %Ld frames. Goodbye !\n" state
-    ) 0L
+  Backend.run (fun () ->
+      clear_events ();
+      Printf.printf "Displayed %Ld frames. Goodbye !\n" state.frames)

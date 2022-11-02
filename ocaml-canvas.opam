@@ -13,10 +13,11 @@ bug-reports: "https://github.com/OCamlPro/ocaml-canvas/issues"
 homepage: "https://ocamlpro.github.io/ocaml-canvas/"
 doc: "https://ocamlpro.github.io/ocaml-canvas/sphinx"
 depends: [
-  "ocaml"                  { >= "4.03.0" }
+  "ocaml"                  { >= "4.03" }
   "dune"                   { >= "2.2" }
   "dune-configurator"      { >= "1.11" }
-  "odoc"                   { with-doc }
+  "react"                  { >= "1.0" }
+  "odoc"                   { >= "1.4" & with-doc }
 
   "conf-freetype"          { os != "macos" & os != "win32" }
   "conf-libfontconfig"     { os != "macos" & os != "win32" }
