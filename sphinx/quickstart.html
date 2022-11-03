@@ -9,8 +9,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>Quick start &mdash; ocaml-canvas master
- (1a2034d
-) (2022/10/11 07:38) documentation</title>
+ (a2b86f8
+) (2022/11/03 13:28) documentation</title>
   
 
   
@@ -65,7 +65,7 @@
             
               <div class="version">
                 master
- (1a2034d
+ (a2b86f8
 )
               </div>
             
@@ -214,19 +214,13 @@ using the functions <code class="code docutils literal notranslate"><span class=
 <h2>Handling canvas events<a class="headerlink" href="#handling-canvas-events" title="Permalink to this headline">¶</a></h2>
 <p>Once the canvases are ready, we may start handling events for these canvases.
 To do so, we use the <code class="code docutils literal notranslate"><span class="pre">Backend.run</span></code> function, which runs an event loop.
-<strong>This function MUST be the last instruction of the program</strong>. It takes three
-arguments: the first one is an event handler function, the second one is
-is executed when the event loop has finished running, and the third one
-is an initial state of an arbitrary type. The event loop may be stopped
-by calling <code class="code docutils literal notranslate"><span class="pre">Backend.stop</span></code> from the event handler.</p>
-<p>The event handler function takes two arguments: a state, and an event
-description. It should pattern-match the event against the various
-constructors of the <code class="code docutils literal notranslate"><span class="pre">Event.t</span></code> type it is interested in, and return a
-pair consisting of the new state and a boolean value indicating whether
-the event was processed (for some events, this may have some side-effect,
-indicated in the event’s description). Each event reports at least the
-canvas on which it occured, and its timestamp. It may also report mouse
-coordinates for mouse events, or keyboard status for keyboard events.</p>
+<strong>This function MUST be the last instruction of the program</strong>. It takes a
+single argument, which is a function to be executed when the event loop has
+finished running. The event loop may be stopped by calling
+<code class="code docutils literal notranslate"><span class="pre">Backend.stop</span></code> from the event handler.</p>
+<p>Each event reports at least the canvas on which it occured, and its
+timestamp. It may also report mouse coordinates for mouse events,
+or keyboard status for keyboard events.</p>
 </div>
 <div class="section" id="an-actual-example">
 <h2>An actual example<a class="headerlink" href="#an-actual-example" title="Permalink to this headline">¶</a></h2>
@@ -269,36 +263,42 @@ program. It will show the number of frames displayed when quitting.</p>
 
   <span class="nn">Canvas</span><span class="p">.</span><span class="n">show</span> <span class="n">c</span><span class="o">;</span>
 
-  <span class="nn">Backend</span><span class="p">.</span><span class="n">run</span> <span class="o">(</span><span class="k">fun</span> <span class="n">state</span> <span class="o">-&gt;</span> <span class="k">function</span>
+  <span class="k">let</span> <span class="n">e1</span> <span class="o">=</span>
+    <span class="nn">React</span><span class="p">.</span><span class="nn">E</span><span class="p">.</span><span class="n">map</span> <span class="o">(</span><span class="k">fun</span> <span class="o">{</span> <span class="nn">Event</span><span class="p">.</span><span class="n">canvas</span> <span class="o">=</span> <span class="o">_;</span> <span class="n">timestamp</span> <span class="o">=</span> <span class="o">_;</span> <span class="n">data</span> <span class="o">=</span> <span class="bp">()</span> <span class="o">}</span> <span class="o">-&gt;</span>
+        <span class="nn">Backend</span><span class="p">.</span><span class="n">stop</span> <span class="bp">()</span>
+      <span class="o">)</span> <span class="nn">Event</span><span class="p">.</span><span class="n">close</span>
+  <span class="k">in</span>
 
-    <span class="o">|</span> <span class="nn">Event</span><span class="p">.</span><span class="nc">CanvasClosed</span> <span class="o">{</span> <span class="n">canvas</span> <span class="o">=</span> <span class="o">_;</span> <span class="n">timestamp</span> <span class="o">=</span> <span class="o">_</span> <span class="o">}</span> <span class="o">-&gt;</span>
-        <span class="nn">Backend</span><span class="p">.</span><span class="n">stop</span> <span class="bp">()</span><span class="o">;</span>
-        <span class="n">state</span><span class="o">,</span> <span class="bp">true</span>
+  <span class="k">let</span> <span class="n">e2</span> <span class="o">=</span>
+    <span class="nn">React</span><span class="p">.</span><span class="nn">E</span><span class="p">.</span><span class="n">map</span> <span class="o">(</span><span class="k">fun</span> <span class="o">{</span> <span class="nn">Event</span><span class="p">.</span><span class="n">canvas</span> <span class="o">=</span> <span class="o">_;</span> <span class="n">timestamp</span> <span class="o">=</span> <span class="o">_;</span>
+                       <span class="n">data</span> <span class="o">=</span> <span class="o">{</span> <span class="nn">Event</span><span class="p">.</span><span class="n">key</span><span class="o">;</span> <span class="kt">char</span> <span class="o">=</span> <span class="o">_;</span> <span class="n">flags</span> <span class="o">=</span> <span class="o">_</span> <span class="o">};</span> <span class="o">_</span> <span class="o">}</span> <span class="o">-&gt;</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="o">=</span> <span class="nc">KeyEscape</span> <span class="k">then</span>
+          <span class="nn">Backend</span><span class="p">.</span><span class="n">stop</span> <span class="bp">()</span>
+      <span class="o">)</span> <span class="nn">Event</span><span class="p">.</span><span class="n">key_down</span>
+  <span class="k">in</span>
 
-    <span class="o">|</span> <span class="nn">Event</span><span class="p">.</span><span class="nc">KeyAction</span> <span class="o">{</span> <span class="n">canvas</span> <span class="o">=</span> <span class="o">_;</span> <span class="n">timestamp</span> <span class="o">=</span> <span class="o">_;</span> <span class="n">key</span><span class="o">;</span>
-                        <span class="kt">char</span> <span class="o">=</span> <span class="o">_;</span> <span class="n">flags</span> <span class="o">=</span> <span class="o">_;</span> <span class="n">state</span> <span class="o">=</span> <span class="nc">Down</span> <span class="o">}</span> <span class="o">-&gt;</span>
-        <span class="k">if</span> <span class="n">key</span> <span class="o">=</span> <span class="nn">Event</span><span class="p">.</span><span class="nc">KeyEscape</span> <span class="k">then</span>
-          <span class="nn">Backend</span><span class="p">.</span><span class="n">stop</span> <span class="bp">()</span><span class="o">;</span>
-        <span class="n">state</span><span class="o">,</span> <span class="bp">true</span>
-
-    <span class="o">|</span> <span class="nn">Event</span><span class="p">.</span><span class="nc">ButtonAction</span> <span class="o">{</span> <span class="n">canvas</span> <span class="o">=</span> <span class="o">_;</span> <span class="n">timestamp</span> <span class="o">=</span> <span class="o">_;</span> <span class="n">position</span> <span class="o">=</span> <span class="o">(</span><span class="n">x</span><span class="o">,</span> <span class="n">y</span><span class="o">);</span>
-                           <span class="n">button</span> <span class="o">=</span> <span class="o">_;</span> <span class="n">state</span> <span class="o">=</span> <span class="nc">Down</span> <span class="o">}</span> <span class="o">-&gt;</span>
+  <span class="k">let</span> <span class="n">e3</span> <span class="o">=</span>
+    <span class="nn">React</span><span class="p">.</span><span class="nn">E</span><span class="p">.</span><span class="n">map</span> <span class="o">(</span><span class="k">fun</span> <span class="o">{</span> <span class="nn">Event</span><span class="p">.</span><span class="n">canvas</span> <span class="o">=</span> <span class="o">_;</span> <span class="n">timestamp</span> <span class="o">=</span> <span class="o">_;</span>
+                       <span class="n">data</span> <span class="o">=</span> <span class="o">{</span> <span class="nn">Event</span><span class="p">.</span><span class="n">position</span> <span class="o">=</span> <span class="o">(</span><span class="n">x</span><span class="o">,</span> <span class="n">y</span><span class="o">);</span> <span class="n">button</span> <span class="o">}</span> <span class="o">}</span> <span class="o">-&gt;</span>
         <span class="nn">Canvas</span><span class="p">.</span><span class="n">setFillColor</span> <span class="n">c</span> <span class="nn">Color</span><span class="p">.</span><span class="n">red</span><span class="o">;</span>
         <span class="nn">Canvas</span><span class="p">.</span><span class="n">clearPath</span> <span class="n">c</span><span class="o">;</span>
         <span class="nn">Canvas</span><span class="p">.</span><span class="n">arc</span> <span class="n">c</span> <span class="o">~</span><span class="n">center</span><span class="o">:(</span><span class="n">float_of_int</span> <span class="n">x</span><span class="o">,</span> <span class="n">float_of_int</span> <span class="n">y</span><span class="o">)</span>
-          <span class="o">~</span><span class="n">radius</span><span class="o">:</span><span class="mi">5</span><span class="o">.</span><span class="mi">0</span> <span class="o">~</span><span class="n">theta1</span><span class="o">:</span><span class="mi">0</span><span class="o">.</span><span class="mi">0</span> <span class="o">~</span><span class="n">theta2</span><span class="o">:(</span><span class="mi">2</span><span class="o">.</span><span class="mi">0</span> <span class="o">*.</span> <span class="nn">Const</span><span class="p">.</span><span class="n">pi</span><span class="o">)</span> <span class="o">~</span><span class="n">ccw</span><span class="o">:</span><span class="bp">false</span><span class="o">;</span>
-        <span class="nn">Canvas</span><span class="p">.</span><span class="n">fill</span> <span class="n">c</span> <span class="o">~</span><span class="n">nonzero</span><span class="o">:</span><span class="bp">false</span><span class="o">;</span>
-        <span class="n">state</span><span class="o">,</span> <span class="bp">true</span>
+          <span class="o">~</span><span class="n">radius</span><span class="o">:</span><span class="mi">5</span><span class="o">.</span><span class="mi">0</span> <span class="o">~</span><span class="n">theta1</span><span class="o">:</span><span class="mi">0</span><span class="o">.</span><span class="mi">0</span> <span class="o">~</span><span class="n">theta2</span><span class="o">:(</span><span class="mi">2</span><span class="o">.</span><span class="mi">0</span> <span class="o">*</span> <span class="nn">Const</span><span class="p">.</span><span class="n">pi</span><span class="o">)</span> <span class="o">~</span><span class="n">ccw</span><span class="o">:</span><span class="bp">false</span><span class="o">;</span>
+        <span class="nn">Canvas</span><span class="p">.</span><span class="n">fill</span> <span class="n">c</span> <span class="o">~</span><span class="n">nonzero</span><span class="o">:</span><span class="bp">false</span>
+      <span class="o">)</span> <span class="nn">Event</span><span class="p">.</span><span class="n">button_down</span>
+  <span class="k">in</span>
 
-    <span class="o">|</span> <span class="nn">Event</span><span class="p">.</span><span class="nc">Frame</span> <span class="o">{</span> <span class="n">canvas</span> <span class="o">=</span> <span class="o">_;</span> <span class="n">timestamp</span> <span class="o">=</span> <span class="o">_</span> <span class="o">}</span> <span class="o">-&gt;</span>
-        <span class="nn">Int64</span><span class="p">.</span><span class="n">add</span> <span class="n">state</span> <span class="nn">Int64</span><span class="p">.</span><span class="n">one</span><span class="o">,</span> <span class="bp">true</span>
+  <span class="k">let</span> <span class="n">frames</span> <span class="o">=</span> <span class="n">ref</span> <span class="mi">0</span> <span class="k">in</span>
 
-    <span class="o">|</span> <span class="o">_</span> <span class="o">-&gt;</span>
-        <span class="n">state</span><span class="o">,</span> <span class="bp">false</span>
+  <span class="k">let</span> <span class="n">e4</span> <span class="o">=</span>
+    <span class="nn">React</span><span class="p">.</span><span class="nn">E</span><span class="p">.</span><span class="n">map</span> <span class="o">(</span><span class="k">fun</span> <span class="o">{</span> <span class="nn">Event</span><span class="p">.</span><span class="n">canvas</span> <span class="o">=</span> <span class="o">_;</span> <span class="n">timestamp</span> <span class="o">=</span> <span class="o">_</span> <span class="o">}</span> <span class="o">-&gt;</span>
+        <span class="n">frames</span> <span class="o">:=</span> <span class="nn">Int64</span><span class="p">.</span><span class="n">add</span> <span class="o">!</span><span class="n">frames</span> <span class="nn">Int64</span><span class="p">.</span><span class="n">one</span>
+      <span class="o">)</span> <span class="nn">Event</span><span class="p">.</span><span class="n">frame</span>
+  <span class="k">in</span>
 
-  <span class="o">)</span> <span class="o">(</span><span class="k">fun</span> <span class="n">state</span> <span class="o">-&gt;</span>
-      <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">&quot;Displayed %Ld frames. Goodbye !</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="n">state</span>
-  <span class="o">)</span> <span class="mi">0</span><span class="n">L</span>
+  <span class="nn">Backend</span><span class="p">.</span><span class="n">run</span> <span class="o">(</span><span class="k">fun</span> <span class="bp">()</span> <span class="o">-&gt;</span>
+      <span class="n">ignore</span> <span class="n">e1</span><span class="o">;</span> <span class="n">ignore</span> <span class="n">e2</span><span class="o">;</span> <span class="n">ignore</span> <span class="n">e3</span><span class="o">;</span> <span class="n">ignore</span> <span class="n">e4</span><span class="o">;</span>
+      <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">&quot;Displayed %Ld frames. Goodbye !</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">!</span><span class="n">frames</span><span class="o">)</span>
 </pre></div>
 </div>
 </div>
