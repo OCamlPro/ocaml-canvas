@@ -524,28 +524,50 @@ var _next_id = 0;
 
 //Provides: _ml_canvas_decorate
 //Requires: caml_jsstring_of_string
-function _ml_canvas_decorate(header, title) {
+function _ml_canvas_decorate(header, resizeable, minimize, maximize, close, title) {
   var width = header.width;
   var ctxt = header.getContext("2d");
   ctxt.fillStyle = "#585858";
   ctxt.fillRect(0, 0, width, 30);
-  ctxt.font = "bold 16px Arial";
-  ctxt.fillStyle = "#F0F0F0F0";
-  ctxt.textAlign = "center";
-  ctxt.fillText(caml_jsstring_of_string(title), width / 2, 21);
+  if (title !== null) {
+    ctxt.fillStyle = "#F0F0F0F0";
+    ctxt.font = "bold 16px Arial";
+    ctxt.textAlign = "center";
+    ctxt.fillText(caml_jsstring_of_string(title), width / 2, 21);
+  }
   ctxt.strokeStyle = "#F0F0F0F0";
   ctxt.lineWidth = 2.0;
-  ctxt.beginPath();
-  ctxt.moveTo(width - 20, 10);
-  ctxt.lineTo(width - 10, 20);
-  ctxt.moveTo(width - 20, 20);
-  ctxt.lineTo(width - 10, 10);
-  ctxt.stroke();
+  if (close == true) {
+    ctxt.beginPath();
+    ctxt.moveTo(width - 20, 10);
+    ctxt.lineTo(width - 10, 20);
+    ctxt.moveTo(width - 20, 20);
+    ctxt.lineTo(width - 10, 10);
+    ctxt.stroke();
+  }
 }
 
-//Provides: ml_canvas_create_framed
-//Requires: _next_id,_header_down_handler,_surface_down_handler,_up_handler,_move_handler,_ml_canvas_decorate
-function ml_canvas_create_framed(title, pos, size) {
+//Provides: _ml_optional_bool_val
+function _ml_optional_bool_val(mlOptBool, def) {
+  return (typeof(mlOptBool) == "object") ? (mlOptBool[1] !== 0) : def;
+}
+
+//Provides: _ml_optional_val
+function _ml_optional_val(mlOptVal, def) {
+  return (typeof(mlOptVal) == "object") ? mlOptVal[1] : def;
+}
+
+//Provides: ml_canvas_create_onscreen
+//Requires: _next_id,_header_down_handler,_surface_down_handler,_up_handler,_move_handler,_ml_canvas_decorate,_ml_optional_bool_val,_ml_optional_val
+function ml_canvas_create_onscreen(decorated, resizeable, minimize, maximize, close, title, pos, size) {
+
+  var decorated = _ml_optional_bool_val(decorated, true);
+  var resizeable = _ml_optional_bool_val(resizeable, true);
+  var minimize = _ml_optional_bool_val(minimize, true);
+  var maximize = _ml_optional_bool_val(maximize, true);
+  var close = _ml_optional_bool_val(close, true);
+  var title = _ml_optional_val(title, null);
+  var pos = _ml_optional_val(pos, [ 0, 0, 0 ]);
 
   var x = pos[1];
   var y = pos[2];
@@ -553,122 +575,73 @@ function ml_canvas_create_framed(title, pos, size) {
   var height = size[2];
 
   var id = ++_next_id;
-
-  var frame = document.createElement("div");
-  frame.id = "f" + id;
-  frame.style.width = width + "px";
-  frame.style.height = height + 30 + "px";
-  frame.style.position = "absolute";
-  frame.style.left = x + "px";
-  frame.style.top = y + "px";
-  frame.style.border = "1px solid black";
-
-  var header = document.createElement("canvas");
-  header.id = "h" + id;
-  header.width = width;
-  header.height = 30;
-  header.style.position = "absolute";
-  _ml_canvas_decorate(header, title);
-
-  var surface = document.createElement("canvas");
-  surface.id = "s" + id;
-  surface.width = width;
-  surface.height = height;
-  surface.style.position = "absolute"
-  surface.style.top = "30px";
-
-  var ctxt = surface.getContext("2d");
-  ctxt.globalAlpha = 1.0;
-  ctxt.lineWidth = 1.0;
-  ctxt.fillStyle = "white";
-  ctxt.strokeStyle = "black";
-
-  // Onscreen canvas are filled with white by default
-  ctxt.fillRect(0, 0, width, height);
-
-  header.onmousedown = _header_down_handler;
-  surface.onmousedown = _surface_down_handler;
-  frame.oncontextmenu = function() { return false; }
 
   var canvas = {
     name: title,
-    frame: frame,
-    header: header,
-    surface: surface,
-    ctxt: ctxt,
+    frame: null,
+    header: null,
+    surface: null,
+    ctxt: null,
     x: x, y: y,
     width: width,
     height: height,
-    id: id
+    id: id,
+    resizeable: resizeable,
+    minimize: minimize,
+    maximize: maximize,
+    close: close
   };
 
-  frame.canvas = canvas;
-  header.canvas = canvas;
-  surface.canvas = canvas;
-
-  frame.appendChild(header);
-  frame.appendChild(surface);
-  document.body.appendChild(frame);
-
-  return canvas;
-}
-
-//Provides: ml_canvas_create_frameless
-//Requires: _next_id,_header_down_handler,_surface_down_handler,_up_handler,_move_handler
-function ml_canvas_create_frameless(pos, size) {
-
-  var x = pos[1];
-  var y = pos[2];
-  var width = size[1];
-  var height = size[2];
-
-  var id = ++_next_id;
+  var header_height = (decorated == true ? 30 : 0);
 
   var frame = document.createElement("div");
   frame.id = "f" + id;
   frame.style.width = width + "px";
-  frame.style.height = height + 30 + "px";
+  frame.style.height = height + header_height + "px";
   frame.style.visibility = "hidden";
   frame.style.position = "absolute";
   frame.style.left = x + "px";
   frame.style.top = y + "px";
-  frame.style.border = "1px solid black";
+  frame.oncontextmenu = function() { return false; }
+  frame.canvas = canvas;
+  canvas.frame = frame;
+  document.body.appendChild(frame);
+
+  var header = null;
+  if (decorated === true) {
+    frame.style.border = "1px solid black";
+    header = document.createElement("canvas");
+    header.id = "h" + id;
+    header.width = width;
+    header.height = 30;
+    header.style.position = "absolute";
+    _ml_canvas_decorate(header, resizeable, minimize, maximize, close, title);
+    header.onmousedown = _header_down_handler;
+    header.canvas = canvas;
+    canvas.header = header;
+    frame.appendChild(header);
+  }
 
   var surface = document.createElement("canvas");
   surface.id = "s" + id;
   surface.width = width;
   surface.height = height;
   surface.style.position = "absolute"
+  surface.style.top = header_height + "px";
+  surface.onmousedown = _surface_down_handler;
+  surface.canvas = canvas;
+  canvas.surface = surface;
+  frame.appendChild(surface);
 
   var ctxt = surface.getContext("2d");
   ctxt.globalAlpha = 1.0;
   ctxt.lineWidth = 1.0;
   ctxt.fillStyle = "white";
   ctxt.strokeStyle = "black";
+  canvas.ctxt = ctxt;
 
   // Onscreen canvas are filled with white by default
   ctxt.fillRect(0, 0, width, height);
-
-  surface.onmousedown = _surface_down_handler;
-  frame.oncontextmenu = function() { return false; }
-
-  var canvas = {
-    name: null,
-    frame: frame,
-    header: null,
-    surface: surface,
-    ctxt: ctxt,
-    x: x, y: y,
-    width: width,
-    height: height,
-    id: id
-  };
-
-  frame.canvas = canvas;
-  surface.canvas = canvas;
-
-  frame.appendChild(surface);
-  document.body.appendChild(frame);
 
   return canvas;
 }
@@ -682,18 +655,6 @@ function ml_canvas_create_offscreen(size) {
 
   var id = ++_next_id;
 
-  var surface = document.createElement("canvas");
-  surface.id = "s" + id;
-  surface.width = width;
-  surface.height = height;
-  surface.style.position = "absolute"
-
-  var ctxt = surface.getContext("2d");
-  ctxt.globalAlpha = 1.0;
-  ctxt.lineWidth = 2.0;
-  ctxt.fillStyle = "white";
-  ctxt.strokeStyle = "black";
-
   var canvas = {
     name: null,
     frame: null,
@@ -702,10 +663,28 @@ function ml_canvas_create_offscreen(size) {
     ctxt: ctxt,
     x: 0, y: 0,
     width: width,
-    height: height
+    height: height,
+    id: id,
+    resizeable: false,
+    minimize: false,
+    maximize: false,
+    close: false
   };
 
+  var surface = document.createElement("canvas");
+  surface.id = "s" + id;
+  surface.width = width;
+  surface.height = height;
+  surface.style.position = "absolute"
   surface.canvas = canvas;
+  canvas.surface = surface;
+
+  var ctxt = surface.getContext("2d");
+  ctxt.globalAlpha = 1.0;
+  ctxt.lineWidth = 2.0;
+  ctxt.fillStyle = "white";
+  ctxt.strokeStyle = "black";
+  canvas.ctxt = ctxt;
 
   return canvas;
 }
@@ -834,7 +813,7 @@ function ml_canvas_set_size(canvas, size) {
   var img = canvas.ctxt.getImageData(0, 0, canvas.width, canvas.height);
   if (canvas.header !== null) {
       canvas.header.width = width;
-      _ml_canvas_decorate(canvas.header, canvas.name);
+      _ml_canvas_decorate(canvas.header, canvas.resizeable, canvas.minimize, canvas.maximize, canvas.close, canvas.name);
   }
   canvas.surface.width = canvas.width = width;
   canvas.surface.height = canvas.height = height;

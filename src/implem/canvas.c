@@ -50,9 +50,14 @@ IMPLEMENT_OBJECT_METHODS(canvas_t, canvas, _canvas_destroy)
 static canvas_t *
 _canvas_create_internal(
   canvas_type_t type,
-  const char *title, // as UTF-8
-  int32_t x,
-  int32_t y,
+  bool decorated,     /* on-screen only */
+  bool resizeable,    /* on-screen only */
+  bool minimize,      /* on-screen only */
+  bool maximize,      /* on-screen only */
+  bool close,         /* on-screen only */
+  const char *title,  /* on-screen only */ // as UTF-8
+  int32_t x,          /* on-screen only */
+  int32_t y,          /* on-screen only */
   int32_t width,
   int32_t height,
   pixmap_t *pixmap)
@@ -103,11 +108,10 @@ _canvas_create_internal(
       goto error_offscreen_surface;
     }
 
-  } else if ((type == CANVAS_FRAMED) || (type == CANVAS_FRAMELESS)) {
+  } else if (type == CANVAS_ONSCREEN) {
 
-    bool framed = (type == CANVAS_FRAMED);
-
-    canvas->window = window_create(framed, title, x, y, width, height);
+    canvas->window = window_create(decorated, resizeable, minimize, maximize,
+                                   close, title, x, y, width, height);
     if (canvas->window == NULL) {
       goto error_window;
     }
@@ -139,7 +143,7 @@ _canvas_create_internal(
 
   backend_add_canvas(canvas);
 
-  if ((type == CANVAS_FRAMED) || (type == CANVAS_FRAMELESS)) {
+  if (type == CANVAS_ONSCREEN) {
     // Onscreen canvas are filled with white by default
     canvas_fill_rect(canvas, 0, 0, width, height);
   }
@@ -163,28 +167,22 @@ error_id:
 }
 
 canvas_t *
-canvas_create_framed(
+canvas_create_onscreen(
+  bool decorated,
+  bool resizeable,
+  bool minimize,
+  bool maximize,
+  bool close,
   const char *title, // as UTF-8
   int32_t x,
   int32_t y,
   int32_t width,
   int32_t height)
 {
-  assert(title != NULL);
-
-  return _canvas_create_internal(CANVAS_FRAMED, title,
-                                 x, y, width, height, NULL);
-}
-
-canvas_t *
-canvas_create_frameless(
-  int32_t x,
-  int32_t y,
-  int32_t width,
-  int32_t height)
-{
-  return _canvas_create_internal(CANVAS_FRAMELESS, NULL,
-                                 x, y, width, height, NULL);
+  return _canvas_create_internal(CANVAS_ONSCREEN,
+                                 decorated, resizeable,
+                                 minimize, maximize, close,
+                                 title, x, y, width, height, NULL);
 }
 
 canvas_t *
@@ -192,8 +190,9 @@ canvas_create_offscreen(
   int32_t width,
   int32_t height)
 {
-  return _canvas_create_internal(CANVAS_OFFSCREEN, NULL,
-                                 0, 0, width, height, NULL);
+  return _canvas_create_internal(CANVAS_OFFSCREEN,
+                                 false, false, false, false, false,
+                                 NULL, 0, 0, width, height, NULL);
 }
 
 canvas_t *
@@ -203,8 +202,10 @@ canvas_create_offscreen_from_pixmap(
   assert(pixmap != NULL);
   assert(pixmap_valid(*pixmap) == true);
 
-  return _canvas_create_internal(CANVAS_OFFSCREEN, NULL,
-                                 0, 0, pixmap->width, pixmap->height, pixmap);
+  return _canvas_create_internal(CANVAS_OFFSCREEN,
+                                 false, false, false, false, false,
+                                 NULL, 0, 0, pixmap->width, pixmap->height,
+                                 pixmap);
 }
 
 canvas_t *
@@ -218,8 +219,10 @@ canvas_create_offscreen_from_png(
   if (res == false) {
     return NULL;
   }
-  return _canvas_create_internal(CANVAS_OFFSCREEN, NULL,
-                                 0, 0, pixmap.width, pixmap.height, &pixmap);
+  return _canvas_create_internal(CANVAS_OFFSCREEN,
+                                 false, false, false, false, false,
+                                 NULL, 0, 0, pixmap.width, pixmap.height,
+                                 &pixmap);
 }
 
 static void (*_canvas_destroy_callback)(canvas_t *) = NULL;

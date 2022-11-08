@@ -33,6 +33,10 @@
 window_t *
 window_create(
   bool decorated,
+  bool resizeable,
+  bool minimize,
+  bool maximize,
+  bool close,
   const char *title,
   int32_t x,
   int32_t y,
@@ -43,16 +47,24 @@ window_create(
 
   switch_IMPL() {
     case_GDI(
-      w = (window_t *)gdi_window_create(decorated, title, x, y, width, height)
+      w = (window_t *)gdi_window_create(decorated, resizeable, minimize,
+                                        maximize, close, title,
+                                        x, y, width, height)
     );
     case_QUARTZ(
-      w = (window_t *)qtz_window_create(decorated, title, x, y, width, height)
+      w = (window_t *)qtz_window_create(decorated, resizeable, minimize,
+                                        maximize, close, title,
+                                        x, y, width, height)
     );
     case_X11(
-      w = (window_t *)x11_window_create(decorated, title, x, y, width, height)
+      w = (window_t *)x11_window_create(decorated, resizeable, minimize,
+                                        maximize, close, title,
+                                        x, y, width, height)
     );
     case_WAYLAND(
-      w = (window_t *)wl_window_create(decorated, title, x, y, width, height)
+      w = (window_t *)wl_window_create(decorated, resizeable, minimize,
+                                       maximize, close, title,
+                                       x, y, width, height)
     );
     default_fail();
   }

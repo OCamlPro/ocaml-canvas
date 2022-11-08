@@ -28,8 +28,8 @@ let () =
 
   Backend.init ();
 
-  let c = Canvas.createFramed "Arcs"
-            ~pos:(300, 200) ~size:(900, 900) in
+  let c = Canvas.createOnscreen ~title:"Arcs"
+            ~pos:(300, 200) ~size:(900, 900) () in
 
   Canvas.setFillColor c Color.white;
   Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(900.0, 900.0);

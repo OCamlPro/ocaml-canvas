@@ -66,7 +66,8 @@ let () =
 
   Backend.init ();
 
-  let ccm = Canvas.createFramed "文章入力欄" ~pos:(500, 500) ~size:(300, 200) in
+  let ccm = Canvas.createOnscreen ~title:"文章入力欄"
+              ~pos:(500, 500) ~size:(300, 200) () in
   Canvas.setFillColor ccm Color.white;
   Canvas.fillRect ccm ~pos:(0.0, 0.0) ~size:(500.0, 500.0);
   Canvas.setFillColor ccm Color.black;

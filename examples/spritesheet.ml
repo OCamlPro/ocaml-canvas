@@ -59,8 +59,8 @@ let () =
 
   Backend.init ();
 
-  let c = Canvas.createFramed "Spritesheet"
-            ~pos:(300, 200) ~size:(1024, 1024) in
+  let c = Canvas.createOnscreen ~title:"Spritesheet"
+            ~pos:(300, 200) ~size:(1024, 1024) () in
 
   Canvas.setFillColor c Color.white;
 

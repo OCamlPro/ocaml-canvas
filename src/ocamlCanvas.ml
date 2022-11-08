@@ -136,7 +136,8 @@ module V1 = struct
       ((x -. cx) *. (cos (-. theta)) +. (y -. cy) *. (sin (-. theta)) +. cx,
        (y -. cy) *. (cos (-. theta)) -. (x -. cx) *. (sin (-. theta)) +. cy)
 
-    let transform (x, y) (t: Transform.t) =
+    let transform (x, y) t =
+      let open Transform in
       (x *. t.a +. y *. t.c +. t.e,
        x *. t.b +. y *. t.d +. t.f)
 
@@ -515,13 +516,11 @@ module V1 = struct
 
     (* Creation *)
 
-    external createFramed :
-      string -> pos:(int * int) -> size:(int * int) -> [> `Onscreen] t
-      = "ml_canvas_create_framed"
-
-    external createFrameless :
-      pos:(int * int) -> size:(int * int) -> [> `Onscreen] t
-      = "ml_canvas_create_frameless"
+    external createOnscreen :
+      ?decorated:bool -> ?resizeable:bool -> ?minimize:bool ->
+      ?maximize:bool -> ?close:bool -> ?title:string ->
+      ?pos:(int * int) -> size:(int * int) -> unit -> [> `Onscreen] t
+      = "ml_canvas_create_onscreen" "ml_canvas_create_onscreen_n"
 
     external createOffscreen : size:(int * int) -> [> `Offscreen] t
       = "ml_canvas_create_offscreen"
@@ -1055,6 +1054,9 @@ module V1 = struct
   end
 
   module InternalEvent = struct
+
+    (* We declare constructors that are only used from the C code *)
+    [@@@warning "-37"]
 
     open Event
 

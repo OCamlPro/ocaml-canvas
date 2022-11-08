@@ -42,9 +42,7 @@ _gdi_window_size_pos(
   RECT rect = (RECT){ .left = window->base.x, .top = window->base.y,
                       .right = window->base.x + window->base.width,
                       .bottom = window->base.y + window->base.height };
-  AdjustWindowRect(&rect,
-                   window->base.decorated ? WS_OVERLAPPEDWINDOW : WS_POPUP,
-                   FALSE);
+  AdjustWindowRect(&rect, window->style, FALSE);
   return (window_size_pos_t){
     .x = rect.left,
     .y = rect.top,
@@ -69,6 +67,10 @@ _gdi_window_update_position(
 gdi_window_t *
 gdi_window_create(
   bool decorated,
+  bool resizeable,
+  bool minimize,
+  bool maximize,
+  bool close,
   const char *title,
   int32_t x,
   int32_t y,
@@ -84,10 +86,20 @@ gdi_window_create(
 
   window->base.visible = false;
   window->base.decorated = decorated;
+  window->base.resizeable = resizeable;
   window->base.x = clip_i32_to_i16(x);
   window->base.y = clip_i32_to_i16(y);
   window->base.width = clip_i32_to_i16(max(1, width));
   window->base.height = clip_i32_to_i16(max(1, height));
+
+  if (decorated) {
+    window->style = WS_OVERLAPPED | WS_BORDER | WS_CAPTION | WS_SYSMENU |
+      (resizeable ? WS_SIZEBOX : 0) |
+      (minimize ? WS_MINIMIZEBOX : 0) |
+      (maximize && resizeable ? WS_MAXIMIZEBOX : 0);
+  } else {
+    window->style = WS_POPUP;
+  }
 
   window_size_pos_t wsp = _gdi_window_size_pos(window);
 
@@ -97,9 +109,7 @@ gdi_window_create(
                                    gdi_back->class_framed :
                                    gdi_back->class_frameless,
                                  wtitle,
-                                 window->base.decorated ?
-                                   WS_OVERLAPPEDWINDOW :
-                                   WS_POPUP,
+                                 window->style,
                                  wsp.x, wsp.y,
                                  wsp.width, wsp.height,
                                  NULL, // Parent HWND
@@ -114,6 +124,12 @@ gdi_window_create(
   if (window->hwnd == NULL) {
     free(window);
     return NULL;
+  }
+
+  if (close == false) {
+    // Or RemoveMenu ?
+    EnableMenuItem(GetSystemMenu(window->hwnd, FALSE), SC_CLOSE,
+                   MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
   }
 
   /* Add to managed winddows */

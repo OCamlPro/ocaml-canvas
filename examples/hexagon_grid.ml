@@ -32,8 +32,8 @@ let () =
 
   Backend.init ();
 
-  let c = Canvas.createFramed "Hexagon Grid"
-            ~pos:(300, 200) ~size:(800, 696) in
+  let c = Canvas.createOnscreen ~title:"Hexagon Grid"
+            ~pos:(300, 200) ~size:(800, 696) () in
 
   Canvas.show c;
 

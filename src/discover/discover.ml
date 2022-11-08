@@ -8,7 +8,7 @@ let query_or_default c package c_flags link_flags =
       c_flags, link_flags
   | Some (pc) ->
       match P.query pc ~package with
-      | Some (p) -> p.cflags, p.libs
+      | Some (p) -> p.P.cflags, p.P.libs
       | None -> c_flags, link_flags
 
 let c_test c ?(c_flags=[]) ?(link_flags=[])

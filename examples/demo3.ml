@@ -5,8 +5,8 @@ let () =
 
   Backend.init ();
 
-  let c = Canvas.createFramed "Hello world"
-            ~pos:(300, 200) ~size:(800, 500) in
+  let c = Canvas.createOnscreen ~title:"Hello world"
+            ~pos:(300, 200) ~size:(800, 500) () in
 
   Canvas.setFillColor c Color.orange;
   Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(800.0, 500.0);

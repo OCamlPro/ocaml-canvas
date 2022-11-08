@@ -7,8 +7,8 @@ let () =
 
   Backend.init ();
 
-  let c = Canvas.createFramed "Hello world"
-            ~pos:(300, 200) ~size:(800, 500) in
+  let c = Canvas.createOnscreen ~title:"Hello world"
+            ~pos:(300, 200) ~size:(800, 500) () in
 
   Canvas.show c;
 

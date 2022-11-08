@@ -24,8 +24,8 @@ let () =
 
   Backend.init ();
 
-  let c = Canvas.createFramed "Aim with mouse"
-            ~pos:(300, 50) ~size:(800, 600) in
+  let c = Canvas.createOnscreen ~title:"Aim with mouse"
+            ~pos:(300, 50) ~size:(800, 600) () in
 
   Canvas.show c;
 

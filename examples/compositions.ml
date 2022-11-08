@@ -32,8 +32,8 @@ let () =
 
   Backend.init ();
 
-  let c = Canvas.createFramed "Compositions"
-            ~pos:(300, 200) ~size:(400, 267) in
+  let c = Canvas.createOnscreen ~title:"Compositions"
+            ~pos:(300, 200) ~size:(400, 267) () in
 
   let event_catImage = Canvas.createOffscreenFromPNG "./assets/dragon.png" in
   let event_spectrumImage =

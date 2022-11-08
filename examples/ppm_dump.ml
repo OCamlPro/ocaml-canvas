@@ -22,8 +22,8 @@ let () =
 
   Backend.init ();
 
-  let c = Canvas.createFramed "PPM Dump"
-            ~pos:(300, 200) ~size:(300, 200) in
+  let c = Canvas.createOnscreen ~title:"PPM Dump"
+            ~pos:(300, 200) ~size:(300, 200) () in
 
   Canvas.setFillColor c Color.orange;
   Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(300.0, 200.0);

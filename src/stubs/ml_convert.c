@@ -129,6 +129,32 @@ Int32_val_clip(
   CAMLreturnT(int32_t, i);
 }
 
+bool
+Optional_bool_val(
+  value mlOptBool,
+  bool def)
+{
+  CAMLparam1(mlOptBool);
+  bool res = def;
+  if (Is_some(mlOptBool)) {
+    res = Bool_val(Some_val(mlOptBool));
+  }
+  CAMLreturnT(bool, res);
+}
+
+const char *
+Optional_string_val(
+  value mlOptString,
+  const char *def)
+{
+  CAMLparam1(mlOptString);
+  const char *res = def;
+  if (Is_some(mlOptString)) {
+    res = String_val(Some_val(mlOptString));
+  }
+  CAMLreturnT(const char *, res);
+}
+
 value
 Val_double_array(
   const double *array,

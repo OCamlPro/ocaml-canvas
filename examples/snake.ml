@@ -75,7 +75,7 @@ let () =
   Backend.init ();
 
   let c =
-    Canvas.createFramed "Snake" ~pos:(300, 200) ~size:(500, 500) in
+    Canvas.createOnscreen ~title:"Snake" ~pos:(300, 200) ~size:(500, 500) () in
 
   Canvas.show c;
 

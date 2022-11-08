@@ -22,8 +22,8 @@ let () =
 
   Backend.init ();
 
-  let c = Canvas.createFramed "Clipping"
-            ~pos:(300, 200) ~size:(300, 300) in
+  let c = Canvas.createOnscreen ~title:"Clipping"
+            ~pos:(300, 200) ~size:(300, 300) () in
   Canvas.save c;
   Canvas.scale c (2.0, 2.0);
   Canvas.rotate c 0.3;

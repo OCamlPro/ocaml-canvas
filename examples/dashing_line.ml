@@ -24,8 +24,8 @@ let () =
 
   Backend.init ();
 
-  let c = Canvas.createFramed "Dashing line"
-            ~pos:(300, 50) ~size:(400, 650) in
+  let c = Canvas.createOnscreen ~title:"Dashing line"
+            ~pos:(300, 50) ~size:(400, 650) () in
 
   Canvas.show c;
 
