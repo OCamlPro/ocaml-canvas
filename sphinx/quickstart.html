@@ -9,8 +9,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>Quick start &mdash; ocaml-canvas master
- (317bee0
-) (2022/11/04 13:04) documentation</title>
+ (2789f84
+) (2022/11/08 16:53) documentation</title>
   
 
   
@@ -65,7 +65,7 @@
             
               <div class="version">
                 master
- (317bee0
+ (2789f84
 )
               </div>
             
@@ -174,22 +174,21 @@
 <h1>Quick start<a class="headerlink" href="#quick-start" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="initialization">
 <h2>Initialization<a class="headerlink" href="#initialization" title="Permalink to this headline">¶</a></h2>
-<p>Before using any function in the library (and assuming the <code class="code docutils literal notranslate"><span class="pre">OCamlCanvas.V1</span></code>
+<p>Before using any function in the library (and assuming the <code class="code docutils literal notranslate"><span class="pre">OcamlCanvas.V1</span></code>
 module has been opened), the user should call <code class="code docutils literal notranslate"><span class="pre">Backend.init</span></code> so that
 the library makes any internal initialization it needs for the current
 backend.</p>
 </div>
 <div class="section" id="creating-canvases">
 <h2>Creating canvases<a class="headerlink" href="#creating-canvases" title="Permalink to this headline">¶</a></h2>
-<p>Once the backend is initialized, one can create Canvas objects
-using the <code class="code docutils literal notranslate"><span class="pre">Canvas.createFramed</span></code>, <code class="code docutils literal notranslate"><span class="pre">Canvas.createFrameless</span></code> and
-<code class="code docutils literal notranslate"><span class="pre">Canvas.createOffscreen</span></code> functions. The first one creates a canvas
-contained in a regular window (which is simulated in the Javascript
-backend). The second one creates a window that has no decoration at
-all. The last one creates canvases that are not rendered on screen,
-which can be useful to save complex images that can then simply
-copied to a visible canvas. Onscreen canvases are hidden by default,
-and <code class="code docutils literal notranslate"><span class="pre">Canvas.show</span></code> should be called on them to make them visible.</p>
+<p>Once the backend is initialized, one can create Canvas objects using
+the <code class="code docutils literal notranslate"><span class="pre">Canvas.createOnscreen</span></code> and <code class="code docutils literal notranslate"><span class="pre">Canvas.createOffscreen</span></code> functions.
+The first one creates canvases contained in regular windows (which are
+simulated in the Javascript backend), while the second one creates
+canvases that are not rendered on screen, which can be useful to save
+complex images that can then simply be copied to a visible canvas.
+Onscreen canvases are hidden by default, and <code class="code docutils literal notranslate"><span class="pre">Canvas.show</span></code>
+should be called on them to make them visible.</p>
 </div>
 <div class="section" id="drawing-on-canvases">
 <h2>Drawing on canvases<a class="headerlink" href="#drawing-on-canvases" title="Permalink to this headline">¶</a></h2>
@@ -212,12 +211,12 @@ using the functions <code class="code docutils literal notranslate"><span class=
 </div>
 <div class="section" id="handling-canvas-events">
 <h2>Handling canvas events<a class="headerlink" href="#handling-canvas-events" title="Permalink to this headline">¶</a></h2>
-<p>Once the canvases are ready, we may start handling events for these canvases.
-To do so, we use the <code class="code docutils literal notranslate"><span class="pre">Backend.run</span></code> function, which runs an event loop.
-<strong>This function MUST be the last instruction of the program</strong>. It takes a
-single argument, which is a function to be executed when the event loop has
-finished running. The event loop may be stopped by calling
-<code class="code docutils literal notranslate"><span class="pre">Backend.stop</span></code> from the event handler.</p>
+<p>Once the canvases are ready, we may start handling events for these
+canvases. To do so, we use the <code class="code docutils literal notranslate"><span class="pre">Backend.run</span></code> function, which runs an
+event loop. <strong>This function MUST be the last instruction of the program</strong>.
+It takes a single argument, which is a function to be executed when the
+event loop has finished running. The event loop may be stopped by calling
+<code class="code docutils literal notranslate"><span class="pre">Backend.stop</span></code> from any update function.</p>
 <p>Each event reports at least the canvas on which it occured, and its
 timestamp. It may also report mouse coordinates for mouse events,
 or keyboard status for keyboard events.</p>
@@ -228,14 +227,14 @@ or keyboard status for keyboard events.</p>
 a cyan border, and the “Hello world !” text drawn rotated in the middle.
 The user may press the “Escape” key or close the window to exit the
 program. It will show the number of frames displayed when quitting.</p>
-<div class="highlight-ocaml notranslate"><div class="highlight"><pre><span></span><span class="k">open</span> <span class="nn">OCamlCanvas</span><span class="p">.</span><span class="nc">V1</span>
+<div class="highlight-ocaml notranslate"><div class="highlight"><pre><span></span><span class="k">open</span> <span class="nn">OcamlCanvas</span><span class="p">.</span><span class="nc">V1</span>
 
 <span class="k">let</span> <span class="bp">()</span> <span class="o">=</span>
 
   <span class="nn">Backend</span><span class="p">.</span><span class="n">init</span> <span class="bp">()</span><span class="o">;</span>
 
-  <span class="k">let</span> <span class="n">c</span> <span class="o">=</span> <span class="nn">Canvas</span><span class="p">.</span><span class="n">createFramed</span> <span class="s2">&quot;Hello world&quot;</span>
-            <span class="o">~</span><span class="n">pos</span><span class="o">:(</span><span class="mi">300</span><span class="o">,</span> <span class="mi">200</span><span class="o">)</span> <span class="o">~</span><span class="n">size</span><span class="o">:(</span><span class="mi">300</span><span class="o">,</span> <span class="mi">200</span><span class="o">)</span> <span class="k">in</span>
+  <span class="k">let</span> <span class="n">c</span> <span class="o">=</span> <span class="nn">Canvas</span><span class="p">.</span><span class="n">createOnscreen</span> <span class="o">~</span><span class="n">title</span><span class="o">:</span><span class="s2">&quot;Hello world&quot;</span>
+            <span class="o">~</span><span class="n">pos</span><span class="o">:(</span><span class="mi">300</span><span class="o">,</span> <span class="mi">200</span><span class="o">)</span> <span class="o">~</span><span class="n">size</span><span class="o">:(</span><span class="mi">300</span><span class="o">,</span> <span class="mi">200</span><span class="o">)</span> <span class="bp">()</span> <span class="k">in</span>
 
   <span class="nn">Canvas</span><span class="p">.</span><span class="n">setFillColor</span> <span class="n">c</span> <span class="nn">Color</span><span class="p">.</span><span class="n">orange</span><span class="o">;</span>
   <span class="nn">Canvas</span><span class="p">.</span><span class="n">fillRect</span> <span class="n">c</span> <span class="o">~</span><span class="n">pos</span><span class="o">:(</span><span class="mi">0</span><span class="o">.</span><span class="mi">0</span><span class="o">,</span> <span class="mi">0</span><span class="o">.</span><span class="mi">0</span><span class="o">)</span> <span class="o">~</span><span class="n">size</span><span class="o">:(</span><span class="mi">300</span><span class="o">.</span><span class="mi">0</span><span class="o">,</span> <span class="mi">200</span><span class="o">.</span><span class="mi">0</span><span class="o">);</span>

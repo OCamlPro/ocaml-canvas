@@ -4,7 +4,7 @@ Quick start
 Initialization
 --------------
 
-Before using any function in the library (and assuming the :code:`OCamlCanvas.V1`
+Before using any function in the library (and assuming the :code:`OcamlCanvas.V1`
 module has been opened), the user should call :code:`Backend.init` so that
 the library makes any internal initialization it needs for the current
 backend.
@@ -12,15 +12,14 @@ backend.
 Creating canvases
 -----------------
 
-Once the backend is initialized, one can create Canvas objects
-using the :code:`Canvas.createFramed`, :code:`Canvas.createFrameless` and
-:code:`Canvas.createOffscreen` functions. The first one creates a canvas
-contained in a regular window (which is simulated in the Javascript
-backend). The second one creates a window that has no decoration at
-all. The last one creates canvases that are not rendered on screen,
-which can be useful to save complex images that can then simply
-copied to a visible canvas. Onscreen canvases are hidden by default,
-and :code:`Canvas.show` should be called on them to make them visible.
+Once the backend is initialized, one can create Canvas objects using
+the :code:`Canvas.createOnscreen` and :code:`Canvas.createOffscreen` functions.
+The first one creates canvases contained in regular windows (which are
+simulated in the Javascript backend), while the second one creates
+canvases that are not rendered on screen, which can be useful to save
+complex images that can then simply be copied to a visible canvas.
+Onscreen canvases are hidden by default, and :code:`Canvas.show`
+should be called on them to make them visible.
 
 Drawing on canvases
 -------------------
@@ -46,12 +45,12 @@ using the functions :code:`Canvas.save` and :code:`Canvas.restore`.
 Handling canvas events
 ----------------------
 
-Once the canvases are ready, we may start handling events for these canvases.
-To do so, we use the :code:`Backend.run` function, which runs an event loop.
-**This function MUST be the last instruction of the program**. It takes a
-single argument, which is a function to be executed when the event loop has
-finished running. The event loop may be stopped by calling
-:code:`Backend.stop` from the event handler.
+Once the canvases are ready, we may start handling events for these
+canvases. To do so, we use the :code:`Backend.run` function, which runs an
+event loop. **This function MUST be the last instruction of the program**.
+It takes a single argument, which is a function to be executed when the
+event loop has finished running. The event loop may be stopped by calling
+:code:`Backend.stop` from any update function.
 
 Each event reports at least the canvas on which it occured, and its
 timestamp. It may also report mouse coordinates for mouse events,
@@ -65,14 +64,14 @@ a cyan border, and the "Hello world !" text drawn rotated in the middle.
 The user may press the "Escape" key or close the window to exit the
 program. It will show the number of frames displayed when quitting.
 ::
-    open OCamlCanvas.V1
+    open OcamlCanvas.V1
 
     let () =
 
       Backend.init ();
 
-      let c = Canvas.createFramed "Hello world"
-                ~pos:(300, 200) ~size:(300, 200) in
+      let c = Canvas.createOnscreen ~title:"Hello world"
+                ~pos:(300, 200) ~size:(300, 200) () in
 
       Canvas.setFillColor c Color.orange;
       Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(300.0, 200.0);
