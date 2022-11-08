@@ -53,7 +53,7 @@ let () =
   let size_i = (800, 600) in
   let size_f = Point.of_ints size_i in
 
-  let c = Canvas.createFramed "Draw" ~pos:(300, 200) ~size:size_i in
+  let c = Canvas.createOnscreen ~title:"Draw" ~pos:(300, 200) ~size:size_i () in
 
   Canvas.show c;
 

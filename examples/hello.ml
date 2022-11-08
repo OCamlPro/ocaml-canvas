@@ -32,7 +32,8 @@ let () =
 
   Backend.init ();
 
-  let c = Canvas.createFramed "Hello world" ~pos:(300, 200) ~size:(300, 200) in
+  let c = Canvas.createOnscreen ~title:"Hello world"
+            ~pos:(300, 200) ~size:(300, 200) () in
 
   Canvas.setFillColor c Color.orange;
   Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(300.0, 200.0);
@@ -118,7 +119,7 @@ let () =
       ) Event.button_down;
 
   retain_event @@
-    React.E.map (fun { Event.canvas = _; timestamp = _ } ->
+    React.E.map (fun { Event.canvas = _; timestamp = _; data = _ } ->
         state.frames <- Int64.add state.frames Int64.one
       ) Event.frame;
 

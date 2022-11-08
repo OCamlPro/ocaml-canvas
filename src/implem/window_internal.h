@@ -20,6 +20,7 @@ typedef struct window_t {
   int32_t width;
   int32_t height;
   bool decorated;
+  bool resizeable;
   bool visible;
   void *data;
 } window_t;

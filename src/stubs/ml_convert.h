@@ -32,6 +32,10 @@
 #if OCAML_VERSION < 41200
 
 #define Val_none Val_int(0)
+#define Some_val(v) Field(v, 0)
+#define Tag_some 0
+#define Is_none(v) ((v) == Val_none)
+#define Is_some(v) Is_block(v)
 
 CAMLextern value caml_alloc_some(value v);
 
@@ -44,6 +48,16 @@ Val_int32_clip(
 int32_t
 Int32_val_clip(
   value mlValue);
+
+bool
+Optional_bool_val(
+  value mlOptBool,
+  bool def);
+
+const char *
+Optional_string_val(
+  value mlOptString,
+  const char *def);
 
 value
 Val_double_array(

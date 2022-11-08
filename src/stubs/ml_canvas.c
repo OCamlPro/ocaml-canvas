@@ -631,20 +631,35 @@ _ml_canvas_canvas_destroy_callback(
 }
 
 CAMLprim value
-ml_canvas_create_framed(
-  value mlTitle,
-  value mlPos,
-  value mlSize)
+ml_canvas_create_onscreen_n(
+  value mlDecorated,  /* bool, optional, default = true */
+  value mlResizeable, /* bool, optional, default = true */
+  value mlMinimize,   /* bool, optional, default = true */
+  value mlMaximize,   /* bool, optional, default = true */
+  value mlClose,      /* bool, optional, default = true */
+  value mlTitle,      /* string, optional, default = "" */
+  value mlPos,        /* (int * int), optional */
+  value mlSize,       /* (int * int), non-optional */
+  value mlUnit)
 {
-  CAMLparam3(mlTitle, mlPos, mlSize);
+  CAMLparam5(mlDecorated, mlResizeable, mlMinimize, mlMaximize, mlClose);
+  CAMLxparam4(mlTitle, mlPos, mlSize, mlUnit);
   CAMLlocal1(mlCanvas);
-  const char *title = String_val(mlTitle);
+  int32_t x = 0, y = 0;
+  if (Is_some(mlPos)) {
+    x = Int32_val_clip(Field(Some_val(mlPos), 0));
+    y = Int32_val_clip(Field(Some_val(mlPos), 1));
+  }
   canvas_t *canvas =
-    canvas_create_framed(title,
-                         Int32_val_clip(Field(mlPos, 0)),
-                         Int32_val_clip(Field(mlPos, 1)),
-                         Int32_val_clip(Field(mlSize, 0)),
-                         Int32_val_clip(Field(mlSize, 1)));
+    canvas_create_onscreen(Optional_bool_val(mlDecorated, true),
+                           Optional_bool_val(mlResizeable, true),
+                           Optional_bool_val(mlMinimize, true),
+                           Optional_bool_val(mlMaximize, true),
+                           Optional_bool_val(mlClose, true),
+                           Optional_string_val(mlTitle, NULL),
+                           x, y,
+                           Int32_val_clip(Field(mlSize, 0)),
+                           Int32_val_clip(Field(mlSize, 1)));
   if (canvas == NULL) {
     caml_failwith("unable to create the specified framed canvas");
   }
@@ -653,25 +668,7 @@ ml_canvas_create_framed(
   CAMLreturn(mlCanvas);
 }
 
-CAMLprim value
-ml_canvas_create_frameless(
-  value mlPos,
-  value mlSize)
-{
-  CAMLparam2(mlPos, mlSize);
-  CAMLlocal1(mlCanvas);
-  canvas_t *canvas =
-    canvas_create_frameless(Int32_val_clip(Field(mlPos, 0)),
-                            Int32_val_clip(Field(mlPos, 1)),
-                            Int32_val_clip(Field(mlSize, 0)),
-                            Int32_val_clip(Field(mlSize, 1)));
-  if (canvas == NULL) {
-    caml_failwith("unable to create the specified frameless canvas");
-  }
-  mlCanvas = Val_canvas(canvas);
-  canvas_release(canvas); /* Because Val_canvas retains it */
-  CAMLreturn(mlCanvas);
-}
+BYTECODE_STUB_9(ml_canvas_create_onscreen)
 
 CAMLprim value
 ml_canvas_create_offscreen(

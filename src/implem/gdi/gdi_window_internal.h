@@ -22,6 +22,7 @@ typedef struct gdi_window_t {
 
   /* Specific to GDI windows */
   HWND hwnd;
+  DWORD style;
 
 } gdi_window_t;
 

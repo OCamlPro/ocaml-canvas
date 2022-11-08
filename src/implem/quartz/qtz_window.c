@@ -215,6 +215,10 @@ _qtz_window_update_size_and_position(
 qtz_window_t *
 qtz_window_create(
   bool decorated,
+  bool resizeable,
+  bool minimize,
+  bool maximize,
+  bool close,
   const char *title,
   int32_t x,
   int32_t y,
@@ -228,6 +232,7 @@ qtz_window_create(
 
   window->base.visible = false;
   window->base.decorated = decorated;
+  window->base.resizeable = resizeable;
   window->base.x = clip_i32_to_i16(x);
   window->base.y = clip_i32_to_i16(y);
   window->base.width = clip_i32_to_i16(max(1, width));
@@ -238,17 +243,15 @@ qtz_window_create(
   NSRect crect = NSMakeRect(window->base.x, window->base.y,
                             window->base.width, window->base.height);
 
-  NSWindowStyleMask mask =
-    window->base.decorated ?
-      NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
-        NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable :
-      NSWindowStyleMaskBorderless;
-
-  //styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskResizable)
-  //styleMask:(NSWindowStyleMaskBorderless | NSWindowStyleMaskResizable)
-  //styleMask:(NSWindowStyleMaskFullScreen | NSWindowStyleMaskResizable) // NO resize
-  //styleMask:(NSWindowStyleMaskFullSizeContentView | NSWindowStyleMaskResizable)
-  //styleMask:(NSWindowStyleMaskHUDWindow | NSWindowStyleMaskResizable)
+  NSWindowStyleMask mask;
+  if (window->base.decorated) {
+    mask = NSWindowStyleMaskTitled |
+      (resizeable ? NSWindowStyleMaskResizable : 0) |
+      (minimize ? NSWindowStyleMaskMiniaturizable : 0) |
+      (close ? NSWindowStyleMaskClosable : 0);
+  } else {
+    mask = NSWindowStyleMaskBorderless;
+  }
 
   window->nswin = [[CanvasWindow alloc]
     initWithContentRect:crect styleMask:mask
@@ -258,6 +261,11 @@ qtz_window_create(
   window->nsview = [[CanvasView alloc] initWithFrame:frect];
   [window->nsview setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
   [window->nswin setContentView:window->nsview];
+
+  if (maximize == false) {
+    NSButton *b = [window->nswin standardWindowButton:NSWindowZoomButton];
+    [b setEnabled:NO];
+  }
 
   RELEASE_POOL;
 

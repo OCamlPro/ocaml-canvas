@@ -30,22 +30,19 @@ typedef struct canvas_t canvas_t;
 
 typedef enum canvas_type_t {
   CANVAS_OFFSCREEN = 0,
-  CANVAS_FRAMED    = 1,
-  CANVAS_FRAMELESS = 2
+  CANVAS_ONSCREEN  = 1
 } canvas_type_t;
 
 DECLARE_OBJECT_METHODS(canvas_t, canvas)
 
 canvas_t *
-canvas_create_framed(
-  const char *title,
-  int32_t x,
-  int32_t y,
-  int32_t width,
-  int32_t height);
-
-canvas_t *
-canvas_create_frameless(
+canvas_create_onscreen(
+  bool decorated,
+  bool resizeable,
+  bool minimize,
+  bool maximize,
+  bool close,
+  const char *title, // as UTF-8
   int32_t x,
   int32_t y,
   int32_t width,

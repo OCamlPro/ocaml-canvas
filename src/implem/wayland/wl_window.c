@@ -94,6 +94,10 @@ _wl_xdg_surface_listener = {
 wl_window_t *
 wl_window_create(
   bool decorated,
+  bool resizeable,
+  bool minimize,
+  bool maximize,
+  bool close,
   const char *title,
   int32_t x,
   int32_t y,

@@ -22,8 +22,8 @@ let () =
 
   Backend.init ();
 
-  let c = Canvas.createFramed "Thick lines"
-            ~pos:(300, 50) ~size:(400, 650) in
+  let c = Canvas.createOnscreen ~title:"Thick lines"
+            ~pos:(300, 50) ~size:(400, 650) () in
 
   Canvas.setFillColor c Color.white;
   Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(400.0, 650.0);

@@ -49,7 +49,7 @@ _x11_window_set_wm_class(
   strcpy(class_hint, res_name);
   strcpy(class_hint + strlen(res_name) + 1, res_class);
 
-  // Window class - ISO-8859-1
+  /* Window class - ISO-8859-1 */
   xcb_change_property(x11_back->c, XCB_PROP_MODE_REPLACE, window->wid,
                       XCB_ATOM_WM_CLASS, XCB_ATOM_STRING, 8,
                       class_len, class_hint);
@@ -74,6 +74,10 @@ _x11_window_update_position(
 x11_window_t *
 x11_window_create(
   bool decorated,
+  bool resizeable,
+  bool minimize,
+  bool maximize,
+  bool close,
   const char *title,
   int32_t x,
   int32_t y,
@@ -87,6 +91,7 @@ x11_window_create(
 
   window->base.visible = false;
   window->base.decorated = decorated;
+  window->base.resizeable = resizeable;
   window->base.x = clip_i32_to_i16(x);
   window->base.y = clip_i32_to_i16(y);
   window->base.width = clip_i32_to_i16(max(1, width));
@@ -167,16 +172,46 @@ x11_window_create(
                       x11_back->_NET_WM_PID, XCB_ATOM_CARDINAL,
                       32, 1, &pid);
 
-  /* Motif hints to disable decorations */
-  if (window->base.decorated == false) {
-    xcb_change_property(x11_back->c, XCB_PROP_MODE_REPLACE, window->wid,
-                        x11_back->_MOTIF_WM_HINTS, x11_back->_MOTIF_WM_HINTS,
-                        32, 5, (uint32_t[]){ 0x02, 0x00, 0x00, 0x00, 0x00 });
+  /* Motif hints (disable decoration/resize) */
+  uint32_t functions = MWM_FUNC_ALL;
+  uint32_t decorations = MWM_DECOR_ALL;
+  if (!(resizeable && minimize && maximize && close)) {
+    functions = MWM_FUNC_MOVE |
+      (resizeable ? MWM_FUNC_RESIZE : 0) |
+      (minimize ? MWM_FUNC_MINIMIZE : 0) |
+      (maximize && resizeable ? MWM_FUNC_MAXIMIZE : 0) |
+      (close ? MWM_FUNC_CLOSE : 0);
+    decorations = MWM_DECOR_BORDER | MWM_DECOR_TITLE | MWM_DECOR_MENU |
+      (resizeable ? MWM_DECOR_RESIZEH : 0) |
+      (minimize ? MWM_DECOR_MINIMIZE : 0) |
+      (maximize && resizeable ? MWM_DECOR_MAXIMIZE : 0) |
+      (close ? 0 : 0);
+  }
+  if (decorated == false) {
+    decorations = 0;
+  }
+  xcb_change_property(x11_back->c, XCB_PROP_MODE_REPLACE, window->wid,
+                      x11_back->_MOTIF_WM_HINTS, x11_back->_MOTIF_WM_HINTS,
+                      32, 5, (uint32_t[]){
+                        MWM_HINTS_FUNCTIONS | MWM_HINTS_DECORATIONS,
+                        functions, decorations, 0x00, 0x00 });
+
 /*
-    xcb_change_property(x11_back->c, XCB_PROP_MODE_REPLACE, window->wid,
-                        x11_back->_NET_WM_WINDOW_TYPE, XCB_ATOM_ATOM,
-                        32, 1, (uint32_t[]){ x11_back->_NET_WM_WINDOW_TYPE_SPLASH });
+  xcb_change_property(x11_back->c, XCB_PROP_MODE_REPLACE, window->wid,
+                      x11_back->_NET_WM_WINDOW_TYPE, XCB_ATOM_ATOM,
+                      32, 1, (uint32_t[]){
+                        x11_back->_NET_WM_WINDOW_TYPE_SPLASH });
 */
+
+  if (window->base.resizeable == false) {
+    xcb_change_property(x11_back->c, XCB_PROP_MODE_REPLACE, window->wid,
+                        XCB_ATOM_WM_NORMAL_HINTS, XCB_ATOM_WM_SIZE_HINTS,
+                        32, 18, (uint32_t[]){
+                          0x30, 0x00, 0x00, 0x00, 0x00,
+                          window->base.width, window->base.height,
+                          window->base.width, window->base.height,
+                          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                          0x00, 0x00, 0x00, 0x00 });
   }
 
 /*
@@ -208,13 +243,12 @@ x11_window_destroy(
   free(window);
 }
 
-x11_target_t * // return an x11_target on stack (no malloc)
+x11_target_t *
 x11_window_get_target(
   x11_window_t *window)
 {
   assert(window != NULL);
   assert(window->wid != XCB_WINDOW_NONE);
-  // cid ?
   return x11_target_create(window->wid, window->cid);
 }
 

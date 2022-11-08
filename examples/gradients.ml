@@ -50,7 +50,8 @@ let () =
   Backend.init ();
 
   let c =
-    Canvas.createFramed "test" ~pos:(960 - 640, 540 - 360) ~size:(1280, 720) in
+    Canvas.createOnscreen ~title:"test"
+      ~pos:(960 - 640, 540 - 360) ~size:(1280, 720) () in
   Canvas.setFillColor c Color.white;
   Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(1280.0, 720.0);
   Canvas.show c;

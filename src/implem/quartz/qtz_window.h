@@ -18,6 +18,10 @@ typedef struct qtz_window_t qtz_window_t;
 qtz_window_t *
 qtz_window_create(
   bool decorated,
+  bool resizeable,
+  bool minimize,
+  bool maximize,
+  bool close,
   const char *title,
   int32_t x,
   int32_t y,

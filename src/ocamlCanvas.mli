@@ -18,20 +18,19 @@
 
     {1 Quick start}
 
-    Before using any function in the library (and assuming the `OCamlCanvas.V1`
+    Before using any function in the library (and assuming the `OcamlCanvas.V1`
     module has been opened), the user should call {!Backend.init} so that
     the library makes any internal initialization it needs for the current
     backend.
 
-    Once the backend is initialized, one can create Canvas objects
-    using the {!Canvas.createFramed}, {!Canvas.createFrameless} and
-    {!Canvas.createOffscreen} functions. The first one creates a canvas
-    contained in a regular window (which is simulated in the Javascript
-    backend). The second one creates a window that has no decoration at
-    all. The last one creates canvases that are not rendered on screen,
-    which can be useful to save complex images that can then simply
-    copied to a visible canvas. Onscreen canvases are hidden by default,
-    and {!Canvas.show} should be called on them to make them visible.
+    Once the backend is initialized, one can create Canvas objects using
+    the {!Canvas.createOnscreen} and {!Canvas.createOffscreen} functions.
+    The first one creates canvases contained in regular windows (which are
+    simulated in the Javascript backend), while the second one creates
+    canvases that are not rendered on screen, which can be useful to save
+    complex images that can then simply be copied to a visible canvas.
+    Onscreen canvases are hidden by default, and {!Canvas.show}
+    should be called on them to make them visible.
 
     Drawing on a canvas can be perfomed using various drawing primitives,
     the most ubiquitous being {!Canvas.clearPath}, {!Canvas.moveTo},
@@ -70,14 +69,14 @@
     program. It will show the number of frames displayed when quitting.
 
 {[
-    open OCamlCanvas.V1
+    open OcamlCanvas.V1
 
     let () =
 
       Backend.init ();
 
-      let c = Canvas.createFramed "Hello world"
-                ~pos:(300, 200) ~size:(300, 200) in
+      let c = Canvas.createOnscreen ~title:"Hello world"
+                ~pos:(300, 200) ~size:(300, 200) () in
 
       Canvas.setFillColor c Color.orange;
       Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(300.0, 200.0);
@@ -146,7 +145,8 @@
 
 module V1 : sig
 (** The OCaml-Canvas module is versioned. This is version 1.
-    It is guaranteed that this interface will remain compatible with
+    When OCaml-Canvas 1.0 will be officially released, it will be
+    guaranteed that this interface will always remain compatible with
     existing programs, provided that the modules defined here ARE NEVER
     included in other modules nor opened globally.
     Local opens should be performed very carefully, as new identifiers
@@ -716,14 +716,20 @@ module V1 : sig
 
     (** {1 Creation} *)
 
-    val createFramed :
-      string -> pos:(int * int) -> size:(int * int) -> [> `Onscreen] t
-    (** [createFramed title ~pos ~size] creates a canvas in a window
-        with title [title] at position [pos] and of size [size] *)
-
-    val createFrameless : pos:(int * int) -> size:(int * int) -> [> `Onscreen] t
-    (** [createFrameless ~pos ~size] creates a canvas in an
-        undecorated window at position [pos] and of size [size] *)
+    val createOnscreen :
+      ?decorated:bool -> ?resizeable:bool -> ?minimize:bool ->
+      ?maximize:bool -> ?close:bool -> ?title:string ->
+      ?pos:(int * int) -> size:(int * int) -> unit -> [> `Onscreen] t
+    (** [createOnscreen ?decorated ?resizeable ?minimize ?maximize ?close
+        ?title ?pos ~size ()] creates a windowed canvas of size [size].
+        The window title and position can be specified using
+        the optional arguments [title] and [pos].
+        The window decorations, which are active by default, can
+        be disabled using the optional arguments [decorated],
+        [resizeable], [minimize], [maximize], and [close].
+        The [decorated] argument has a higher priority: if set to false,
+        all other decoration arguments will be ignored (considered to be
+        false), and all decorations will be removed from the window. *)
 
     val createOffscreen : size:(int * int) -> [> `Offscreen] t
     (** [createOffscreen ~size] creates an offscreen canvas of size [size] *)

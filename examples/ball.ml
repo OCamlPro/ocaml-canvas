@@ -41,8 +41,8 @@ let () =
   let w = float_of_int width in
   let h = float_of_int height in
 
-  let c = Canvas.createFramed "Compositions"
-            ~pos:(300, 200) ~size:(width, height) in
+  let c = Canvas.createOnscreen ~title:"Ball"
+            ~pos:(300, 200) ~size:(width, height) () in
   Canvas.moveTo c (0.0, 0.0);
   Canvas.lineTo c (520.0, 0.0);
   Canvas.lineTo c (520.0, 200.0);
