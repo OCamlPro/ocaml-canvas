@@ -8,6 +8,16 @@
 /*                                                                        */
 /**************************************************************************/
 
+//Provides: Optional_bool_val
+function Optional_bool_val(mlOptBool, def) {
+  return (typeof(mlOptBool) == "object") ? (mlOptBool[1] !== 0) : def;
+}
+
+//Provides: Optional_val
+function Optional_val(mlOptVal, def) {
+  return (typeof(mlOptVal) == "object") ? mlOptVal[1] : def;
+}
+
 //Provides: Val_focus_in_out
 //Requires: FOCUS,FOCUS_TAG
 

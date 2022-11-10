@@ -223,6 +223,9 @@ x11_window_create(
   /* Add to managed windows */
   x11_backend_add_window(window);
 
+  /* Show and hide so the window is created */
+  xcb_map_window(x11_back->c, window->wid);
+  xcb_unmap_window(x11_back->c, window->wid);
 
   /* Flush any pending request */
   xcb_flush(x11_back->c);

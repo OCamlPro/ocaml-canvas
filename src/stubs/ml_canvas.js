@@ -10,6 +10,28 @@
 
 
 
+/* Utility functions */
+
+//Provides: _ml_canvas_initialized
+var _ml_canvas_initialized = false;
+
+//Provides: _ml_canvas_ensure_initialized
+//Requires: _ml_canvas_initialized
+//Requires: caml_named_value, caml_raise_constant
+function _ml_canvas_ensure_initialized() {
+  if (_ml_canvas_initialized == false) {
+    caml_raise_constant(caml_named_value("Not_initialized"));
+  }
+}
+
+//Provides: _ml_canvas_valid_canvas_size
+function _ml_canvas_valid_canvas_size(width, height) {
+  return 0 < width && width <= 32767 && 0 < height && height <= 32767;
+}
+
+
+
+
 /* JS Event handlers */
 
 //Provides: _focus
@@ -24,23 +46,23 @@ var _move = {
 }
 
 //Provides: _make_key_event
-//Requires: _focus,keyname_to_keycode,Val_key_code,Val_key_state,EVENT_TAG
+//Requires: _focus, keyname_to_keycode, Val_key_code, Val_key_state, EVENT_TAG
 //Requires: caml_int64_of_float
 function _make_key_event(e, state) {
-  var char = e.key.length === 1 ? e.key.charCodeAt(0) : 0;
-  var flags = [ 0, e.shiftKey, e.altKey, e.ctrlKey, e.metaKey,
-                   e.getModifierState("CapsLock"),
-                   e.getModifierState("NumLock"),
-                   e.key === "Dead" ];
-  var evt = [ EVENT_TAG.KEY_ACTION,
-              [ 0, _focus, caml_int64_of_float(e.timeStamp * 1000.0),
-                Val_key_code(keyname_to_keycode(e.code)),
-                char, flags, Val_key_state(state) ] ];
+  var char = (e.key.length === 1) ? e.key.charCodeAt(0) : 0;
+  var flags = [0, e.shiftKey, e.altKey, e.ctrlKey, e.metaKey,
+                  e.getModifierState("CapsLock"),
+                  e.getModifierState("NumLock"),
+                  (e.key === "Dead")];
+  var evt = [EVENT_TAG.KEY_ACTION,
+             [0, _focus, caml_int64_of_float(e.timeStamp * 1000.0),
+              Val_key_code(keyname_to_keycode(e.code)),
+              char, flags, Val_key_state(state)]];
   return evt;
 }
 
 //Provides: _key_down_handler
-//Requires: _focus,_make_key_event,_ml_canvas_process_event,KEY_STATE
+//Requires: _focus, _make_key_event, _ml_canvas_process_event, KEY_STATE
 function _key_down_handler(e) {
   if (_focus !== null) {
     var evt = _make_key_event(e, KEY_STATE.DOWN);
@@ -50,7 +72,7 @@ function _key_down_handler(e) {
 }
 
 //Provides: _key_up_handler
-//Requires: _focus,_make_key_event,_ml_canvas_process_event,KEY_STATE
+//Requires: _focus, _make_key_event, _ml_canvas_process_event, KEY_STATE
 function _key_up_handler(e) {
   if (_focus !== null) {
     var evt = _make_key_event(e, KEY_STATE.UP);
@@ -60,7 +82,7 @@ function _key_up_handler(e) {
 }
 
 //Provides: _header_down_handler
-//Requires: _focus,_move,ml_canvas_close,_ml_canvas_process_event,EVENT_TAG
+//Requires: _focus, _move, ml_canvas_close, _ml_canvas_process_event, EVENT_TAG
 //Requires: caml_int64_of_float
 function _header_down_handler(e) {
   if (e.target !== null) {
@@ -68,9 +90,9 @@ function _header_down_handler(e) {
     if ((e.offsetX >= e.target.canvas.width - 20) &&
         (e.offsetX <= e.target.canvas.width - 10) &&
         (e.offsetY >= 10) && (e.offsetY <= 20)) {
-      var evt = [ EVENT_TAG.CANVAS_CLOSED,
-                  [ 0, e.target.canvas,
-                    caml_int64_of_float(e.timeStamp * 1000.0) ] ];
+      var evt = [EVENT_TAG.CANVAS_CLOSED,
+                 [0, e.target.canvas,
+                  caml_int64_of_float(e.timeStamp * 1000.0)]];
       _ml_canvas_process_event(evt);
       ml_canvas_close(e.target.canvas);
       _focus = null;
@@ -86,38 +108,38 @@ function _header_down_handler(e) {
 }
 
 //Provides: _surface_down_handler
-//Requires: _focus,_ml_canvas_process_event,EVENT_TAG
+//Requires: _focus, _ml_canvas_process_event, EVENT_TAG
 //Requires: caml_int64_of_float
 function _surface_down_handler(e) {
   if (e.target !== null) {
     _focus = e.target.canvas;
     document.body.insertBefore(e.target.canvas.frame, null);
-    var evt = [ EVENT_TAG.BUTTON_ACTION,
-                [ 0, e.target.canvas,
-                  caml_int64_of_float(e.timeStamp * 1000.0),
-                  [ 0, e.offsetX, e.offsetY ], e.button + 1, 1 ] ];
+    var evt = [EVENT_TAG.BUTTON_ACTION,
+               [0, e.target.canvas,
+                caml_int64_of_float(e.timeStamp * 1000.0),
+                [0, e.offsetX, e.offsetY], e.button + 1, 1]];
     _ml_canvas_process_event(evt);
   }
   return false;
 }
 
 //Provides: _up_handler
-//Requires: _move,_ml_canvas_process_event,EVENT_TAG
+//Requires: _move, _ml_canvas_process_event, EVENT_TAG
 //Requires: caml_int64_of_float
 function _up_handler(e) {
   _move.moving = false;
   if (e.target.canvas !== undefined) {
-    var evt = [ EVENT_TAG.BUTTON_ACTION,
-                [ 0, e.target.canvas,
-                  caml_int64_of_float(e.timeStamp * 1000.0),
-                  [ 0, e.offsetX, e.offsetY ], e.button + 1, 0 ] ];
+    var evt = [EVENT_TAG.BUTTON_ACTION,
+               [0, e.target.canvas,
+                caml_int64_of_float(e.timeStamp * 1000.0),
+                [0, e.offsetX, e.offsetY], e.button + 1, 0]];
     _ml_canvas_process_event(evt);
   }
   return false; // = prevent default behavior
 }
 
 //Provides: _move_handler
-//Requires: _move,_ml_canvas_process_event,EVENT_TAG
+//Requires: _move, _ml_canvas_process_event, EVENT_TAG
 //Requires: caml_int64_of_float
 function _move_handler(e) {
   if (_move.moving) {
@@ -133,29 +155,26 @@ function _move_handler(e) {
     _move.target.style.left = canvas.x + "px";
     _move.target.style.top = canvas.y + "px";
   } else if (e.target.canvas !== undefined) {
-    var evt = [ EVENT_TAG.MOUSE_MOVE,
-                [ 0, e.target.canvas,
-                  caml_int64_of_float(e.timeStamp * 1000.0),
-                  [ 0, e.offsetX, e.offsetY ] ] ];
+    var evt = [EVENT_TAG.MOUSE_MOVE,
+               [0, e.target.canvas,
+                caml_int64_of_float(e.timeStamp * 1000.0),
+                [0, e.offsetX, e.offsetY]]];
     _ml_canvas_process_event(evt);
   }
   return false;
 }
 
 //Provides: _frame_handler
-//Requires: _ml_canvas_process_event,EVENT_TAG
+//Requires: _ml_canvas_process_event, EVENT_TAG
 //Requires: caml_int64_of_float
 function _frame_handler(timestamp) {
-
   var surfaces = document.getElementsByTagName("canvas");
-
   for (var i = 0; i < surfaces.length; ++i) {
-    var evt = [ EVENT_TAG.FRAME,
-                [ 0, surfaces[i].canvas,
-                  caml_int64_of_float(timestamp * 1000.0) ] ];
+    var evt = [EVENT_TAG.FRAME,
+               [0, surfaces[i].canvas,
+                caml_int64_of_float(timestamp * 1000.0)]];
     _ml_canvas_process_event(evt);
   }
-
   window.requestAnimationFrame(_frame_handler);
 }
 
@@ -176,7 +195,7 @@ function _ml_canvas_image_of_png_file(filename) {
   img.loading = 'eager';
   img.decoding = 'sync';
   img.src = 'data:image/png;base64,' + data;
-  return [ img.decode(), img ];
+  return [img.decode(), img];
 }
 
 //Provides: _ml_canvas_ba_of_img
@@ -202,7 +221,7 @@ function _ml_canvas_ba_of_img(img) {
 }
 
 //Provides: _ml_canvas_surface_of_ba
-//Requires: caml_ba_dim,caml_ba_to_typed_array
+//Requires: caml_ba_dim, caml_ba_to_typed_array
 function _ml_canvas_surface_of_ba(data) {
   var surface = document.createElement("canvas");
   surface.width = caml_ba_dim(data, 1);
@@ -228,17 +247,21 @@ function _ml_canvas_surface_of_ba(data) {
 }
 
 //Provides: ml_canvas_image_data_create_from_png
-//Requires: _ml_canvas_image_of_png_file,_ml_canvas_ba_of_img
+//Requires: _ml_canvas_ensure_initialized, _ml_canvas_image_of_png_file, _ml_canvas_ba_of_img
+//Requires: caml_raise_with_string, caml_named_value
 function ml_canvas_image_data_create_from_png(filename, onload) {
+  _ml_canvas_ensure_initialized();
   var img = _ml_canvas_image_of_png_file(filename);
   if (img === null) {
+    caml_raise_with_string(caml_named_value("Read_png_failed"), filename);
     return 0;
   }
   img[0].then(function (__img) {
     var ba = _ml_canvas_ba_of_img(img[1]);
     onload(ba);
+    return 0;
   }, function (__err) {
-    return;
+    return 0;
   });
   return 0;
 }
@@ -246,7 +269,7 @@ function ml_canvas_image_data_create_from_png(filename, onload) {
 //Provides: ml_canvas_image_data_get_size
 //Requires: caml_ba_dim
 function ml_canvas_image_data_get_size(data) {
-  return [ 0, caml_ba_dim(data, 1), caml_ba_dim(data, 0) ];
+  return [0, caml_ba_dim(data, 1), caml_ba_dim(data, 0)];
 }
 
 //Provides: ml_canvas_image_data_fill
@@ -274,11 +297,14 @@ function _ml_canvas_adjust_blit_info(dwidth, dheight, dx, dy,
 }
 
 //Provides: ml_canvas_image_data_sub
-//Requires: _ml_canvas_adjust_blit_info
-//Requires: caml_ba_dim,caml_ba_to_typed_array,caml_ba_create_unsafe
+//Requires: _ml_canvas_valid_canvas_size, _ml_canvas_adjust_blit_info
+//Requires: caml_ba_dim, caml_ba_to_typed_array, caml_ba_create_unsafe, caml_invalid_argument
 function ml_canvas_image_data_sub(src_data, spos, size) {
   var dwidth = size[1];
   var dheight = size[2];
+  if (!_ml_canvas_valid_canvas_size(dwidth, dheight)) {
+    caml_invalid_argument("ImageData.blit: invalid dimensions");
+  }
   var swidth = caml_ba_dim(src_data, 1);
   var sheight = caml_ba_dim(src_data, 0);
   var ta = new window.Uint8Array(dwidth * dheight * 4);
@@ -308,9 +334,14 @@ function ml_canvas_image_data_sub(src_data, spos, size) {
 }
 
 //Provides: ml_canvas_image_data_blit
-//Requires: _ml_canvas_adjust_blit_info
-//Requires: caml_ba_dim,caml_ba_to_typed_array
+//Requires: _ml_canvas_valid_canvas_size, _ml_canvas_adjust_blit_info
+//Requires: caml_ba_dim, caml_ba_to_typed_array, caml_invalid_argument
 function ml_canvas_image_data_blit(dst_data, dpos, src_data, spos, size) {
+  var width = size[1];
+  var height = size[2];
+  if (!_ml_canvas_valid_canvas_size(width, height)) {
+    caml_invalid_argument("ImageData.blit: invalid dimensions");
+  }
   var dwidth = caml_ba_dim(dst_data, 1);
   var dheight = caml_ba_dim(dst_data, 0);
   var swidth = caml_ba_dim(src_data, 1);
@@ -318,7 +349,7 @@ function ml_canvas_image_data_blit(dst_data, dpos, src_data, spos, size) {
   var blit_info =
     _ml_canvas_adjust_blit_info(dwidth, dheight, dpos[1], dpos[2],
                                 swidth, sheight, spos[1], spos[2],
-                                size[1], size[2]);
+                                width, height);
   var dx = blit_info[0];
   var dy = blit_info[1];
   var sx = blit_info[2];
@@ -339,14 +370,14 @@ function ml_canvas_image_data_blit(dst_data, dpos, src_data, spos, size) {
 }
 
 //Provides: ml_canvas_image_data_get_pixel
-//Requires: caml_ba_dim,caml_ba_to_typed_array
+//Requires: caml_ba_dim, caml_ba_to_typed_array
 function ml_canvas_image_data_get_pixel(data, pos) {
   var ta = new window.Uint32Array(caml_ba_to_typed_array(data).buffer);
   return ta[pos[2] * caml_ba_dim(data, 1) + pos[1]]
 }
 
 //Provides: ml_canvas_image_data_put_pixel
-//Requires: caml_ba_dim,caml_ba_to_typed_array
+//Requires: caml_ba_dim, caml_ba_to_typed_array
 function ml_canvas_image_data_put_pixel(data, pos, color) {
   var ta = new window.Uint32Array(caml_ba_to_typed_array(data).buffer);
   ta[pos[2] * caml_ba_dim(data, 1) + pos[1]] = color;
@@ -354,12 +385,14 @@ function ml_canvas_image_data_put_pixel(data, pos, color) {
 }
 
 //Provides: ml_canvas_image_data_import_png
-//Requires: _ml_canvas_surface_of_ba,_ml_canvas_image_of_png_file
-//Requires: caml_ba_to_typed_array
+//Requires: _ml_canvas_ensure_initialized, _ml_canvas_surface_of_ba, _ml_canvas_image_of_png_file
+//Requires: caml_ba_to_typed_array, caml_raise_with_string, caml_named_value
 function ml_canvas_image_data_import_png(data, pos, filename, onload) {
+  _ml_canvas_ensure_initialized();
   var img = _ml_canvas_image_of_png_file(filename);
   var surface = _ml_canvas_surface_of_ba(data);
   if ((img === null) || (surface === null)) {
+    caml_raise_with_string(caml_named_value("Read_png_failed"), filename);
     return 0;
   }
   img[0].then(function (__img) {
@@ -372,21 +405,28 @@ function ml_canvas_image_data_import_png(data, pos, filename, onload) {
       dta[i] = sta[i];
     }
     onload(data);
+    return 0;
   }, function (__err) {
-    return;
+    return 0;
   });
   return 0;
 }
 
 //Provides: ml_canvas_image_data_export_png
-//Requires: _ml_canvas_surface_of_ba
-//Requires: caml_create_file
+//Requires: _ml_canvas_ensure_initialized, _ml_canvas_surface_of_ba
+//Requires: caml_create_file, caml_raise_with_string, caml_named_value
 function ml_canvas_image_data_export_png(data, filename) {
-  var surface = _ml_canvas_surface_of_ba(data);
-  if (surface !== null) {
-    var data = surface.toDataURL("image/png").substring(22);
-    caml_create_file(filename, window.atob(data));
+  _ml_canvas_ensure_initialized();
+  try {
+    var surface = _ml_canvas_surface_of_ba(data);
+    if (surface !== null) {
+      var data = surface.toDataURL("image/png").substring(22);
+      caml_create_file(filename, window.atob(data));
+    }
+  } catch (exn) {
+    caml_raise_with_string(caml_named_value("Write_png_failed"), filename);
   }
+  return 0;
 }
 
 
@@ -401,41 +441,49 @@ function ml_canvas_path_create() {
 //Provides: ml_canvas_path_close
 function ml_canvas_path_close(path) {
   path.closePath();
+  return 0;
 }
 
 //Provides: ml_canvas_path_move_to
 function ml_canvas_path_move_to(path, p) {
   path.moveTo(p[1], p[2]);
+  return 0;
 }
 
 //Provides: ml_canvas_path_line_to
 function ml_canvas_path_line_to(path, p) {
   path.lineTo(p[1], p[2]);
+  return 0;
 }
 
 //Provides: ml_canvas_path_arc
 function ml_canvas_path_arc(path, p, radius, theta1, theta2, ccw) {
   path.arc(p[1], p[2], radius, theta1, theta2, ccw);
+  return 0;
 }
 
 //Provides: ml_canvas_path_arc_to
 function ml_canvas_path_arc_to(path, p1, p2, radius) {
   path.arcTo(p1[1], p1[2], p2[1], p2[2], radius);
+  return 0;
 }
 
 //Provides: ml_canvas_path_quadratic_curve_to
 function ml_canvas_path_quadratic_curve_to(path, cp, p) {
   path.quadraticCurveTo(cp[1], cp[2], p[1], p[2]);
+  return 0;
 }
 
 //Provides : ml_canvas_path_bezier_curve_to
 function ml_canvas_path_bezier_curve_to(path, cp1, cp2, p) {
   path.bezierCurveTo(cp1[1], cp1[2], cp2[1], cp2[2], p[1], p[2]);
+  return 0;
 }
 
 //Provides: ml_canvas_path_rect
 function ml_canvas_path_rect(path, pos, size) {
   path.rect(pos[1], pos[2], size[1], size[2]);
+  return 0;
 }
 
 //Provides: ml_canvas_path_ellipse
@@ -443,17 +491,20 @@ function ml_canvas_path_ellipse(path, p, radius, rotation,
                                 theta1, theta2, ccw) {
   path.ellipse(p[1], p[2], radius[1], radius[2],
                rotation, theta1, theta2, ccw);
+  return 0;
 }
 
 //Provides: ml_canvas_path_add
 function ml_canvas_path_add(path1, path2) {
   path1.addPath(path2);
+  return 0;
 }
 
 //Provides: ml_canvas_path_add_transformed
 function ml_canvas_path_add_transformed(path1, path2, t) {
   var m = new window.DOMMatrix([[1], t[2], t[3], t[4], t[5], t[6]]);
   path1.addPath(path2, m);
+  return 0;
 }
 
 
@@ -482,7 +533,9 @@ function ml_canvas_create_conic_gradient(canvas, center, angle) {
 //Requires: _color_of_int
 function ml_canvas_gradient_add_color_stop(grad, color, pos) {
   grad.addColorStop(pos, _color_of_int(color));
+  return 0;
 }
+
 
 
 /* Patterns */
@@ -495,13 +548,16 @@ function ml_canvas_create_pattern(canvas, image, repeat) {
 }
 
 
+
 /* Canvas */
 
-/* Comparison */
+/* Comparison and hashing */
 
 // Provides: ml_canvas_hash
+// Requires: caml_named_value
 function ml_canvas_hash(canvas) {
-  return canvas.id;
+  var hash = caml_named_value("Hashtbl.hash");
+  return hash(canvas.id);
 }
 
 // Provides: ml_canvas_compare
@@ -517,14 +573,15 @@ function ml_canvas_compare(canvas1, canvas2) {
 
 
 
-/* Creating / destruction */
+/* Creation */
 
 //Provides: _next_id
 var _next_id = 0;
 
 //Provides: _ml_canvas_decorate
 //Requires: caml_jsstring_of_string
-function _ml_canvas_decorate(header, resizeable, minimize, maximize, close, title) {
+function _ml_canvas_decorate(header, resizeable, minimize,
+                             maximize, close, title) {
   var width = header.width;
   var ctxt = header.getContext("2d");
   ctxt.fillStyle = "#585858";
@@ -547,32 +604,30 @@ function _ml_canvas_decorate(header, resizeable, minimize, maximize, close, titl
   }
 }
 
-//Provides: _ml_optional_bool_val
-function _ml_optional_bool_val(mlOptBool, def) {
-  return (typeof(mlOptBool) == "object") ? (mlOptBool[1] !== 0) : def;
-}
-
-//Provides: _ml_optional_val
-function _ml_optional_val(mlOptVal, def) {
-  return (typeof(mlOptVal) == "object") ? mlOptVal[1] : def;
-}
-
 //Provides: ml_canvas_create_onscreen
-//Requires: _next_id,_header_down_handler,_surface_down_handler,_up_handler,_move_handler,_ml_canvas_decorate,_ml_optional_bool_val,_ml_optional_val
-function ml_canvas_create_onscreen(decorated, resizeable, minimize, maximize, close, title, pos, size) {
+//Requires: _ml_canvas_ensure_initialized, _ml_canvas_valid_canvas_size, _next_id, _header_down_handler, _surface_down_handler, _up_handler, _move_handler, _ml_canvas_decorate, Optional_bool_val, Optional_val
+//Requires: caml_invalid_argument
+function ml_canvas_create_onscreen(decorated, resizeable, minimize, maximize,
+                                   close, title, pos, size) {
 
-  var decorated = _ml_optional_bool_val(decorated, true);
-  var resizeable = _ml_optional_bool_val(resizeable, true);
-  var minimize = _ml_optional_bool_val(minimize, true);
-  var maximize = _ml_optional_bool_val(maximize, true);
-  var close = _ml_optional_bool_val(close, true);
-  var title = _ml_optional_val(title, null);
-  var pos = _ml_optional_val(pos, [ 0, 0, 0 ]);
+  _ml_canvas_ensure_initialized();
 
-  var x = pos[1];
-  var y = pos[2];
   var width = size[1];
   var height = size[2];
+  if (!_ml_canvas_valid_canvas_size(width, height)) {
+    caml_invalid_argument("Canvas.blit: invalid dimensions");
+  }
+
+  var pos = Optional_val(pos, [0, 0, 0]);
+  var x = pos[1];
+  var y = pos[2];
+
+  var decorated = Optional_bool_val(decorated, true);
+  var resizeable = Optional_bool_val(resizeable, true);
+  var minimize = Optional_bool_val(minimize, true);
+  var maximize = Optional_bool_val(maximize, true);
+  var close = Optional_bool_val(close, true);
+  var title = Optional_val(title, null);
 
   var id = ++_next_id;
 
@@ -647,11 +702,18 @@ function ml_canvas_create_onscreen(decorated, resizeable, minimize, maximize, cl
 }
 
 //Provides: ml_canvas_create_offscreen
-//Requires: _next_id
+//Requires: _ml_canvas_ensure_initialized, _ml_canvas_valid_canvas_size, _next_id
+//Requires: caml_invalid_argument
 function ml_canvas_create_offscreen(size) {
+
+  _ml_canvas_ensure_initialized();
 
   var width = size[1];
   var height = size[2];
+
+  if (!_ml_canvas_valid_canvas_size(width, height)) {
+    caml_invalid_argument("Canvas.createOffscreen: invalid dimensions");
+  }
 
   var id = ++_next_id;
 
@@ -690,12 +752,13 @@ function ml_canvas_create_offscreen(size) {
 }
 
 //Provides: ml_canvas_create_offscreen_from_image_data
-//Requires: ml_canvas_create_offscreen
-//Requires: caml_ba_to_typed_array,caml_ba_dim
+//Requires: _ml_canvas_ensure_initialized, ml_canvas_create_offscreen
+//Requires: caml_ba_to_typed_array, caml_ba_dim
 function ml_canvas_create_offscreen_from_image_data(data) {
+  _ml_canvas_ensure_initialized();
   var width = caml_ba_dim(data, 1);
   var height = caml_ba_dim(data, 0);
-  var canvas = ml_canvas_create_offscreen([ 0, width, height ])
+  var canvas = ml_canvas_create_offscreen([0, width, height])
   if (canvas === null) {
     return null;
   }
@@ -719,21 +782,25 @@ function ml_canvas_create_offscreen_from_image_data(data) {
 }
 
 //Provides: ml_canvas_create_offscreen_from_png
-//Requires: ml_canvas_create_offscreen,_ml_canvas_image_of_png_file
+//Requires: _ml_canvas_ensure_initialized, ml_canvas_create_offscreen, _ml_canvas_image_of_png_file
+//Requires: caml_raise_with_string, caml_named_value
 function ml_canvas_create_offscreen_from_png(filename, onload) {
+  _ml_canvas_ensure_initialized();
   var img = _ml_canvas_image_of_png_file(filename);
   if (img === null) {
+    caml_raise_with_string(caml_named_value("Read_png_failed"), filename);
     return 0;
   }
   img[0].then(function (__img) {
-    var canvas = ml_canvas_create_offscreen([ 0, img[1].width, img[1].height ])
+    var canvas = ml_canvas_create_offscreen([0, img[1].width, img[1].height])
     if (canvas === null) {
       return 0;
     }
     canvas.ctxt.drawImage(img[1], 0, 0);
     onload(canvas);
+    return 0;
   }, function (__err) {
-    return;
+    return 0;
   });
   return 0;
 }
@@ -749,6 +816,7 @@ function ml_canvas_show(canvas) {
     _focus = canvas;
     canvas.frame.style.visibility = "visible";
   }
+  return 0;
 }
 
 // Provides: ml_canvas_hide
@@ -760,6 +828,7 @@ function ml_canvas_hide(canvas) {
     }
     canvas.frame.style.visibility = "hidden";
   }
+  return 0;
 }
 
 // Provides: ml_canvas_close
@@ -789,6 +858,7 @@ function ml_canvas_close(canvas) {
       canvas.frame = null;
     }
   }
+  return 0;
 }
 
 
@@ -802,31 +872,37 @@ function ml_canvas_get_id(canvas) {
 
 // Provides: ml_canvas_get_size
 function ml_canvas_get_size(canvas) {
-  return [ 0, canvas.width, canvas.height ];
+  return [0, canvas.width, canvas.height];
 }
 
 // Provides: ml_canvas_set_size
-// Requires: _ml_canvas_decorate
+// Requires: _ml_canvas_valid_canvas_size, _ml_canvas_decorate
+// Requires: caml_invalid_argument
 function ml_canvas_set_size(canvas, size) {
   var width = size[1];
   var height = size[2];
+  if (!_ml_canvas_valid_canvas_size(width, height)) {
+    caml_invalid_argument("Canvas.setSize: invalid dimensions");
+  }
   var img = canvas.ctxt.getImageData(0, 0, canvas.width, canvas.height);
   if (canvas.header !== null) {
       canvas.header.width = width;
-      _ml_canvas_decorate(canvas.header, canvas.resizeable, canvas.minimize, canvas.maximize, canvas.close, canvas.name);
+      _ml_canvas_decorate(canvas.header, canvas.resizeable, canvas.minimize,
+                          canvas.maximize, canvas.close, canvas.name);
   }
   canvas.surface.width = canvas.width = width;
   canvas.surface.height = canvas.height = height;
   canvas.ctxt.fillRect(0, 0, width, height);
   canvas.ctxt.putImageData(img, 0, 0);
+  return 0;
 }
 
 // Provides: ml_canvas_get_position
 function ml_canvas_get_position(canvas) {
   if (canvas.frame !== null) {
-    return [ 0, canvas.x, canvas.y ];
+    return [0, canvas.x, canvas.y];
   } else {
-    return [ 0, 0, 0 ];
+    return [0, 0, 0];
   }
 }
 
@@ -840,6 +916,7 @@ function ml_canvas_set_position(canvas, pos) {
     canvas.frame.style.left = x + "px";
     canvas.frame.style.top = y + "px";
   }
+  return 0;
 }
 
 
@@ -849,31 +926,37 @@ function ml_canvas_set_position(canvas, pos) {
 // Provides: ml_canvas_set_transform
 function ml_canvas_set_transform(canvas, t) {
   canvas.ctxt.setTransform(t[1], t[2], t[3], t[4], t[5], t[6]);
+  return 0;
 }
 
 // Provides: ml_canvas_transform
 function ml_canvas_transform(canvas, t) {
   canvas.ctxt.transform(t[1], t[2], t[3], t[4], t[5], t[6]);
+  return 0;
 }
 
 // Provides: ml_canvas_translate
 function ml_canvas_translate(canvas, vec) {
   canvas.ctxt.translate(vec[1], vec[2]);
+  return 0;
 }
 
 // Provides: ml_canvas_scale
 function ml_canvas_scale(canvas, vec) {
   canvas.ctxt.scale(vec[1], vec[2]);
+  return 0;
 }
 
 // Provides: ml_canvas_shear
 function ml_canvas_shear(canvas, vec) {
   canvas.ctxt.transform(1.0, vec[2], vec[1], 1.0, 0.0, 0.0);
+  return 0;
 }
 
 // Provides: ml_canvas_rotate
 function ml_canvas_rotate(canvas, theta) {
   canvas.ctxt.rotate(theta);
+  return 0;
 }
 
 
@@ -883,11 +966,13 @@ function ml_canvas_rotate(canvas, theta) {
 // Provides: ml_canvas_save
 function ml_canvas_save(canvas) {
   canvas.ctxt.save();
+  return 0;
 }
 
 // Provides: ml_canvas_restore
 function ml_canvas_restore(canvas) {
   canvas.ctxt.restore();
+  return 0;
 }
 
 
@@ -928,6 +1013,7 @@ function ml_canvas_get_line_width(canvas) {
 //Provides: ml_canvas_set_line_width
 function ml_canvas_set_line_width(canvas, width) {
   canvas.ctxt.lineWidth = width;
+  return 0;
 }
 
 //Provides: ml_canvas_get_line_cap
@@ -940,6 +1026,7 @@ function ml_canvas_get_line_cap(canvas) {
 //Requires: Cap_type_val
 function ml_canvas_set_line_cap(canvas, cap) {
   canvas.ctxt.lineCap = Cap_type_val(cap);
+  return 0;
 }
 
 //Provides: ml_canvas_get_line_dash_offset
@@ -950,6 +1037,7 @@ function ml_canvas_get_line_dash_offset(canvas) {
 //Provides: ml_canvas_set_line_dash_offset
 function ml_canvas_set_line_dash_offset(canvas, offset) {
   canvas.ctxt.lineDashOffset = offset;
+  return 0;
 }
 
 //Provides: ml_canvas_get_line_dash
@@ -963,6 +1051,7 @@ function ml_canvas_get_line_dash(canvas) {
 function ml_canvas_set_line_dash(canvas, dash) {
   dash.shift();
   canvas.ctxt.setLineDash(dash);
+  return 0;
 }
 
 //Provides: ml_canvas_get_line_join
@@ -975,6 +1064,7 @@ function ml_canvas_get_line_join(canvas) {
 //Requires: Join_type_val
 function ml_canvas_set_line_join(canvas, join) {
   canvas.ctxt.lineJoin = Join_type_val(join);
+  return 0;
 }
 
 //Provides: ml_canvas_get_miter_limit
@@ -985,6 +1075,7 @@ function ml_canvas_get_miter_limit(canvas) {
 //Provides: ml_canvas_set_miter_limit
 function ml_canvas_set_miter_limit(canvas, limit) {
   canvas.ctxt.miterLimit = limit;
+  return 0;
 }
 
 //Provides: ml_canvas_get_stroke_color
@@ -1001,28 +1092,33 @@ function ml_canvas_get_stroke_color(canvas) {
 //Requires: _color_of_int
 function ml_canvas_set_stroke_color(canvas, color) {
   canvas.ctxt.strokeStyle = _color_of_int(color);
+  return 0;
 }
 
 //Provides: ml_canvas_set_stroke_gradient
 function ml_canvas_set_stroke_gradient(canvas, grad) {
   canvas.ctxt.strokeStyle = grad;
+  return 0;
 }
 
 //Provides: ml_canvas_set_stroke_pattern
 function ml_canvas_set_stroke_pattern(canvas, pattern) {
   canvas.ctxt.strokeStyle = pattern;
+  return 0;
 }
 
 //Provides: ml_canvas_set_stroke_style
 //Requires: Val_draw_style
 function ml_canvas_set_stroke_style(canvas, style) {
   canvas.ctxt.strokeStyle = Val_draw_style(style);
+  return 0;
 }
 
 //Provides: ml_canvas_get_stroke_style
 //Requires: Draw_style_val
 function ml_canvas_get_stroke_style(canvas) {
   return Draw_style_val(canvas.ctxt.strokeStyle);
+  return 0;
 }
 
 //Provides: ml_canvas_get_fill_color
@@ -1039,6 +1135,7 @@ function ml_canvas_get_fill_color(canvas) {
 //Requires: _color_of_int
 function ml_canvas_set_fill_color(canvas, color) {
   canvas.ctxt.fillStyle = _color_of_int(color);
+  return 0;
 }
 
 //Provides: ml_canvas_get_global_alpha
@@ -1049,22 +1146,26 @@ function ml_canvas_get_global_alpha(canvas) {
 //Provides: ml_canvas_set_global_alpha
 function ml_canvas_set_global_alpha(canvas, global_alpha) {
   canvas.ctxt.globalAlpha = global_alpha;
+  return 0;
 }
 
 //Provides: ml_canvas_set_fill_gradient
 function ml_canvas_set_fill_gradient(canvas, grad) {
   canvas.ctxt.fillStyle = grad;
+  return 0;
 }
 
 //Provides: ml_canvas_set_fill_pattern
 function ml_canvas_set_fill_pattern(canvas, pattern) {
   canvas.ctxt.fillStyle = pattern;
+  return 0;
 }
 
 //Provides: ml_canvas_set_fill_style
 //Requires: Val_draw_style
 function ml_canvas_set_fill_style(canvas, style) {
   canvas.ctxt.fillStyle = Val_draw_style(style);
+  return 0;
 }
 
 //Provides: ml_canvas_get_fill_style
@@ -1083,6 +1184,7 @@ function ml_canvas_get_global_composite_operation(canvas) {
 //Requires: Compop_val
 function ml_canvas_set_global_composite_operation(canvas, op) {
   canvas.ctxt.globalCompositeOperation = Compop_val(op);
+  return 0;
 }
 
 //Provides: ml_canvas_get_shadow_color
@@ -1095,6 +1197,7 @@ function ml_canvas_get_shadow_color(canvas) {
 //Requires: _color_of_int
 function ml_canvas_set_shadow_color(canvas, color) {
   canvas.ctxt.shadowColor = _color_of_int(color);
+  return 0;
 }
 
 //Provides: ml_canvas_get_shadow_blur
@@ -1105,25 +1208,28 @@ function ml_canvas_get_shadow_blur(canvas) {
 //Provides: ml_canvas_set_shadow_blur
 function ml_canvas_set_shadow_blur(canvas, blur) {
   canvas.ctxt.shadowBlur = blur;
+  return 0;
 }
 
 //Provides: ml_canvas_get_shadow_offset
 function ml_canvas_get_shadow_offset(canvas, offset) {
-  return [ 0, canvas.ctxt.shadowOffsetX, canvas.ctxt.shadowOffsetY ];
+  return [0, canvas.ctxt.shadowOffsetX, canvas.ctxt.shadowOffsetY];
 }
 
 //Provides: ml_canvas_set_shadow_offset
 function ml_canvas_set_shadow_offset(canvas, offset) {
   canvas.ctxt.shadowOffsetX = offset[1];
   canvas.ctxt.shadowOffsetY = offset[2];
+  return 0;
 }
 
 //Provides: ml_canvas_set_font
-//Requires: Slant_val,caml_jsstring_of_string
+//Requires: Slant_val, caml_jsstring_of_string
 function ml_canvas_set_font(canvas, family, size, slant, weight) {
   canvas.ctxt.font =
     Slant_val(slant) + " " + weight + " " + size + "pt " +
         caml_jsstring_of_string(family);
+  return 0;
 }
 
 
@@ -1133,52 +1239,62 @@ function ml_canvas_set_font(canvas, family, size, slant, weight) {
 //Provides: ml_canvas_clear_path
 function ml_canvas_clear_path(canvas) {
   canvas.ctxt.beginPath();
+  return 0;
 }
 
 //Provides: ml_canvas_close_path
 function ml_canvas_close_path(canvas) {
   canvas.ctxt.closePath();
+  return 0;
 }
 
 //Provides: ml_canvas_move_to
 function ml_canvas_move_to(canvas, p) {
   canvas.ctxt.moveTo(p[1], p[2]);
+  return 0;
 }
 
 //Provides: ml_canvas_line_to
 function ml_canvas_line_to(canvas, p) {
   canvas.ctxt.lineTo(p[1], p[2]);
+  return 0;
 }
 
 //Provides: ml_canvas_arc
 function ml_canvas_arc(canvas, p, radius, theta1, theta2, ccw) {
   canvas.ctxt.arc(p[1], p[2], radius, theta1, theta2, ccw);
+  return 0;
 }
 
 //Provides: ml_canvas_arc_to
 function ml_canvas_arc_to(canvas, p1, p2, radius) {
   canvas.ctxt.arcTo(p1[1], p1[2], p2[1], p2[2], radius);
+  return 0;
 }
 
 //Provides: ml_canvas_quadratic_curve_to
 function ml_canvas_quadratic_curve_to(canvas, p1, p2) {
   canvas.ctxt.quadraticCurveTo(p1[1], p1[2], p2[1], p2[2]);
+  return 0;
 }
 
 //Provides: ml_canvas_bezier_curve_to
 function ml_canvas_bezier_curve_to(canvas, p1, p2, p3) {
   canvas.ctxt.bezierCurveTo(p1[1], p1[2], p2[1], p2[2], p3[1], p3[2]);
+  return 0;
 }
 
 //Provides: ml_canvas_rect
 function ml_canvas_rect(canvas, pos, size) {
   canvas.ctxt.rect(pos[1], pos[2], size[1], size[2]);
+  return 0;
 }
 
 //Provides: ml_canvas_ellipse
 function ml_canvas_ellipse(canvas, p, radius, rotation, theta1, theta2, ccw) {
   canvas.ctxt.ellipse(p[1], p[2], radius[1], radius[2],
                       rotation, theta1, theta2, ccw);
+  return 0;
 }
 
 
@@ -1191,6 +1307,7 @@ function ml_canvas_fill(canvas, nonzero) {
   } else {
     canvas.ctxt.fill(); // "evenodd"
   }
+  return 0;
 }
 
 //Provides: ml_canvas_fill_path
@@ -1200,16 +1317,19 @@ function ml_canvas_fill_path(canvas, path, nonzero) {
   } else {
     canvas.ctxt.fill(path); // "evenodd"
   }
+  return 0;
 }
 
 //Provides: ml_canvas_stroke
 function ml_canvas_stroke(canvas) {
   canvas.ctxt.stroke();
+  return 0;
 }
 
 //Provides: ml_canvas_stroke_path
 function ml_canvas_stroke_path(canvas, path) {
   canvas.ctxt.stroke(path);
+  return 0;
 }
 
 //Provides: ml_canvas_clip
@@ -1219,6 +1339,7 @@ function ml_canvas_clip(canvas, nonzero) {
   } else {
     canvas.ctxt.clip(); // "evenodd"
   }
+  return 0;
 }
 
 //Provides: ml_canvas_clip_path
@@ -1228,6 +1349,7 @@ function ml_canvas_clip_path(canvas, path, nonzero) {
   } else {
     canvas.ctxt.clip(path); // "evenodd"
   }
+  return 0;
 }
 
 
@@ -1237,11 +1359,13 @@ function ml_canvas_clip_path(canvas, path, nonzero) {
 //Provides: ml_canvas_fill_rect
 function ml_canvas_fill_rect(canvas, pos, size) {
   canvas.ctxt.fillRect(pos[1], pos[2], size[1], size[2]);
+  return 0;
 }
 
 //Provides: ml_canvas_stroke_rect
 function ml_canvas_stroke_rect(canvas, pos, size) {
   canvas.ctxt.strokeRect(pos[1], pos[2], size[1], size[2]);
+  return 0;
 }
 
 
@@ -1249,21 +1373,29 @@ function ml_canvas_stroke_rect(canvas, pos, size) {
 //Requires: caml_jsstring_of_string
 function ml_canvas_fill_text(canvas, text, pos) {
   canvas.ctxt.fillText(caml_jsstring_of_string(text), pos[1], pos[2]);
+  return 0;
 }
 
 //Provides: ml_canvas_stroke_text
 //Requires: caml_jsstring_of_string
 function ml_canvas_stroke_text(canvas, text, pos) {
   canvas.ctxt.strokeText(caml_jsstring_of_string(text), pos[1], pos[2]);
+  return 0;
 }
 
 //Provides: ml_canvas_blit
+//Requires: _ml_canvas_valid_canvas_size
+//Requires: caml_invalid_argument
 function ml_canvas_blit(dst_canvas, dpos, src_canvas, spos, size) {
   var width = size[1];
   var height = size[2];
+  if (!_ml_canvas_valid_canvas_size(width, height)) {
+    caml_invalid_argument("Canvas.blit: invalid dimensions");
+  }
   dst_canvas.ctxt.drawImage(src_canvas.surface,
                             spos[1], spos[2], width, height,
                             dpos[1], dpos[2], width, height);
+  return 0;
 }
 
 
@@ -1276,7 +1408,6 @@ function ml_canvas_get_pixel(canvas, pos) {
           (image.data[0] << 16) |
           (image.data[1] << 8) |
           (image.data[2] << 0);
-
 }
 
 //Provides: ml_canvas_put_pixel
@@ -1287,13 +1418,18 @@ function ml_canvas_put_pixel(canvas, pos, color) {
   image.data[1] = (color & 0x0000FF00) >>> 8; // G
   image.data[2] = (color & 0x000000FF) >>> 0; // B
   canvas.ctxt.putImageData(image, pos[1], pos[2]);
+  return 0;
 }
 
 //Provides: ml_canvas_get_image_data
-//Requires: caml_ba_create_unsafe
+//Requires: _ml_canvas_valid_canvas_size
+//Requires: caml_ba_create_unsafe, caml_invalid_argument
 function ml_canvas_get_image_data(canvas, pos, size) {
   var width = size[1];
   var height = size[2];
+  if (!_ml_canvas_valid_canvas_size(width, height)) {
+    caml_invalid_argument("Canvas.getImageData: invalid dimensions");
+  }
   var image = canvas.ctxt.getImageData(pos[1], pos[2], width, height);
   var sta = new window.Uint8Array(image.data.buffer);
   var dta = new window.Uint8Array(sta.length);
@@ -1309,8 +1445,14 @@ function ml_canvas_get_image_data(canvas, pos, size) {
 }
 
 //Provides: ml_canvas_put_image_data
-//Requires: caml_ba_to_typed_array,caml_ba_dim
+//Requires: _ml_canvas_valid_canvas_size
+//Requires: caml_ba_to_typed_array, caml_ba_dim, caml_invalid_argument
 function ml_canvas_put_image_data(canvas, dpos, data, spos, size) {
+  var width = size[1];
+  var height = size[2];
+  if (!_ml_canvas_valid_canvas_size(width, height)) {
+    caml_invalid_argument("Canvas.putImageData: invalid dimensions");
+  }
   var sta = new window.Uint8Array(caml_ba_to_typed_array(data).buffer);
   var dta = new window.Uint8ClampedArray(sta.length);
   // Convert from BGRA to RGBA
@@ -1329,31 +1471,41 @@ function ml_canvas_put_image_data(canvas, dpos, data, spos, size) {
       new window.ImageData(dta, caml_ba_dim(data, 1), caml_ba_dim(data, 0));
   }
   canvas.ctxt.putImageData(image, dpos[1], dpos[2],
-                           spos[1], spos[2], size[1], size[2]);
+                           spos[1], spos[2], width, height);
+  return 0;
 }
 
 //Provides: ml_canvas_import_png
 //Requires: _ml_canvas_image_of_png_file
+//Requires: caml_raise_with_string, caml_named_value
 function ml_canvas_import_png(canvas, pos, filename, onload) {
+  //TODO: check read failure
   var img = _ml_canvas_image_of_png_file(filename);
   if (img === null) {
+    caml_raise_with_string(caml_named_value("Read_png_failed"), filename);
     return 0;
   }
   img[0].then(function (__img) {
     canvas.ctxt.drawImage(img[1], pos[1], pos[2]);
     // image, sx, sy, sWitdh, sHeight, dx, dy, dWidth, dHeight
     onload(canvas);
+    return 0;
   }, function (__err) {
-    return;
+    return 0;
   });
   return 0;
 }
 
 //Provides: ml_canvas_export_png
-//Requires: caml_create_file
+//Requires: caml_create_file, caml_raise_with_string, caml_named_value
 function ml_canvas_export_png(canvas, filename) {
-  var data = canvas.surface.toDataURL("image/png").substring(22);
-  caml_create_file(filename, window.atob(data));
+  try {
+    var data = canvas.surface.toDataURL("image/png").substring(22);
+    caml_create_file(filename, window.atob(data));
+  } catch (exn) {
+    caml_raise_with_string(caml_named_value("Write_png_failed"), filename);
+  }
+  return 0;
 }
 
 
@@ -1368,7 +1520,9 @@ function ml_canvas_int_of_key(keycode) {
 
 //Provides: ml_canvas_key_of_int
 //Requires: Val_key_code
+//Requires: caml_invalid_argument
 function ml_canvas_key_of_int(keycode) {
+  caml_invalid_argument("key_of_int: i must be in the 0-255 range");
   return Val_key_code(keycode);
 }
 
@@ -1376,25 +1530,20 @@ function ml_canvas_key_of_int(keycode) {
 
 /* Backend */
 
-//Provides: _ml_canvas_initialized
-var _ml_canvas_initialized = false;
-
 //Provides: ml_canvas_init
-//Requires: _key_down_handler,_key_up_handler,_up_handler,_move_handler,_frame_handler,_ml_canvas_initialized
+//Requires: _key_down_handler, _key_up_handler, _up_handler, _move_handler, _frame_handler, _ml_canvas_initialized
 //Requires: caml_list_to_js_array
 function ml_canvas_init() {
-  if (_ml_canvas_initialized) {
-    return false;
+  if (_ml_canvas_initialized === true) {
+    return 0;
   }
-
   document.onkeydown = _key_down_handler;
   document.onkeyup = _key_up_handler;
   document.onmouseup = _up_handler;
   document.onmousemove = _move_handler;
   window.requestAnimationFrame(_frame_handler);
   _ml_canvas_initialized = true;
-
-  return _ml_canvas_initialized;
+  return 0;
 }
 
 //Provides: _ml_canvas_mlProcessEvent
@@ -1403,54 +1552,77 @@ var _ml_canvas_mlProcessEvent = null;
 //Provides: _ml_canvas_mlContinuation
 var _ml_canvas_mlContinuation = null;
 
-//Provides: _ml_canvas_mlState
-var _ml_canvas_mlState = null;
+//Provides: _ml_canvas_mlException
+var _ml_canvas_mlException = null;
 
 //Provides: _ml_canvas_process_event
-//Requires: _ml_canvas_mlProcessEvent,_ml_canvas_mlContinuation,_ml_canvas_mlState,ml_canvas_stop
+//Requires: _ml_canvas_mlProcessEvent, _ml_canvas_mlException, ml_canvas_stop
 function _ml_canvas_process_event(mlEvent) {
   if (_ml_canvas_mlProcessEvent === null) {
     return false;
   }
   try {
-    var mlResult = _ml_canvas_mlProcessEvent(_ml_canvas_mlState, mlEvent);
-    _ml_canvas_mlState = mlResult[1];
-    return mlResult[2];
+    _ml_canvas_mlProcessEvent(mlEvent);
+    return true;
   } catch (exn) {
-    //_ml_canvas_mlException = exn;
+    _ml_canvas_mlException = exn;
     ml_canvas_stop();
     return false;
   }
 }
 
 //Provides: ml_canvas_run
-//Requires: _ml_canvas_mlProcessEvent,_ml_canvas_mlContinuation,_ml_canvas_mlState
-function ml_canvas_run(mlProcessEvent, mlContinuation, mlState) {
+//Requires: _ml_canvas_ensure_initialized, _ml_canvas_mlProcessEvent, _ml_canvas_mlContinuation, _ml_canvas_mlException, _ml_canvas_ensure_initialized
+function ml_canvas_run(mlProcessEvent, mlContinuation) {
+  _ml_canvas_ensure_initialized();
   if (_ml_canvas_mlProcessEvent !== null) {
-    return;
+    return 0;
   }
   _ml_canvas_mlProcessEvent = mlProcessEvent;
   _ml_canvas_mlContinuation = mlContinuation;
-  _ml_canvas_mlState = mlState;
+  _ml_canvas_mlException = null;
+  return 0;
 }
 
 //Provides: ml_canvas_stop
-//Requires: _ml_canvas_mlProcessEvent,_ml_canvas_mlContinuation,_ml_canvas_mlState
+//Requires: _ml_canvas_ensure_initialized, _ml_canvas_mlProcessEvent, _ml_canvas_mlContinuation, _ml_canvas_mlException, _ml_canvas_ensure_initialized
 function ml_canvas_stop() {
+  _ml_canvas_ensure_initialized();
   _ml_canvas_mlProcessEvent = null;
-  if (_ml_canvas_mlContinuation !== null) {
-    try {
-      _ml_canvas_mlContinuation(_ml_canvas_mlState);
-    } catch (exn) {
-      // do nothing
-    }
+  if (_ml_canvas_mlException !== null) {
+    var exn = _ml_canvas_mlException;
     _ml_canvas_mlContinuation = null;
+    _ml_canvas_mlException = null;
+    throw (exn);
+  } else if (_ml_canvas_mlContinuation !== null) {
+    try {
+      _ml_canvas_mlContinuation();
+      _ml_canvas_mlContinuation = null;
+    } catch (exn) {
+      _ml_canvas_mlContinuation = null;
+      throw (exn);
+    }
+  }
+  return 0;
+}
+
+//Provides: ml_canvas_get_canvas
+//Requires: _ml_canvas_ensure_initialized
+function ml_canvas_get_canvas(id) {
+  _ml_canvas_ensure_initialized();
+  var surface = document.getElementById("s" + id);
+  if (surface === null) {
+    return 0; // None
+  } else {
+    return [0, surface.canvas]; // Some
   }
 }
 
 //Provides: ml_canvas_get_current_timestamp
+//Requires: _ml_canvas_ensure_initialized
 //Requires: caml_int64_of_float
 function ml_canvas_get_current_timestamp() {
+  _ml_canvas_ensure_initialized();
   var e = new window.Event("dummy");
   return caml_int64_of_float(e.timeStamp * 1000.0);
 }

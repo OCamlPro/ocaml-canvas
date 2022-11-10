@@ -60,6 +60,28 @@ CAMLprim value name(value *a, int n) \
 
 
 
+static bool _ml_canvas_initialized = false;
+
+static void
+_ml_canvas_ensure_initialized(
+  void)
+{
+  if (_ml_canvas_initialized == false) {
+    caml_raise_constant(*caml_named_value("Not_initialized"));
+  }
+}
+
+static bool
+_ml_canvas_valid_canvas_size(
+  int32_t width,
+  int32_t height)
+{
+  return 0 < width && width <= 32767 && 0 < height && height <= 32767;
+}
+
+
+
+
 /* Image Data (aka Pixmaps) */
 
 CAMLprim value
@@ -68,10 +90,12 @@ ml_canvas_image_data_create_from_png(
   value mlOnLoad)
 {
   CAMLparam2(mlFilename, mlOnLoad);
+  _ml_canvas_ensure_initialized();
+  const char *filename = String_val(mlFilename);
   pixmap_t pixmap = { 0 };
-  bool res = impexp_import_png(&pixmap, 0, 0, String_val(mlFilename));
+  bool res = impexp_import_png(&pixmap, 0, 0, filename);
   if ((res == false) || (pixmap_valid(pixmap) == false)) {
-    caml_failwith("unable to create pixmap from PNG file");
+    caml_raise_with_string(*caml_named_value("Read_png_failed"), filename);
   }
   caml_callback(mlOnLoad, Val_pixmap(&pixmap));
   CAMLreturn(Val_unit);
@@ -111,14 +135,17 @@ ml_canvas_image_data_sub(
   value mlSize)
 {
   CAMLparam3(mlPixmap, mlPos, mlSize);
-  int32_t sx = Int32_val_clip(Field(mlPos, 0));
-  int32_t sy = Int32_val_clip(Field(mlPos, 1));
   int32_t width = Int32_val_clip(Field(mlSize, 0));
   int32_t height = Int32_val_clip(Field(mlSize, 1));
+  if (!_ml_canvas_valid_canvas_size(width, height)) {
+    caml_invalid_argument("ImageData.sub: invalid dimensions");
+  }
+  int32_t sx = Int32_val_clip(Field(mlPos, 0));
+  int32_t sy = Int32_val_clip(Field(mlPos, 1));
   pixmap_t src_pixmap = Pixmap_val(mlPixmap);
   pixmap_t dst_pixmap = pixmap(width, height, NULL);
   if (pixmap_valid(dst_pixmap) == false) {
-    caml_failwith("unable to extract sub image data");
+    caml_failwith("ImageData.sub: unable to extract sub image data");
   }
   pixmap_blit(&dst_pixmap, 0, 0, &src_pixmap, sx, sy, width, height);
   CAMLreturn(Val_pixmap(&dst_pixmap));
@@ -133,6 +160,11 @@ ml_canvas_image_data_blit(
   value mlSize)
 {
   CAMLparam5(mlDstPixmap, mlDPos, mlSrcPixmap, mlSPos, mlSize);
+  int32_t width = Int32_val_clip(Field(mlSize, 0));
+  int32_t height = Int32_val_clip(Field(mlSize, 1));
+  if (!_ml_canvas_valid_canvas_size(width, height)) {
+    caml_invalid_argument("ImageData.blit: invalid dimensions");
+  }
   pixmap_t dst_pixmap = Pixmap_val(mlDstPixmap);
   pixmap_t src_pixmap = Pixmap_val(mlSrcPixmap);
   pixmap_blit(&dst_pixmap,
@@ -141,8 +173,8 @@ ml_canvas_image_data_blit(
               &src_pixmap,
               Int32_val_clip(Field(mlSPos, 0)),
               Int32_val_clip(Field(mlSPos, 1)),
-              Int32_val_clip(Field(mlSize, 0)),
-              Int32_val_clip(Field(mlSize, 1)));
+              width,
+              height);
   CAMLreturn(Val_unit);
 }
 
@@ -180,19 +212,19 @@ ml_canvas_image_data_import_png(
   value mlOnLoad)
 {
   CAMLparam4(mlPixmap, mlDPos, mlFilename, mlOnLoad);
+  _ml_canvas_ensure_initialized();
+  const char * filename = String_val(mlFilename);
   pixmap_t pixmap = Pixmap_val(mlPixmap);
   bool res = impexp_import_png(&pixmap,
                                Int32_val_clip(Field(mlDPos, 0)),
                                Int32_val_clip(Field(mlDPos, 1)),
-                               String_val(mlFilename));
+                               filename);
   if ((res == false) || (pixmap_valid(pixmap) == false)) {
-    caml_failwith("unable to import PNG file into pixmap");
+    caml_raise_with_string(*caml_named_value("Read_png_failed"), filename);
   }
   caml_callback(mlOnLoad, mlPixmap);
   CAMLreturn(Val_unit);
 }
-
-
 
 CAMLprim value
 ml_canvas_image_data_export_png(
@@ -200,145 +232,17 @@ ml_canvas_image_data_export_png(
   value mlFilename)
 {
   CAMLparam2(mlPixmap, mlFilename);
+  _ml_canvas_ensure_initialized();
+  const char *filename = String_val(mlFilename);
   pixmap_t pixmap = Pixmap_val(mlPixmap);
-  bool res = impexp_export_png(&pixmap, String_val(mlFilename));
+  bool res = impexp_export_png(&pixmap, filename);
   if (res == false) {
-    caml_failwith("unable to export pixmap to PNG file");
+    caml_raise_with_string(*caml_named_value("Write_png_failed"), filename);
   }
   CAMLreturn(Val_unit);
 }
 
 
-
-/* Gradients */
-
-static void
-_ml_canvas_gradient_destroy_callback(
-  gradient_t *gradient)
-{
-  CAMLparam0();
-  value *mlWeakPointer_ptr = (value *)gradient_get_data(gradient);
-  if (mlWeakPointer_ptr != NULL) {
-    gradient_set_data(gradient, NULL);
-    caml_remove_generational_global_root(mlWeakPointer_ptr);
-    free(mlWeakPointer_ptr);
-  }
-  CAMLreturn0;
-}
-
-CAMLprim value
-ml_canvas_create_linear_gradient(
-  value mlCanvas,
-  value mlPos1,
-  value mlPos2)
-{
-  CAMLparam3(mlCanvas, mlPos1, mlPos2);
-  CAMLlocal1(mlGradient);
-  gradient_t *gradient =
-    gradient_create_linear(Double_val(Field(mlPos1, 0)),
-                           Double_val(Field(mlPos1, 1)),
-                           Double_val(Field(mlPos2, 0)),
-                           Double_val(Field(mlPos2, 1)));
-  if (gradient == NULL) {
-    caml_failwith("unable to create the specified linear gradient");
-  }
-  mlGradient = Val_gradient(gradient);
-  gradient_release(gradient); /* Because Val_gradient retains it */
-  CAMLreturn(mlGradient);
-}
-
-CAMLprim value
-ml_canvas_create_radial_gradient(
-  value mlCanvas,
-  value mlCenter1,
-  value mlRadius1,
-  value mlCenter2,
-  value mlRadius2)
-{
-  CAMLparam5(mlCanvas, mlCenter1, mlRadius1, mlCenter2, mlRadius2);
-  CAMLlocal1(mlGradient);
-  gradient_t *gradient =
-    gradient_create_radial(Double_val(Field(mlCenter1, 0)),
-                           Double_val(Field(mlCenter1, 1)),
-                           Double_val(mlRadius1),
-                           Double_val(Field(mlCenter2, 0)),
-                           Double_val(Field(mlCenter2, 1)),
-                           Double_val(mlRadius2));
-  if (gradient == NULL) {
-    caml_failwith("unable to create the specified radial gradient");
-  }
-  mlGradient = Val_gradient(gradient);
-  gradient_release(gradient); /* Because Val_gradient retains it */
-  CAMLreturn(mlGradient);
-}
-
-CAMLprim value
-ml_canvas_create_conic_gradient(
-  value mlCanvas,
-  value mlCenter,
-  value mlAngle)
-{
-  CAMLparam3(mlCanvas, mlCenter, mlAngle);
-  CAMLlocal1(mlGradient);
-  gradient_t *gradient =
-    gradient_create_conic(Double_val(Field(mlCenter, 0)),
-                          Double_val(Field(mlCenter, 1)),
-                          Double_val(mlAngle));
-  if (gradient == NULL) {
-    caml_failwith("unable to create the specified conic gradient");
-  }
-  mlGradient = Val_gradient(gradient);
-  gradient_release(gradient); /* Because Val_gradient retains it */
-  CAMLreturn(mlGradient);
-}
-
-CAMLprim value
-ml_canvas_gradient_add_color_stop(
-  value mlGradient,
-  value mlColor,
-  value mlStop)
-{
-  CAMLparam3(mlGradient, mlColor, mlStop);
-  gradient_add_color_stop(Gradient_val(mlGradient),
-                          color_of_int(Int32_val(mlColor)),
-                          Double_val(mlStop));
-  CAMLreturn(Val_unit);
-}
-
-/* Patterns */
-
-static void
-_ml_canvas_pattern_destroy_callback(
-  pattern_t *pattern)
-{
-  CAMLparam0();
-  value *mlWeakPointer_ptr = (value *)pattern_get_data(pattern);
-  if (mlWeakPointer_ptr != NULL) {
-    pattern_set_data(pattern, NULL);
-    caml_remove_generational_global_root(mlWeakPointer_ptr);
-    free(mlWeakPointer_ptr);
-  }
-  CAMLreturn0;
-}
-
-CAMLprim value
-ml_canvas_create_pattern(
-  value mlCanvas,
-  value mlPixmap,
-  value mlRepeat)
-{
-  CAMLparam3(mlCanvas, mlPixmap, mlRepeat);
-  CAMLlocal1(mlPattern);
-  pixmap_t pixmap = Pixmap_val(mlPixmap);
-  pattern_t *pattern = pattern_create(&pixmap,
-                                      Repeat_val(mlRepeat));
-  if (pattern == NULL) {
-    caml_failwith("unable to create the specified pattern");
-  }
-  mlPattern = Val_pattern(pattern);
-  pattern_release(pattern); /* Because Val_pattern retains it */
-  CAMLreturn(mlPattern);
-}
 
 /* Path */
 
@@ -364,7 +268,7 @@ ml_canvas_path_create(
   CAMLlocal1(mlPath);
   path2d_t *path2d = path2d_create();
   if (path2d == NULL) {
-    caml_failwith("unable to create the specified path2d");
+    caml_failwith("Path.create: unable to create the specified path2d");
   }
   mlPath = Val_path2d(path2d);
   path2d_release(path2d); /* Because Val_path2d retains it */
@@ -554,9 +458,143 @@ ml_canvas_path_add_transformed(
 
 
 
+/* Gradients */
+
+static void
+_ml_canvas_gradient_destroy_callback(
+  gradient_t *gradient)
+{
+  CAMLparam0();
+  value *mlWeakPointer_ptr = (value *)gradient_get_data(gradient);
+  if (mlWeakPointer_ptr != NULL) {
+    gradient_set_data(gradient, NULL);
+    caml_remove_generational_global_root(mlWeakPointer_ptr);
+    free(mlWeakPointer_ptr);
+  }
+  CAMLreturn0;
+}
+
+CAMLprim value
+ml_canvas_create_linear_gradient(
+  value mlCanvas,
+  value mlPos1,
+  value mlPos2)
+{
+  CAMLparam3(mlCanvas, mlPos1, mlPos2);
+  CAMLlocal1(mlGradient);
+  gradient_t *gradient =
+    gradient_create_linear(Double_val(Field(mlPos1, 0)),
+                           Double_val(Field(mlPos1, 1)),
+                           Double_val(Field(mlPos2, 0)),
+                           Double_val(Field(mlPos2, 1)));
+  if (gradient == NULL) {
+    caml_failwith("Canvas.createLinearGradient: unable to create the specified linear gradient");
+  }
+  mlGradient = Val_gradient(gradient);
+  gradient_release(gradient); /* Because Val_gradient retains it */
+  CAMLreturn(mlGradient);
+}
+
+CAMLprim value
+ml_canvas_create_radial_gradient(
+  value mlCanvas,
+  value mlCenter1,
+  value mlRadius1,
+  value mlCenter2,
+  value mlRadius2)
+{
+  CAMLparam5(mlCanvas, mlCenter1, mlRadius1, mlCenter2, mlRadius2);
+  CAMLlocal1(mlGradient);
+  gradient_t *gradient =
+    gradient_create_radial(Double_val(Field(mlCenter1, 0)),
+                           Double_val(Field(mlCenter1, 1)),
+                           Double_val(mlRadius1),
+                           Double_val(Field(mlCenter2, 0)),
+                           Double_val(Field(mlCenter2, 1)),
+                           Double_val(mlRadius2));
+  if (gradient == NULL) {
+    caml_failwith("Canvas.createRadialGradient: unable to create the specified radial gradient");
+  }
+  mlGradient = Val_gradient(gradient);
+  gradient_release(gradient); /* Because Val_gradient retains it */
+  CAMLreturn(mlGradient);
+}
+
+CAMLprim value
+ml_canvas_create_conic_gradient(
+  value mlCanvas,
+  value mlCenter,
+  value mlAngle)
+{
+  CAMLparam3(mlCanvas, mlCenter, mlAngle);
+  CAMLlocal1(mlGradient);
+  gradient_t *gradient =
+    gradient_create_conic(Double_val(Field(mlCenter, 0)),
+                          Double_val(Field(mlCenter, 1)),
+                          Double_val(mlAngle));
+  if (gradient == NULL) {
+    caml_failwith("Canvas.createConicGradient: unable to create the specified conic gradient");
+  }
+  mlGradient = Val_gradient(gradient);
+  gradient_release(gradient); /* Because Val_gradient retains it */
+  CAMLreturn(mlGradient);
+}
+
+CAMLprim value
+ml_canvas_gradient_add_color_stop(
+  value mlGradient,
+  value mlColor,
+  value mlStop)
+{
+  CAMLparam3(mlGradient, mlColor, mlStop);
+  gradient_add_color_stop(Gradient_val(mlGradient),
+                          color_of_int(Int32_val(mlColor)),
+                          Double_val(mlStop));
+  CAMLreturn(Val_unit);
+}
+
+
+
+/* Patterns */
+
+static void
+_ml_canvas_pattern_destroy_callback(
+  pattern_t *pattern)
+{
+  CAMLparam0();
+  value *mlWeakPointer_ptr = (value *)pattern_get_data(pattern);
+  if (mlWeakPointer_ptr != NULL) {
+    pattern_set_data(pattern, NULL);
+    caml_remove_generational_global_root(mlWeakPointer_ptr);
+    free(mlWeakPointer_ptr);
+  }
+  CAMLreturn0;
+}
+
+CAMLprim value
+ml_canvas_create_pattern(
+  value mlCanvas,
+  value mlPixmap,
+  value mlRepeat)
+{
+  CAMLparam3(mlCanvas, mlPixmap, mlRepeat);
+  CAMLlocal1(mlPattern);
+  pixmap_t pixmap = Pixmap_val(mlPixmap);
+  pattern_t *pattern = pattern_create(&pixmap,
+                                      Repeat_val(mlRepeat));
+  if (pattern == NULL) {
+    caml_failwith("Canvas.createPattern: unable to create the specified pattern");
+  }
+  mlPattern = Val_pattern(pattern);
+  pattern_release(pattern); /* Because Val_pattern retains it */
+  CAMLreturn(mlPattern);
+}
+
+
+
 /* Canvas */
 
-/* Comparison */
+/* Comparison and hashing */
 
 static int32_t
 _ml_canvas_get_id_raw(
@@ -564,17 +602,10 @@ _ml_canvas_get_id_raw(
 {
   canvas_t *canvas = *((canvas_t **)Data_custom_val(mlCanvas));
   if (canvas == NULL) {
-    return 0;
+    return 0; // should probably be a critical error...
   } else {
     return canvas_get_id(canvas);
   }
-}
-
-intnat
-ml_canvas_hash_raw(
-  value mlCanvas)
-{
-  return (intnat)_ml_canvas_get_id_raw(mlCanvas);
 }
 
 CAMLprim value
@@ -582,7 +613,11 @@ ml_canvas_hash(
   value mlCanvas)
 {
   CAMLparam1(mlCanvas);
-  CAMLreturn(Val_long(ml_canvas_hash_raw(mlCanvas)));
+  static const value *mlHash = NULL;
+  if (mlHash == NULL) {
+    mlHash = caml_named_value("Hashtbl.hash");
+  }
+  CAMLreturn(caml_callback(*mlHash, Val_long(_ml_canvas_get_id_raw(mlCanvas))));
 }
 
 int
@@ -609,7 +644,7 @@ ml_canvas_compare(
   value mlCanvas2)
 {
   CAMLparam2(mlCanvas1, mlCanvas2);
-  CAMLreturn(Val_int(ml_canvas_compare_raw(mlCanvas1, mlCanvas2)));
+  CAMLreturn(Val_long(ml_canvas_compare_raw(mlCanvas1, mlCanvas2)));
 }
 
 
@@ -645,6 +680,12 @@ ml_canvas_create_onscreen_n(
   CAMLparam5(mlDecorated, mlResizeable, mlMinimize, mlMaximize, mlClose);
   CAMLxparam4(mlTitle, mlPos, mlSize, mlUnit);
   CAMLlocal1(mlCanvas);
+  _ml_canvas_ensure_initialized();
+  int32_t width = Int32_val_clip(Field(mlSize, 0));
+  int32_t height = Int32_val_clip(Field(mlSize, 1));
+  if (!_ml_canvas_valid_canvas_size(width, height)) {
+    caml_invalid_argument("Canvas.createOnscreen: invalid dimensions");
+  }
   int32_t x = 0, y = 0;
   if (Is_some(mlPos)) {
     x = Int32_val_clip(Field(Some_val(mlPos), 0));
@@ -657,11 +698,9 @@ ml_canvas_create_onscreen_n(
                            Optional_bool_val(mlMaximize, true),
                            Optional_bool_val(mlClose, true),
                            Optional_string_val(mlTitle, NULL),
-                           x, y,
-                           Int32_val_clip(Field(mlSize, 0)),
-                           Int32_val_clip(Field(mlSize, 1)));
+                           x, y, width, height);
   if (canvas == NULL) {
-    caml_failwith("unable to create the specified framed canvas");
+    caml_failwith("Canvas.createOnscreen: unable to create the specified framed canvas");
   }
   mlCanvas = Val_canvas(canvas);
   canvas_release(canvas); /* Because Val_canvas retains it */
@@ -676,11 +715,15 @@ ml_canvas_create_offscreen(
 {
   CAMLparam1(mlSize);
   CAMLlocal1(mlCanvas);
-  canvas_t *canvas =
-    canvas_create_offscreen(Int32_val_clip(Field(mlSize, 0)),
-                            Int32_val_clip(Field(mlSize, 1)));
+  _ml_canvas_ensure_initialized();
+  int32_t width = Int32_val_clip(Field(mlSize, 0));
+  int32_t height = Int32_val_clip(Field(mlSize, 1));
+  if (!_ml_canvas_valid_canvas_size(width, height)) {
+    caml_invalid_argument("Canvas.createOffscreen: invalid dimensions");
+  }
+  canvas_t *canvas = canvas_create_offscreen(width, height);
   if (canvas == NULL) {
-    caml_failwith("unable to create the specified offscreen canvas");
+    caml_failwith("Canvas.createOffscreen: unable to create the specified offscreen canvas");
   }
   mlCanvas = Val_canvas(canvas);
   canvas_release(canvas); /* Because Val_canvas retains it */
@@ -693,16 +736,17 @@ ml_canvas_create_offscreen_from_image_data(
 {
   CAMLparam1(mlPixmap);
   CAMLlocal1(mlCanvas);
+  _ml_canvas_ensure_initialized();
   pixmap_t pixmap = Pixmap_val(mlPixmap);
   /* We need to duplicate the pixmap, as canvas_create_offscreen_from_pixmap
      steals the data pointer */
   pixmap = pixmap_copy(pixmap);
   if (pixmap_valid(pixmap) == false) {
-    caml_failwith("unable to create a canvas from the given image data");
+    caml_failwith("Canvas.createOffscreen: unable to create a canvas from the given image data");
   }
   canvas_t *canvas = canvas_create_offscreen_from_pixmap(&pixmap);
   if (canvas == NULL) {
-    caml_failwith("unable to create a canvas from the given image data");
+    caml_failwith("Canvas.createOffscreen: unable to create a canvas from the given image data");
   }
   /* We delete the pixmap copy we did earlier; it is safe to do so,
      as pixmap deletion checks if the data pointer is NULL (which
@@ -720,9 +764,11 @@ ml_canvas_create_offscreen_from_png(
 {
   CAMLparam2(mlFilename, mlOnLoad);
   CAMLlocal1(mlCanvas);
-  canvas_t *canvas = canvas_create_offscreen_from_png(String_val(mlFilename));
+  _ml_canvas_ensure_initialized();
+  const char *filename = String_val(mlFilename);
+  canvas_t *canvas = canvas_create_offscreen_from_png(filename);
   if (canvas == NULL) {
-    caml_failwith("unable to create a canvas from the given PNG");
+    caml_raise_with_string(*caml_named_value("Read_png_failed"), filename);
   }
   mlCanvas = Val_canvas(canvas);
   canvas_release(canvas); /* Because Val_canvas retains it */
@@ -792,9 +838,13 @@ ml_canvas_set_size(
   value mlSize)
 {
   CAMLparam2(mlCanvas, mlSize);
+  int32_t width = Int32_val_clip(Field(mlSize, 0));
+  int32_t height = Int32_val_clip(Field(mlSize, 1));
+  if (!_ml_canvas_valid_canvas_size(width, height)) {
+    caml_invalid_argument("Canvas.setSize: invalid dimensions");
+  }
   canvas_set_size(Canvas_val(mlCanvas),
-                  Int32_val_clip(Field(mlSize, 0)),
-                  Int32_val_clip(Field(mlSize, 1)));
+                  width, height);
   CAMLreturn(Val_unit);
 }
 
@@ -1311,7 +1361,7 @@ ml_canvas_set_font(
                   String_val(mlFamily),
                   Double_val(mlSize),
                   Slant_val(mlSlant),
-                  Int_val(mlWeight));
+                  Int32_val_clip(mlWeight));
   CAMLreturn(Val_unit);
 }
 
@@ -1619,14 +1669,19 @@ ml_canvas_blit(
   value mlSize)
 {
   CAMLparam5(mlDstCanvas, mlDPos, mlSrcCanvas, mlSPos, mlSize);
+  int32_t width = Int32_val_clip(Field(mlSize, 0));
+  int32_t height = Int32_val_clip(Field(mlSize, 1));
+  if (!_ml_canvas_valid_canvas_size(width, height)) {
+    caml_invalid_argument("Canvas.blit: invalid dimensions");
+  }
   canvas_blit(Canvas_val(mlDstCanvas),
               Int32_val_clip(Field(mlDPos, 0)),
               Int32_val_clip(Field(mlDPos, 1)),
               Canvas_val(mlSrcCanvas),
               Int32_val_clip(Field(mlSPos, 0)),
               Int32_val_clip(Field(mlSPos, 1)),
-              Int32_val_clip(Field(mlSize, 0)),
-              Int32_val_clip(Field(mlSize, 1)));
+              width,
+              height);
   CAMLreturn(Val_unit);
 }
 
@@ -1669,14 +1724,19 @@ ml_canvas_get_image_data(
   value mlSize)
 {
   CAMLparam3(mlCanvas, mlPos, mlSize);
+  int32_t width = Int32_val_clip(Field(mlSize, 0));
+  int32_t height = Int32_val_clip(Field(mlSize, 1));
+  if (!_ml_canvas_valid_canvas_size(width, height)) {
+    caml_invalid_argument("Canvas.getImageData: invalid dimensions");
+  }
   pixmap_t pixmap =
     canvas_get_pixmap(Canvas_val(mlCanvas),
                       Int32_val_clip(Field(mlPos, 0)),
                       Int32_val_clip(Field(mlPos, 1)),
-                      Int32_val_clip(Field(mlSize, 0)),
-                      Int32_val_clip(Field(mlSize, 1)));
+                      width,
+                      height);
   if (pixmap_valid(pixmap) == false) {
-    caml_failwith("unable to retrieve image data");
+    caml_failwith("Canvas.getImageData: unable to retrieve image data");
   }
   CAMLreturn(Val_pixmap(&pixmap));
 }
@@ -1690,6 +1750,11 @@ ml_canvas_put_image_data(
   value mlSize)
 {
   CAMLparam5(mlCanvas, mlDPos, mlPixmap, mlSPos, mlSize);
+  int32_t width = Int32_val_clip(Field(mlSize, 0));
+  int32_t height = Int32_val_clip(Field(mlSize, 1));
+  if (!_ml_canvas_valid_canvas_size(width, height)) {
+    caml_invalid_argument("Canvas.putImageData: invalid dimensions");
+  }
   pixmap_t pixmap = Pixmap_val(mlPixmap);
   canvas_put_pixmap(Canvas_val(mlCanvas),
                     Int32_val_clip(Field(mlDPos, 0)),
@@ -1697,8 +1762,8 @@ ml_canvas_put_image_data(
                     &pixmap,
                     Int32_val_clip(Field(mlSPos, 0)),
                     Int32_val_clip(Field(mlSPos, 1)),
-                    Int32_val_clip(Field(mlSize, 0)),
-                    Int32_val_clip(Field(mlSize, 1)));
+                    width,
+                    height);
   CAMLreturn(Val_unit);
 }
 
@@ -1710,13 +1775,13 @@ ml_canvas_import_png(
   value mlOnLoad)
 {
   CAMLparam4(mlCanvas, mlDPos, mlFilename, mlOnLoad);
-  bool res =
-    canvas_import_png(Canvas_val(mlCanvas),
-                      Int32_val_clip(Field(mlDPos, 0)),
-                      Int32_val_clip(Field(mlDPos, 1)),
-                      String_val(mlFilename));
+  const char *filename = String_val(mlFilename);
+  bool res = canvas_import_png(Canvas_val(mlCanvas),
+                               Int32_val_clip(Field(mlDPos, 0)),
+                               Int32_val_clip(Field(mlDPos, 1)),
+                               filename);
   if (res == false) {
-    caml_failwith("unable to import PNG");
+    caml_raise_with_string(*caml_named_value("Read_png_failed"), filename);
   }
   caml_callback(mlOnLoad, mlCanvas);
   CAMLreturn(Val_unit);
@@ -1728,10 +1793,10 @@ ml_canvas_export_png(
   value mlFilename)
 {
   CAMLparam2(mlCanvas, mlFilename);
-  bool res = canvas_export_png(Canvas_val(mlCanvas),
-                               String_val(mlFilename));
+  const char *filename = String_val(mlFilename);
+  bool res = canvas_export_png(Canvas_val(mlCanvas), filename);
   if (res == false) {
-    caml_failwith("unable to export to PNG");
+    caml_raise_with_string(*caml_named_value("Write_png_failed"), filename);
   }
   CAMLreturn(Val_unit);
 }
@@ -1745,7 +1810,7 @@ ml_canvas_int_of_key(
   value mlKeyCode)
 {
   CAMLparam1(mlKeyCode);
-  CAMLreturn(Val_int(Key_code_val(mlKeyCode)));
+  CAMLreturn(Val_long((intnat)Key_code_val(mlKeyCode)));
 }
 
 CAMLprim value
@@ -1753,14 +1818,16 @@ ml_canvas_key_of_int(
   value mlInt)
 {
   CAMLparam1(mlInt);
-  CAMLreturn(Val_key_code(Int_val(mlInt)));
+  intnat i = Long_val(mlInt);
+  if ((i < 0) || (i > 255)) {
+    caml_invalid_argument("Event.key_of_int: i must be in the 0-255 range");
+  };
+  CAMLreturn(Val_key_code((key_code_t)i));
 }
 
 
 
 /* Backend */
-
-static bool _ml_canvas_initialized = false;
 
 CAMLprim value
 ml_canvas_init()
@@ -1768,7 +1835,7 @@ ml_canvas_init()
   CAMLparam0();
 
   if (_ml_canvas_initialized == true) {
-    CAMLreturn(Val_false);
+    CAMLreturn(Val_unit);
   }
 
   switch (get_os_type()) {
@@ -1783,18 +1850,19 @@ ml_canvas_init()
     default: assert(!"Invalid OS type"); break;
   }
 
-  if (_ml_canvas_initialized == true) {
-    canvas_set_destroy_callback(_ml_canvas_canvas_destroy_callback);
-    gradient_set_destroy_callback(_ml_canvas_gradient_destroy_callback);
-    pattern_set_destroy_callback(_ml_canvas_pattern_destroy_callback);
-    path2d_set_destroy_callback(_ml_canvas_path_destroy_callback);
+  if (_ml_canvas_initialized == false) {
+    caml_failwith("Backend.init: backend initialization failed");
   }
 
-  CAMLreturn(Val_bool(_ml_canvas_initialized));
+  canvas_set_destroy_callback(_ml_canvas_canvas_destroy_callback);
+  gradient_set_destroy_callback(_ml_canvas_gradient_destroy_callback);
+  pattern_set_destroy_callback(_ml_canvas_pattern_destroy_callback);
+  path2d_set_destroy_callback(_ml_canvas_path_destroy_callback);
+
+  CAMLreturn(Val_unit);
 }
 
 static value _ml_canvas_mlException = Val_unit;
-static value _ml_canvas_mlState = Val_unit;
 static value _ml_canvas_mlProcessEvent = Val_unit;
 
 static bool
@@ -1809,9 +1877,7 @@ _ml_canvas_process_event(
     CAMLreturnT(bool, false);
   }
 
-  mlResult = caml_callback2_exn(_ml_canvas_mlProcessEvent,
-                                _ml_canvas_mlState,
-                                Val_event(event));
+  mlResult = caml_callback_exn(_ml_canvas_mlProcessEvent, Val_event(event));
 
   /* If an exception was raised, save for later */
   if (Is_exception_result(mlResult)) {
@@ -1821,23 +1887,21 @@ _ml_canvas_process_event(
       caml_modify_generational_global_root(&_ml_canvas_mlException, mlResult);
     }
     backend_stop();
-    mlResult = Val_false;
-  } else {
-    _ml_canvas_mlState = Field(mlResult, 0);
-    mlResult = Field(mlResult, 1);
+    CAMLreturnT(bool, false);
   }
 
-  CAMLreturnT(bool, Bool_val(mlResult));
+  CAMLreturnT(bool, true);
 }
 
 CAMLprim value
 ml_canvas_run(
   value mlProcessEvent,
-  value mlContinuation,
-  value mlState)
+  value mlContinuation)
 {
-  CAMLparam3(mlProcessEvent, mlContinuation, mlState);
+  CAMLparam2(mlProcessEvent, mlContinuation);
   CAMLlocal1(mlResult);
+
+  _ml_canvas_ensure_initialized();
 
   /* If already running, ignore */
   if (_ml_canvas_mlProcessEvent != Val_unit) {
@@ -1846,9 +1910,6 @@ ml_canvas_run(
 
   _ml_canvas_mlProcessEvent = mlProcessEvent;
   caml_register_generational_global_root(&_ml_canvas_mlProcessEvent);
-
-  _ml_canvas_mlState = mlState;
-  caml_register_global_root(&_ml_canvas_mlState);
 
   _ml_canvas_mlException = Val_unit;
   caml_register_generational_global_root(&_ml_canvas_mlException);
@@ -1863,22 +1924,18 @@ ml_canvas_run(
   caml_remove_generational_global_root(&_ml_canvas_mlException);
   _ml_canvas_mlException = Val_unit;
 
-  mlState = _ml_canvas_mlState;
-  caml_remove_global_root(&_ml_canvas_mlState);
-  _ml_canvas_mlState = Val_unit;
-
   caml_remove_generational_global_root(&_ml_canvas_mlProcessEvent);
   _ml_canvas_mlProcessEvent = Val_unit;
 
   /* If an exception was raised, re-raise */
   if (mlResult != Val_unit) {
-    caml_raise(mlResult);
+    caml_raise_constant(mlResult);
   }
 
-  mlResult = caml_callback_exn(mlContinuation, mlState);
+  mlResult = caml_callback_exn(mlContinuation, Val_unit);
   if (Is_exception_result(mlResult)) {
     mlResult = Extract_exception(mlResult);
-    caml_raise(mlResult);
+    caml_raise_constant(mlResult);
   }
 
   CAMLreturn(Val_unit);
@@ -1889,16 +1946,9 @@ ml_canvas_stop(
   void)
 {
   CAMLparam0();
+  _ml_canvas_ensure_initialized();
   backend_stop();
   CAMLreturn(Val_unit);
-}
-
-CAMLprim value
-ml_canvas_get_current_timestamp(
-  void)
-{
-  CAMLparam0();
-  CAMLreturn(caml_copy_int64(backend_get_time()));
 }
 
 CAMLprim value
@@ -1906,10 +1956,20 @@ ml_canvas_get_canvas(
   value mlId)
 {
   CAMLparam1(mlId);
-  canvas_t *result = backend_get_canvas(Int_val(mlId));
+  _ml_canvas_ensure_initialized();
+  canvas_t *result = backend_get_canvas(Long_val(mlId));
   if (result == NULL) {
     CAMLreturn(Val_none);
   } else {
     CAMLreturn(caml_alloc_some(Val_canvas(result)));
   }
+}
+
+CAMLprim value
+ml_canvas_get_current_timestamp(
+  void)
+{
+  CAMLparam0();
+  _ml_canvas_ensure_initialized();
+  CAMLreturn(caml_copy_int64(backend_get_time()));
 }
