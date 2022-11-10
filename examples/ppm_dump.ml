@@ -52,6 +52,7 @@ let () =
   Canvas.show c;
 
   let img = Canvas.getImageData c ~pos:(0, 0) ~size:(300, 200) in
+  let img_ba = ImageData.to_bigarray img in
 
   let oc = open_out "picture.ppm" in
   let fmt = Format.formatter_of_out_channel oc in
@@ -59,10 +60,10 @@ let () =
 
   for i = 0 to 199 do
     for j = 0 to 299 do
-      let b = Bigarray.Array3.get img i j 0 in
-      let g = Bigarray.Array3.get img i j 1 in
-      let r = Bigarray.Array3.get img i j 2 in
-      let _a = Bigarray.Array3.get img i j 3 in
+      let b = Bigarray.Array3.get img_ba i j 0 in
+      let g = Bigarray.Array3.get img_ba i j 1 in
+      let r = Bigarray.Array3.get img_ba i j 2 in
+      let _a = Bigarray.Array3.get img_ba i j 3 in
       let sep = if (j land 3) = 3 then '\n' else ' ' in
       Format.fprintf fmt "%d %d %d%c" r g b sep
     done

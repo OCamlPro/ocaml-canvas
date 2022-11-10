@@ -18,7 +18,7 @@
 
     {1 Quick start}
 
-    Before using any function in the library (and assuming the `OcamlCanvas.V1`
+    Before using any function in the library (and assuming the {!OcamlCanvas.V1}
     module has been opened), the user should call {!Backend.init} so that
     the library makes any internal initialization it needs for the current
     backend.
@@ -140,8 +140,7 @@
       Backend.run (fun () ->
           ignore e1; ignore e2; ignore e3; ignore e4;
           Printf.printf "Displayed %Ld frames. Goodbye !\n" !frames)
-]}
-*)
+]} *)
 
 module V1 : sig
 (** The OCaml-Canvas module is versioned. This is version 1.
@@ -154,8 +153,27 @@ module V1 : sig
     before the open directive. An effort will be made to avoid introducing
     new identifiers that are of length 3 of less, or starting with a single
     character followed by an underscore. Hence such identifiers should be
-    safe to use without risking to be shadowed.
- *)
+    safe to use without risking to be shadowed. *)
+
+  module Exception : sig
+  (** OCaml-Canvas' exceptions *)
+
+    exception Not_initialized
+    (** Raised when calling a function before {!Backend.init} is called *)
+
+    exception File_not_found of string
+    (** Raised by PNG import/export functions to indicate the given file could
+        not be found. The string argument recalls the file in question. *)
+
+    exception Read_png_failed of string
+    (** Raised by PNG import functions to indicate failure. The string
+        argument might provide futher information explaining the failure. *)
+
+    exception Write_png_failed of string
+    (** Raised by PNG export functions to indicate failure. The string
+        argument might provide futher information explaining the failure. *)
+
+  end
 
   module Const : sig
   (** Some useful mathematical constants *)
@@ -191,60 +209,16 @@ module V1 : sig
     (** [inv_e] is 1 / e *)
 
     val log2_e : float
-    (** [log2_e] is log2(e) *)
+    (** [log2_e] is log{_2}(e) *)
 
     val log10_e : float
-    (** [log10_e] is log10(e) *)
+    (** [log10_e] is log{_10}(e) *)
 
     val ln_2 : float
-    (** [ln2_e] is ln2(e) *)
+    (** [ln_2] is ln(2) *)
 
     val ln_10 : float
-    (** [ln10_e] is ln10(e) *)
-
-  end
-
-  module Transform : sig
-  (** Transform manipulation functions *)
-
-    type t = {
-      a : float; (** x scaling/flipping, rotation *)
-      b : float; (** x shearing, rotation *)
-      c : float; (** y scaling/flipping, rotation *)
-      d : float; (** y shearing, rotation *)
-      e : float; (** x translation *)
-      f : float; (** y translation *)
-    }
-    (** A type to represent transformation matrices of the form:
- {[     a b 0
-        c d 0
-        e f 1 ]} *)
-
-    val id : t
-    (** Identity transformation *)
-
-    val create : (float * float * float * float * float * float) -> t
-    (** [create t] creates a transformation given
-        the matrix [t = (a, b, c, d, e, f)] *)
-
-    val mul : t -> t -> t
-    (** [mul t1 t2] multiplies [t1] by [t2] *)
-
-    val translate : t -> (float * float) -> t
-    (** [translate t v] composes [t] by a translation of vector [v] *)
-
-    val scale : t -> (float * float) -> t
-    (** [scale t v] composes [t] by a scaling of vector [v] *)
-
-    val shear : t -> (float * float) -> t
-    (** [shear t v] composes [t] by a shearing of vector [v] *)
-
-    val rotate : t -> float -> t
-    (** [rotate t a] composes [t] by a rotation
-        of angle [a] around the origin *)
-
-    val inverse : t -> t
-    (** [inverse t] returns the inverse of [t] *)
+    (** [ln_10] is ln(10) *)
 
   end
 
@@ -277,6 +251,55 @@ module V1 : sig
 
   end
 
+  module Transform : sig
+  (** Transform manipulation functions *)
+
+    type t = {
+      a : float; (** x scaling/flipping, rotation *)
+      b : float; (** x shearing, rotation *)
+      c : float; (** y shearing, rotation *)
+      d : float; (** y scaling/flipping, rotation *)
+      e : float; (** x translation *)
+      f : float; (** y translation *)
+    }
+    (** A type to represent transformation matrices of the form:
+ {[
+        a b 0
+        c d 0
+        e f 1 ]} *)
+
+    val id : t
+    (** Identity transformation *)
+
+    val create : (float * float * float * float * float * float) -> t
+    (** [create t] creates a transformation given
+        the matrix [t = (a, b, c, d, e, f)] *)
+
+    val mul : t -> t -> t
+    (** [mul t1 t2] multiplies [t1] by [t2] *)
+
+    val translate : t -> Vector.t -> t
+    (** [translate t v] composes [t] by a translation of vector [v] *)
+
+    val scale : t -> Vector.t -> t
+    (** [scale t v] composes [t] by a scaling of vector [v] *)
+
+    val shear : t -> Vector.t -> t
+    (** [shear t v] composes [t] by a shearing of vector [v] *)
+
+    val rotate : t -> float -> t
+    (** [rotate t a] composes [t] by a rotation
+        of angle [a] around the origin *)
+
+    val inverse : t -> t
+    (** [inverse t] returns the inverse of [t]
+
+        {b Exceptions:}
+        {ul
+        {- {!Invalid_argument} if [t] is a singular transformation matrix }} *)
+
+  end
+
   module Point : sig
   (** Point manipulation functions *)
 
@@ -301,7 +324,11 @@ module V1 : sig
 
     val barycenter : float -> t -> float -> t -> t
     (** [barycenter a p1 b p2] compute the barycenter
-        of ([a], [p1]) and ([b], [p2]) *)
+        of ([a], [p1]) and ([b], [p2])
+
+        {b Exceptions:}
+        {ul
+        {- {!Invalid_argument} if [a] + [b] = 0.0}} *)
 
     val distance : t -> t -> float
     (** [distance p1 p2] computes the distance between [p1] and [p2] *)
@@ -315,22 +342,25 @@ module V1 : sig
     (** Abstract type for colors *)
 
     val of_rgb : int -> int -> int -> t
-    (** [of_rgb r g b] creates a color from its [r], [g] and [b] components *)
+    (** [of_rgb r g b] creates a color from its [r], [g] and [b] components.
+        Those components are automatically clipped to the 0-255 range. *)
 
     val to_rgb : t -> int * int * int
     (** [to_rgb c] converts a color to its [r], [g] and [b] components,
         ignoring the alpha component *)
 
     val of_argb : int -> int -> int -> int -> t
-    (** [of_argb a r g b] creates a color from
-        its [a], [r], [g], [b] components *)
+    (** [of_argb a r g b] creates a color from it [a], [r], [g] and [b]
+        components. Those components are automatically clipped to the
+        0-255 range. *)
 
     val to_argb : t -> int * int * int * int
     (** [to_argb c] converts a color to its [a], [r], [g] and [b] components *)
 
     val of_int : int -> t
     (** [of_int i] creates a color from its 24-bit integer representation [i] ;
-        this representation does not include the alpha component *)
+        this representation does not include the alpha component.
+        This integer is clipped to 24-bit beforehand. *)
 
     val to_int : t -> int
     (** [to_int c] converts a color [c] to its 24-bit integer representation ;
@@ -343,37 +373,37 @@ module V1 : sig
     (** [to_int c] converts a color [c] to its 32-bit integer representation *)
 
     val transpBlack : t
-    (** Predefined `transpBlack` color *)
+    (** Predefined transparent black color *)
 
     val transpWhite : t
-    (** Predefined `transpWhite` color *)
+    (** Predefined transparent white color *)
 
     val black : t
-    (** Predefined `black` color *)
+    (** Predefined black color *)
 
     val white : t
-    (** Predefined `white` color *)
+    (** Predefined white color *)
 
     val blue : t
-    (** Predefined `blue` color *)
+    (** Predefined blue color *)
 
     val cyan : t
-    (** Predefined `cyan` color *)
+    (** Predefined cyan color *)
 
     val green : t
-    (** Predefined `green` color *)
+    (** Predefined green color *)
 
     val lime : t
-    (** Predefined `lime` color *)
+    (** Predefined lime color *)
 
     val orange : t
-    (** Predefined `orange` color *)
+    (** Predefined orange color *)
 
     val pink : t
-    (** Predefined `pink` color *)
+    (** Predefined pink color *)
 
     val red : t
-    (** Predefined `red` color *)
+    (** Predefined red color *)
 
     val of_string : string -> t
     (** [of_string s] returns the color associated with string [s].
@@ -404,48 +434,56 @@ module V1 : sig
     (** Font weight *)
 
     val thin : weight
-    (** Predefined `thin` weight *)
+    (** Predefined thin weight *)
 
     val extraLight : weight
-    (** Predefined `extraLight` weight *)
+    (** Predefined extraLight weight *)
 
     val light : weight
-    (** Predefined `light` weight *)
+    (** Predefined light weight *)
 
     val regular : weight
-    (** Predefined `regular` weight *)
+    (** Predefined regular weight *)
 
     val medium : weight
-    (** Predefined `medium` weight *)
+    (** Predefined medium weight *)
 
     val semiBold : weight
-    (** Predefined `semiBold` weight *)
+    (** Predefined semiBold weight *)
 
     val bold : weight
-    (** Predefined `bold` weight *)
+    (** Predefined bold weight *)
 
     val extraBold : weight
-    (** Predefined `extraBold` weight *)
+    (** Predefined extraBold weight *)
 
     val black : weight
-    (** Predefined `black` weight *)
+    (** Predefined black weight *)
 
   end
 
   module ImageData : sig
   (** Image data manipulation functions *)
 
-    type t =
-      (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array3.t
-    (** Image data are big arrays of dimension 3 (height, width, component),
-        where the components are in BGRA order *)
+    type t
+    (** An abstract type representing an image data *)
 
     val create : (int * int) -> t
-    (** [create size] creates an empty image data of the given [size] *)
+    (** [create size] creates an empty image data of the given [size].
+
+        {b Exceptions:}
+        {ul
+        {- {!Exception.Not_initialized} if {!Backend.init} was not called}
+        {- {!Invalid_argument} if either component of [size] is outside the range 1-32767}} *)
 
     val createFromPNG : string -> t React.event
     (** [createFromPNG filename] creates an image data
-        with the contents of PNG file [filename] *)
+        with the contents of PNG file [filename]
+
+        {b Exceptions:}
+        {ul
+        {- {!Exception.Not_initialized} if {!Backend.init} was not called}
+        {- {!Exception.Read_png_failed} if the PNG file could not be read}} *)
 
     val getSize : t -> (int * int)
     (** [getSize id] returns the size of image data [id] *)
@@ -455,30 +493,75 @@ module V1 : sig
 
     val sub : t -> pos:(int * int) -> size:(int * int) -> t
     (** [sub c ~pos ~size] returns a copy of the pixel data
-        at position [pos] of size [size] in image data [id] *)
+        at position [pos] of size [size] in image data [id].
+        Any pixel outside the image bounds is considered
+        to be transparent black.
+
+        {b Exceptions:}
+        {ul
+        {- {!Invalid_argument} if either component of [size] is outside the range 1-32767}} *)
 
     val blit :
       dst:t -> dpos:(int * int) ->
       src:t -> spos:(int * int) -> size:(int * int) -> unit
-    (** [blit ~dst ~dpos ~src ~spos ~size] copies the area
-        specified by [spos] and [size] from image data [src]
-        to image data [dst] at position [dpos] *)
+    (** [blit ~dst ~dpos ~src ~spos ~size] copies the area specified
+        by [spos] and [size] from image data [src] to image data [dst]
+        at position [dpos]. If the given position and size yield an
+        inconsistent area, this has no effect.
+
+        {b Exceptions:}
+        {ul
+        {- {!Invalid_argument} if either component of [size] is outside the range 1-32767}} *)
 
     val getPixel : t -> (int * int) -> Color.t
-    (** [getPixel id pos] returns the color of the pixel
-        at position [pos] in image data [id] *)
+    (** [getPixel id pos] returns the color of the pixel at position
+        [pos] in image data [id]. If [pos] is outside the image
+        bounds, returns the transparent black color. *)
 
     val putPixel : t -> (int * int) -> Color.t -> unit
-    (** [putPixel id pos c] sets the color of the pixel
-        at position [pos] in image data [id] to color [c] *)
+    (** [putPixel id pos c] sets the color of the pixel at position
+        [pos] in image data [id] to color [c]. If [pos] is
+        outside the image bounds, this has no effect. *)
 
     val importPNG : t -> pos:(int * int) -> string -> t React.event
     (** [importPNG id ~pos filename] loads the file [filename]
-        into image data [id] at position [pos] *)
+        into image data [id] at position [pos]. Any pixel
+        that falls outside the image bounds is ignored.
+
+        {b Exceptions:}
+        {ul
+        {- {!Exception.Not_initialized} if {!Backend.init} was not called}
+        {- {!Exception.Read_png_failed} if the PNG file could not be read}} *)
 
     val exportPNG : t -> string -> unit
     (** [exportPNG id filename] saves the contents of image
-        data [id] to a file with name [filename] *)
+        data [id] to a file with name [filename]
+
+        {b Exceptions:}
+        {ul
+        {- {!Exception.Not_initialized} if {!Backend.init} was not called}
+        {- {!Exception.Write_png_failed} if the PNG file could not be written}} *)
+
+    type t_repr =
+      (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array3.t
+    (** Image data's internal representation is a big array of dimension 3
+        (height, width, component), with the components in BGRA order *)
+
+    val of_bigarray : t_repr -> t
+    (** [of_bigarray ba] reinterprets a big array [ba] as an image data.
+        The big array must be of dimension 3 (height, width, component),
+        with the components in BGRA order. The underlying memory
+        will be shared between the image data and the big array.
+
+        {b Exceptions:}
+        {ul
+        {- {!Invalid_argument} if the first or second dimension of [ba] is outside the range 1-32767, or if the third dimension of [ba] is not 4}} *)
+
+    val to_bigarray : t -> t_repr
+    (** [to_bigarray id] reinterprets an image data [id] as a big array.
+        The resulting big array will be of dimension 3 (height, width,
+        component), with the components in BGRA order. The underlying
+        memory will be shared between the image data and the big array.  *)
 
   end
 
@@ -489,7 +572,7 @@ module V1 : sig
     (** An abstract type representing a gradient *)
 
     val addColorStop : t -> Color.t -> float -> unit
-    (** [addColorStop] gradient color stop) adds a new [color]
+    (** [addColorStop gradient color stop] adds a new [color]
         color spot in the gradient object at position [stop] *)
 
   end
@@ -555,12 +638,12 @@ module V1 : sig
         [path]'s brush position to [~p] with control points [~cp1]
         and [~cp2]. *)
 
-    val rect : t -> pos:Point.t -> size:(float * float) -> unit
+    val rect : t -> pos:Point.t -> size:Vector.t -> unit
     (** [rect p ~pos ~size] adds the rectangle specified by [pos]
         and [size]) to the path [p] *)
 
     val ellipse :
-      t -> center:Point.t -> radius:(float * float) ->
+      t -> center:Point.t -> radius:Vector.t ->
       rotation:float -> theta1:float -> theta2:float -> ccw:bool -> unit
     (** [ellipse p ~center ~radius ~rotation ~theta1 ~theta2] adds
         an ellipse with the given parameters to the path [p] *)
@@ -673,15 +756,15 @@ module V1 : sig
         of [rep] using [img] as source *)
 
 
-    (** {1 Comparison functions} *)
+    (** {1 Comparison and hash functions} *)
 
     (** In order to ease identification of canvas or building collections
         of canvas, the usual comparison functions are provided.
         These functions simply operate on the canvas' unique ids. *)
 
     val hash : 'kind t -> int
-    (** [hash c] returns a unique integer value for canvas [c], which
-        happens to be the same as the unique canvas id [getId c] *)
+    (** [hash c] returns a unique integer value for canvas [c],
+        which is computed as [Hashtbl.hash (Canvas.getId c)] *)
 
     val compare : 'kind1 t -> 'kind2 t -> int
     (** [compare c1 c2] is equivalent to [compare (getId c1) (getId c2)] *)
@@ -729,18 +812,37 @@ module V1 : sig
         [resizeable], [minimize], [maximize], and [close].
         The [decorated] argument has a higher priority: if set to false,
         all other decoration arguments will be ignored (considered to be
-        false), and all decorations will be removed from the window. *)
+        false), and all decorations will be removed from the window.
+
+        {b Exceptions:}
+        {ul
+        {- {!Exception.Not_initialized} if {!Backend.init} was not called}
+        {- {!Invalid_argument} if either component of [size] is outside the range 1-32767}} *)
 
     val createOffscreen : size:(int * int) -> [> `Offscreen] t
-    (** [createOffscreen ~size] creates an offscreen canvas of size [size] *)
+    (** [createOffscreen ~size] creates an offscreen canvas of size [size]
+
+        {b Exceptions:}
+        {ul
+        {- {!Exception.Not_initialized} if {!Backend.init} was not called}
+        {- {!Invalid_argument} if either component of [size] is outside the range 1-32767}} *)
 
     val createOffscreenFromImageData : ImageData.t -> [> `Offscreen] t
     (** [createOffscreenFromImageData id] creates an offscreen
-        canvas with the contents of image data [id] *)
+        canvas with the contents of image data [id]
+
+        {b Exceptions:}
+        {ul
+        {- {!Exception.Not_initialized} if {!Backend.init} was not called}} *)
 
     val createOffscreenFromPNG : string -> [`Offscreen] t React.event
     (** [createOffscreen filename] creates an offscreen
-        canvas with the contents of PNG file [filename] *)
+        canvas with the contents of PNG file [filename]
+
+        {b Exceptions:}
+        {ul
+        {- {!Exception.Not_initialized} if {!Backend.init} was not called}
+        {- {!Exception.Read_png_failed} if the PNG file could not be read}} *)
 
 
     (** {1 Visibility} *)
@@ -753,7 +855,7 @@ module V1 : sig
     (** [hide c] makes the canvas [c] invisible.
         Does not apply to offscreen canvas. *)
 
-    val close : [> `Onscreen] t -> unit
+    val close : [< `Onscreen] t -> unit
     (** [close c] closes the canvas [c], i.e. it permanently removes
         it from the screen and prevents it to receive events ;
         however it can still be used as an offscreen canvas. *)
@@ -768,7 +870,11 @@ module V1 : sig
     (** [getSize c] returns the size of canvas [c] *)
 
     val setSize : 'kind t -> (int * int) -> unit
-    (** [setSize c size] sets the size of canvas [c] *)
+    (** [setSize c size] sets the size of canvas [c]
+
+        {b Exceptions:}
+        {ul
+        {- {!Invalid_argument} if either component of [size] is outside the range 1-32767}} *)
 
     val getPosition : [< `Onscreen] t -> (int * int)
     (** [getPosition c] returns the position of canvas [c] *)
@@ -791,7 +897,8 @@ module V1 : sig
     val setTransform : 'kind t -> Transform.t -> unit
     (** [setTransform c t] sets the current transformation matrix of canvas [c].
         The matrix [t = { a, b, c, d, e, f }] is of the following form:
- {[     a b 0
+{[
+        a b 0
         c d 0
         e f 1 ]} *)
 
@@ -799,15 +906,15 @@ module V1 : sig
     (** [transform c t] apply the given arbitrary transformation
         to the current transformation matrix of canvas [c] *)
 
-    val translate : 'kind t -> (float * float) -> unit
+    val translate : 'kind t -> Vector.t -> unit
     (** [translate c vec] apply the given translation transform
         to the current transformation matrix of canvas [c] *)
 
-    val scale : 'kind t -> (float * float) -> unit
+    val scale : 'kind t -> Vector.t -> unit
     (** [scale c vec] apply the given scale transform
         to the current transformation matrix of canvas [c] *)
 
-    val shear : 'kind t -> (float * float) -> unit
+    val shear : 'kind t -> Vector.t -> unit
     (** [shear c vec] apply the given shear transform
         to the current transformation matrix of canvas [c] *)
 
@@ -924,10 +1031,10 @@ module V1 : sig
     val setShadowBlur : 'kind t -> float -> unit
     (** [setShadowBlur c b] sets the shadow blur radius of canvas [c] to [b] *)
 
-    val getShadowOffset : 'kind t -> (float * float)
+    val getShadowOffset : 'kind t -> Vector.t
     (** [setShadowOffset c] returns the offset of the shadows drawn in [c] *)
 
-    val setShadowOffset : 'kind t -> (float * float) -> unit
+    val setShadowOffset : 'kind t -> Vector.t -> unit
     (** [setShadowOffset c o] sets the offset
         of the shadows drawn in [c] to [o] *)
 
@@ -988,12 +1095,12 @@ module V1 : sig
         the control points [cp1] and [cp2] and the end point [p]
         to the current subpath of canvas [c] *)
 
-    val rect : 'kind t -> pos:Point.t -> size:(float * float) -> unit
+    val rect : 'kind t -> pos:Point.t -> size:Vector.t -> unit
     (** [rect c ~pos ~size] adds the rectangle specified by [pos]
         and [size]) to the current subpath of canvas [c] *)
 
     val ellipse :
-      'kind t -> center:Point.t -> radius:(float * float) ->
+      'kind t -> center:Point.t -> radius:Vector.t ->
       rotation:float -> theta1:float -> theta2:float -> ccw:bool -> unit
     (** [ellipse c ~center ~radius ~rotation ~theta1 ~theta2] adds an ellipse
         with the given parameters to the current subpath of canvas [c] *)
@@ -1028,11 +1135,11 @@ module V1 : sig
 
     (** {1 Immediate drawing} *)
 
-    val fillRect : 'kind t -> pos:Point.t -> size:(float * float) -> unit
+    val fillRect : 'kind t -> pos:Point.t -> size:Vector.t -> unit
     (** [fillRect c ~pos ~size] immediatly fills the rectangle specified by
         [pos] and [size] to the canvas [c] using the current fill color *)
 
-    val strokeRect : 'kind t -> pos:Point.t -> size:(float * float) -> unit
+    val strokeRect : 'kind t -> pos:Point.t -> size:Vector.t -> unit
     (** [strokeRect c ~pos ~size] immediatly draws the outline of
         the rectangle specified by [pos] and [size] to the canvas
         [c] using the current stroke color and line width *)
@@ -1049,8 +1156,14 @@ module V1 : sig
     val blit :
       dst:'kind1 t -> dpos:(int * int) ->
       src:'kind2 t -> spos:(int * int) -> size:(int * int) -> unit
-    (** [blit ~dst ~dpos ~src ~spos ~size] copies the area specified by [spos]
-        and [size] from canvas [src] to canvas [dst] at position [dpos] *)
+    (** [blit ~dst ~dpos ~src ~spos ~size] copies the area specified
+        by [spos] and [size] from canvas [src] to canvas [dst] at
+        position [dpos]. If the given position and size yield an
+        inconsistent area, this has no effect.
+
+        {b Exceptions:}
+        {ul
+        {- {!Invalid_argument} if either component of [size] is outside the range 1-32767}} *)
 
 
     (** {1 Direct pixel access} *)
@@ -1060,33 +1173,55 @@ module V1 : sig
         real-time. Better use them on offscreen canvas during loading phases. *)
 
     val getPixel : 'kind t -> (int * int) -> Color.t
-    (** [getPixel c pos] returns the color of the
-        pixel at position [pos] in canvas [c] *)
+    (** [getPixel c pos] returns the color of the pixel at position
+        [pos] in canvas [c]. If [pos] is outside the canvas
+        bounds, returns the transparent black color. *)
 
     val putPixel : 'kind t -> (int * int) -> Color.t -> unit
-    (** [putPixel c pos col] sets the color of the pixel
-        at position [pos] in canvas [c] to color [col] *)
+    (** [putPixel c pos col] sets the color of the pixel at position
+        [pos] in canvas [c] to color [col]. If [pos] is
+        outside the canvas bounds, this has no effect. *)
 
     val getImageData :
       'kind t -> pos:(int * int) -> size:(int * int) -> ImageData.t
     (** [getImageData c ~pos ~size] returns a copy of the pixel
-        data at position [pos] of size [size] in canvas [c] *)
+        data at position [pos] of size [size] in canvas [c].
+        Any pixel outside the canvas bounds is considered
+        to be transparent black.
+
+        {b Exceptions:}
+        {ul
+        {- {!Invalid_argument} if either component of [size] is outside the range 1-32767}} *)
 
     val putImageData :
       'kind t -> dpos:(int * int) -> ImageData.t ->
       spos:(int * int) -> size:(int * int) -> unit
     (** [setImageData c ~dpos id ~spos ~size] overwrite the pixels
         at position [dpos] in canvas [c] with the provided pixel
-        data starting at position [spos] and of size [size] *)
+        data starting at position [spos] and of size [size].
+        If the given position and size yield an
+        inconsistent area, this has no effect.
+
+        {b Exceptions:}
+        {ul
+        {- {!Invalid_argument} if either component of [size] is outside the range 1-32767}} *)
 
     val importPNG :
       'kind t -> pos:(int * int) -> string -> 'kind t React.event
     (** [importPNG c ~pos filename] loads the file
-        [filename] into canvas [c] at position [pos] *)
+        [filename] into canvas [c] at position [pos]
+
+        {b Exceptions:}
+        {ul
+        {- {!Exception.Read_png_failed} if the PNG file could not be read}} *)
 
     val exportPNG : 'kind t -> string -> unit
     (** [exportPNG c filename] saves the contents of
-        canvas [c] to a file with name [filename] *)
+        canvas [c] to a file with name [filename]
+
+        {b Exceptions:}
+        {ul
+        {- {!Exception.Write_png_failed} if the PNG file could not be written}} *)
 
   end
 
@@ -1369,7 +1504,12 @@ module V1 : sig
 
     val key_of_int : int -> key
     (** [key_of_int i] returns the key corresponding to the
-        platform-independent integer [i]. *)
+        platform-independent integer [i] in the range 0-255.
+
+        {b Exceptions:}
+        {ul
+        {- {!Invalid_argument} if [i] < 0 or [i] > 255}} *)
+
 
   end
 
@@ -1377,7 +1517,11 @@ module V1 : sig
   (** Initialization and event loop control *)
 
     val init : unit -> unit
-    (** [init ()] initializes the backend *)
+    (** [init ()] initializes the backend
+
+        {b Exceptions:}
+        {ul
+        {- {!Failure} if initialization fails}} *)
 
     val run : (unit -> 'dummy1) -> 'dummy2
     (** [run k] executes the backend event loop, calling update functions as
@@ -1388,21 +1532,37 @@ module V1 : sig
         the program terminates, you MUST use the [k] function: it is meant
         for that. Note that calling [run] from an update function will just
         be ignored (though this should not be done). However, [run] may
-        be called from the [k] function, if needed. *)
+        be called from the [k] function, if needed.
+
+        {b Exceptions:}
+        {ul
+        {- {!Exception.Not_initialized} if {!Backend.init} was not called}} *)
 
     val stop : unit -> unit
     (** [stop ()] requests termination of the currently running event
         loop, if any. It should be called from an update function.
         Actual termination of the event loop will occur at the end of
         the current iteration of the event loop, so after calling [stop]
-        an update function should proceed normally until it returns. *)
+        an update function should proceed normally until it returns.
+
+        {b Exceptions:}
+        {ul
+        {- {!Exception.Not_initialized} if {!Backend.init} was not called}} *)
 
     val getCanvas : int -> 'a Canvas.t option
-    (** [getCanvas i] returns the canvas that has id [i], if it exists *)
+    (** [getCanvas i] returns the canvas that has id [i], if it exists
+
+        {b Exceptions:}
+        {ul
+        {- {!Exception.Not_initialized} if {!Backend.init} was not called}} *)
 
     val getCurrentTimestamp : unit -> Event.timestamp
     (** [getCurrentTimestamp ()] returns the current timestamp
-        in microseconds, from an arbitrary starting point *)
+        in microseconds, from an arbitrary starting point
+
+        {b Exceptions:}
+        {ul
+        {- {!Exception.Not_initialized} if {!Backend.init} was not called}} *)
 
   end
 

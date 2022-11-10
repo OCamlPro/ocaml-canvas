@@ -103,7 +103,6 @@ Val_int32_clip(
   int32_t i)
 {
   CAMLparam0();
-  CAMLlocal1(mlValue);
   if (sizeof(intnat) == 4) {
     if (i < INT32_MIN/2) {
       i = INT32_MIN/2;
@@ -111,8 +110,7 @@ Val_int32_clip(
       i = INT32_MAX/2;
     }
   }
-  mlValue = Val_long(i);
-  CAMLreturn(mlValue);
+  CAMLreturn(Val_long(i));
 }
 
 int32_t
@@ -197,7 +195,7 @@ Val_focus_in_out(
     [FOCUS_OUT] = TAG_FOCUS_OUT,
     [FOCUS_IN]  = TAG_FOCUS_IN,
   };
-  CAMLreturn(Val_int(map[s]));
+  CAMLreturn(Val_long(map[s]));
 }
 
 value
@@ -349,7 +347,7 @@ Val_key_code(
   if ((tag == TAG_KEY_ESCAPE) && (key_code != KEY_ESCAPE)) {
     caml_invalid_argument("invalid key code provided");
   }
-  CAMLreturn(Val_int(tag));
+  CAMLreturn(Val_long(tag));
 }
 
 key_code_t
@@ -509,7 +507,7 @@ Val_key_state(
     [KEY_UP]   = TAG_KEY_UP,
     [KEY_DOWN] = TAG_KEY_DOWN,
   };
-  CAMLreturn(Val_int(map[s]));
+  CAMLreturn(Val_long(map[s]));
 }
 
 value
@@ -543,7 +541,7 @@ Val_button(
     [BUTTON_WHEEL_UP]   = TAG_BUTTON_WHEEL_UP,
     [BUTTON_WHEEL_DOWN] = TAG_BUTTON_WHEEL_DOWN,
   };
-  CAMLreturn(Val_int(map[b]));
+  CAMLreturn(Val_long(map[b]));
 }
 
 value
@@ -555,7 +553,7 @@ Val_button_state(
     [BUTTON_UP]   = TAG_BUTTON_UP,
     [BUTTON_DOWN] = TAG_BUTTON_DOWN,
   };
-  CAMLreturn(Val_int(map[s]));
+  CAMLreturn(Val_long(map[s]));
 }
 
 value
@@ -637,7 +635,7 @@ Val_key_event(
   Store_field(mlEventDesc, 0, Val_canvas((canvas_t *)(event->target)));
   Store_field(mlEventDesc, 1, caml_copy_int64(event->time));
   Store_field(mlEventDesc, 2, Val_key_code(event->desc.key.code));
-  Store_field(mlEventDesc, 3, Val_int(event->desc.key.char_));
+  Store_field(mlEventDesc, 3, Val_long(event->desc.key.char_));
   Store_field(mlEventDesc, 4, Val_key_flags(event->desc.key.modifiers,
                                             event->desc.key.dead));
   Store_field(mlEventDesc, 5, Val_key_state(event->desc.key.state));
@@ -731,7 +729,16 @@ Val_event(
 }
 
 int ml_canvas_compare_raw(value mlCanvas1, value mlCanvas2);
-intnat ml_canvas_hash_raw(value mlCanvas);
+
+value ml_canvas_hash(value mlCanvas);
+
+static intnat
+_ml_canvas_hash(
+  value mlCanvas)
+{
+  CAMLparam1(mlCanvas);
+  CAMLreturnT(intnat, Long_val(ml_canvas_hash(mlCanvas)));
+}
 
 static void
 _ml_canvas_finalize(
@@ -747,7 +754,7 @@ static struct custom_operations _ml_canvas_ops = {
   "com.ocamlpro.ocaml-canvas",
   _ml_canvas_finalize,
   ml_canvas_compare_raw,
-  ml_canvas_hash_raw,
+  _ml_canvas_hash,
   custom_serialize_default,
   custom_deserialize_default,
   custom_compare_ext_default,
@@ -1070,7 +1077,7 @@ Val_repeat(
     [PATTERN_REPEAT_Y]  = TAG_REPEAT_Y,
     [PATTERN_REPEAT_XY] = TAG_REPEAT_XY
   };
-  CAMLreturn(Val_int(map[repeat]));
+  CAMLreturn(Val_long(map[repeat]));
 }
 
 pattern_repeat_t
@@ -1097,7 +1104,7 @@ Val_style(
     case DRAW_STYLE_COLOR:
       mlStyle = caml_alloc(1, TAG_COLOR);
       Store_field(mlStyle, 0,
-                  Val_int(color_to_int(style.content.color)));
+                  caml_copy_int32(color_to_int(style.content.color)));
       break;
     case DRAW_STYLE_GRADIENT:
       mlStyle = caml_alloc(1, TAG_GRADIENT);
@@ -1180,7 +1187,7 @@ Val_join_type(
     [JOIN_MITER] = TAG_JOIN_MITER,
     [JOIN_BEVEL] = TAG_JOIN_BEVEL
   };
-  CAMLreturn(Val_int(map[join]));
+  CAMLreturn(Val_long(map[join]));
 }
 
 join_type_t
@@ -1206,7 +1213,7 @@ Val_cap_type(
     [CAP_SQUARE] = TAG_CAP_SQUARE,
     [CAP_ROUND]  = TAG_CAP_ROUND
   };
-  CAMLreturn(Val_int(map[cap]));
+  CAMLreturn(Val_long(map[cap]));
 }
 
 cap_type_t
@@ -1255,7 +1262,7 @@ Val_compop(
     [COLOR]            = TAG_OP_COLOR,
     [LUMINOSITY]       = TAG_OP_LUMINOSITY
   };
-  CAMLreturn(Val_int(map[compop]));
+  CAMLreturn(Val_long(map[compop]));
 }
 
 composite_operation_t

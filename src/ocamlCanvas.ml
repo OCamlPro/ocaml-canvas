@@ -10,6 +10,24 @@
 
 module V1 = struct
 
+  let valid_canvas_size (width, height) =
+    0 < width && width <= 32767 && 0 < height && height <= 32767
+
+  module Exception = struct
+
+    exception Not_initialized
+    exception File_not_found of string
+    exception Read_png_failed of string
+    exception Write_png_failed of string
+
+    let () =
+      Callback.register_exception "Not_initialized" Not_initialized;
+      Callback.register_exception "File_not_found" (File_not_found "");
+      Callback.register_exception "Read_png_failed" (Read_png_failed "");
+      Callback.register_exception "Write_png_failed" (Write_png_failed "")
+
+  end
+
   module Const = struct
 
     let pi =       3.14159265358979323846
@@ -30,6 +48,33 @@ module V1 = struct
 
     let ln_2 =     0.693147180559945309417
     let ln_10 =    2.30258509299404568402
+
+  end
+
+  module Vector = struct
+
+    type t = (float * float)
+
+    let zero =
+      (0.0, 0.0)
+
+    let unit =
+      (1.0, 1.0)
+
+    let add (x1, y1) (x2, y2) =
+      x1 +. x2, y1 +. y2
+
+    let sub (x1, y1) (x2, y2) =
+      x1 -. x2, y1 -. y2
+
+    let mul (x, y) k =
+      x *. k, y *. k
+
+    let dot (x1, y1) (x2, y2) =
+      x1 *. x2 +. y1 *. y2
+
+    let norm (x, y) =
+      sqrt (x *. x +. y *. y)
 
   end
 
@@ -84,38 +129,14 @@ module V1 = struct
         d = t.d *. cos_a +. t.b *. sin_a }
 
     let inverse t =
-      let invdet = 1.0 /. (t.a *. t.d -. t.b *. t.c) in
+      let det = t.a *. t.d -. t.b *. t.c in
+      if det = 0.0 then
+        invalid_arg "Transform.inverse: the matrix is not inversible";
+      let invdet = 1.0 /. det in
       { a =    t.d *. invdet; b = -. t.b *. invdet;
         c = -. t.c *. invdet; d =    t.a *. invdet;
         e = (t.c *. t.f -. t.d *. t.e) *. invdet;
         f = (t.b *. t.e -. t.a *. t.f) *. invdet }
-
-  end
-
-  module Vector = struct
-
-    type t = (float * float)
-
-    let zero =
-      (0.0, 0.0)
-
-    let unit =
-      (1.0, 1.0)
-
-    let add (x1, y1) (x2, y2) =
-      x1 +. x2, y1 +. y2
-
-    let sub (x1, y1) (x2, y2) =
-      x1 -. x2, y1 -. y2
-
-    let mul (x, y) k =
-      x *. k, y *. k
-
-    let dot (x1, y1) (x2, y2) =
-      x1 *. x2 +. y1 *. y2
-
-    let norm (x, y) =
-      sqrt (x *. x +. y *. y)
 
   end
 
@@ -142,8 +163,11 @@ module V1 = struct
        x *. t.b +. y *. t.d +. t.f)
 
     let barycenter a (x1, y1) b (x2, y2) =
-      (a *. x1 +. b *. x2) /. (a +. b),
-      (a *. y1 +. b *. y2) /. (a +. b)
+      let sum_ab = a +. b in
+      if sum_ab = 0.0 then
+        invalid_arg "Point.barycenter: a + b must be non-nul";
+      (a *. x1 +. b *. x2) /. sum_ab,
+      (a *. y1 +. b *. y2) /. sum_ab
 
     let distance (x1, y1) (x2, y2) =
       sqrt ((x2 -. x1) ** 2.0 +. (y2 -. y1) ** 2.0)
@@ -293,6 +317,8 @@ module V1 = struct
     type t = image_data
 
     let create (width, height) =
+      if not (valid_canvas_size (width, height)) then
+        invalid_arg "ImageData.create: invalid image dimensions";
       let a = Bigarray.Array3.create Bigarray.int8_unsigned
                 Bigarray.c_layout height width 4 in
       Bigarray.Array3.fill a 0;
@@ -339,6 +365,19 @@ module V1 = struct
 
     external exportPNG : t -> string -> unit
       = "ml_canvas_image_data_export_png"
+
+    type t_repr = image_data
+
+    let of_bigarray (ba : t_repr) =
+      if not (valid_canvas_size (Bigarray.Array3.dim2 ba,
+                                 Bigarray.Array3.dim1 ba)) then
+        invalid_arg "ImageData.of_bigarray: invalid image dimensions";
+
+      if Bigarray.Array3.dim3 ba <> 4 then
+        invalid_arg "ImageData.of_bigarray: third dimension must be 4";
+      ba
+
+    external to_bigarray : t -> t_repr = "%identity"
 
   end
 
@@ -394,11 +433,11 @@ module V1 = struct
       t -> cp1:Point.t -> cp2:Point.t -> p:Point.t -> unit
       = "ml_canvas_path_bezier_curve_to"
 
-    external rect : t -> pos:Point.t -> size:(float * float) -> unit
+    external rect : t -> pos:Point.t -> size:Vector.t -> unit
       = "ml_canvas_path_rect"
 
     external ellipse :
-      t -> center:Point.t -> radius:(float * float) ->
+      t -> center:Point.t -> radius:Vector.t ->
       rotation:float -> theta1:float -> theta2:float -> ccw:bool -> unit
       = "ml_canvas_path_ellipse" "ml_canvas_path_ellipse_n"
 
@@ -496,6 +535,9 @@ module V1 = struct
 
     (* Comparison *)
 
+    let () =
+      Callback.register "Hashtbl.hash" Hashtbl.hash
+
     external hash : 'kind t -> int
       = "ml_canvas_hash"
 
@@ -546,7 +588,7 @@ module V1 = struct
     external hide : [< `Onscreen] t -> unit
       = "ml_canvas_hide"
 
-    external close : [> `Onscreen] t -> unit
+    external close : [< `Onscreen] t -> unit
       = "ml_canvas_close"
 
     (* Configuration *)
@@ -581,13 +623,13 @@ module V1 = struct
     external transform : 'kind t -> Transform.t -> unit
       = "ml_canvas_transform"
 
-    external translate : 'kind t -> (float * float) -> unit
+    external translate : 'kind t -> Vector.t -> unit
       = "ml_canvas_translate"
 
-    external scale : 'kind t -> (float * float) -> unit
+    external scale : 'kind t -> Vector.t -> unit
       = "ml_canvas_scale"
 
-    external shear : 'kind t -> (float * float) -> unit
+    external shear : 'kind t -> Vector.t -> unit
       = "ml_canvas_shear"
 
     external rotate : 'kind t -> float -> unit
@@ -691,10 +733,10 @@ module V1 = struct
     external setShadowBlur : 'kind t -> float -> unit
       = "ml_canvas_set_shadow_blur"
 
-    external getShadowOffset : 'kind t -> (float * float)
+    external getShadowOffset : 'kind t -> Vector.t
       = "ml_canvas_get_shadow_offset"
 
-    external setShadowOffset : 'kind t -> (float * float) -> unit
+    external setShadowOffset : 'kind t -> Vector.t -> unit
       = "ml_canvas_set_shadow_offset"
 
     external setFont :
@@ -731,11 +773,11 @@ module V1 = struct
       'kind t -> cp1:Point.t -> cp2:Point.t -> p:Point.t -> unit
       = "ml_canvas_bezier_curve_to"
 
-    external rect : 'kind t -> pos:Point.t -> size:(float * float) -> unit
+    external rect : 'kind t -> pos:Point.t -> size:Vector.t -> unit
       = "ml_canvas_rect"
 
     external ellipse :
-      'kind t -> center:Point.t -> radius:(float * float) ->
+      'kind t -> center:Point.t -> radius:Vector.t ->
       rotation:float -> theta1:float -> theta2:float -> ccw:bool -> unit
       = "ml_canvas_ellipse" "ml_canvas_ellipse_n"
 
@@ -759,10 +801,10 @@ module V1 = struct
 
     (* Immediate drawing *)
 
-    external fillRect : 'kind t -> pos:Point.t -> size:(float * float) -> unit
+    external fillRect : 'kind t -> pos:Point.t -> size:Vector.t -> unit
       = "ml_canvas_fill_rect"
 
-    external strokeRect : 'kind t -> pos:Point.t -> size:(float * float) -> unit
+    external strokeRect : 'kind t -> pos:Point.t -> size:Vector.t -> unit
       = "ml_canvas_stroke_rect"
 
     external fillText : 'kind t -> string -> Point.t -> unit
@@ -1137,8 +1179,7 @@ module V1 = struct
       = "ml_canvas_init"
 
     external run_internal :
-      ('state -> InternalEvent.t -> 'state * bool) ->
-      ('state -> 'dummy1) -> 'state -> 'dummy2
+      (InternalEvent.t -> unit) -> (unit -> 'dummy1) -> 'dummy2
       = "ml_canvas_run"
 
     external stop : unit -> unit
@@ -1153,7 +1194,7 @@ module V1 = struct
     let run k =
       let open InternalEvent in
       let open Event in
-      let h s e =
+      let h e =
         (match e with
         | Frame { canvas; timestamp } ->
             let e = { canvas; timestamp; data = () } in
@@ -1188,10 +1229,9 @@ module V1 = struct
         | MouseMove { canvas; timestamp; position } ->
             let e = { canvas; timestamp; data = position } in
             set_event_timestamp e.timestamp; send_mouse_move e);
-        Pending.process ();
-        s, true
+        Pending.process ()
       in
-      run_internal h k ()
+      run_internal h k
 
   end
 
