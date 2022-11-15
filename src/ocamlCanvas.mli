@@ -571,6 +571,20 @@ module V1 : sig
     type t
     (** An abstract type representing a gradient *)
 
+    val createLinear : pos1:Point.t -> pos2:Point.t -> t
+    (** [createLinear ~pos1 ~pos2] creates a new linear gradient
+        parallel to the line ([pos1], [pos2]) in window coordinates *)
+
+    val createRadial:
+      center1:Point.t -> rad1:float -> center2:Point.t -> rad2:float -> t
+    (** [createRadial ~center1 ~rad1 ~center2 ~rad2] creates a new
+        radial gradient between the disks with centers [center1] and
+        [center2] and radi [rad1] and [rad2] in window coordinates *)
+
+    val createConic: center:Point.t -> angle:float -> t
+    (** [createConic ~center ~angle] creates a new conic gradient
+        with center [center] and initial angle [angle] *)
+
     val addColorStop : t -> Color.t -> float -> unit
     (** [addColorStop gradient color stop] adds a new [color]
         color spot in the gradient object at position [stop] *)
@@ -589,6 +603,9 @@ module V1 : sig
       | RepeatY
       | RepeatXY (** *)
     (** Pattern repetition *)
+
+    val create : ImageData.t -> repeat -> t
+    (** [create img rep] creates a pattern of [rep] using [img] as source *)
 
   end
 
@@ -725,35 +742,6 @@ module V1 : sig
 
     type 'kind t
     (** An abstract type representing a canvas *)
-
-
-    (** {1 Gradient creation functions} *)
-
-    val createLinearGradient :
-      'kind t -> pos1:Point.t -> pos2:Point.t -> Gradient.t
-    (** [createLinearGradient c ~pos1 ~pos2] creates a new
-        linear gradient parallel to the line ([pos1][pos2])
-        in window coordinates for canvas [c] *)
-
-    val createRadialGradient:
-      'kind t -> center1:Point.t -> rad1:float ->
-      center2:Point.t -> rad2:float -> Gradient.t
-    (** [createRadialGradient c ~center1 ~rad1 ~center2 ~rad2] creates a new
-        radial gradient between the disks with centers [center1] and [center2]
-        and radi [rad1] and [rad2] in window coordinates for canvas [c] *)
-
-    val createConicGradient:
-      'kind t -> center:Point.t -> angle:float -> Gradient.t
-    (** [createConicGradient c ~center ~angle] creates a new conic gradient
-        with center [center] and initial angle [angle] for canvas [c] *)
-
-
-    (** {1 Pattern creation function} *)
-
-    val createPattern :
-      'kind t -> ImageData.t -> Pattern.repeat -> Pattern.t
-    (** [createPattern img rep] creates a pattern
-        of [rep] using [img] as source *)
 
 
     (** {1 Comparison and hash functions} *)
@@ -1549,12 +1537,13 @@ module V1 : sig
         {ul
         {- {!Exception.Not_initialized} if {!Backend.init} was not called}} *)
 
-    val getCanvas : int -> 'a Canvas.t option
+    val getCanvas : int -> 'a Canvas.t
     (** [getCanvas i] returns the canvas that has id [i], if it exists
 
         {b Exceptions:}
         {ul
-        {- {!Exception.Not_initialized} if {!Backend.init} was not called}} *)
+        {- {!Exception.Not_initialized} if {!Backend.init} was not called}
+        {- {!Not_found} if no canvas has id [i]}} *)
 
     val getCurrentTimestamp : unit -> Event.timestamp
     (** [getCurrentTimestamp ()] returns the current timestamp

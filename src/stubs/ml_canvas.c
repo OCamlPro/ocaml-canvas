@@ -475,12 +475,11 @@ _ml_canvas_gradient_destroy_callback(
 }
 
 CAMLprim value
-ml_canvas_create_linear_gradient(
-  value mlCanvas,
+ml_canvas_gradient_create_linear(
   value mlPos1,
   value mlPos2)
 {
-  CAMLparam3(mlCanvas, mlPos1, mlPos2);
+  CAMLparam2(mlPos1, mlPos2);
   CAMLlocal1(mlGradient);
   gradient_t *gradient =
     gradient_create_linear(Double_val(Field(mlPos1, 0)),
@@ -488,7 +487,7 @@ ml_canvas_create_linear_gradient(
                            Double_val(Field(mlPos2, 0)),
                            Double_val(Field(mlPos2, 1)));
   if (gradient == NULL) {
-    caml_failwith("Canvas.createLinearGradient: unable to create the specified linear gradient");
+    caml_failwith("Gradient.createLinear: unable to create the specified linear gradient");
   }
   mlGradient = Val_gradient(gradient);
   gradient_release(gradient); /* Because Val_gradient retains it */
@@ -496,14 +495,13 @@ ml_canvas_create_linear_gradient(
 }
 
 CAMLprim value
-ml_canvas_create_radial_gradient(
-  value mlCanvas,
+ml_canvas_gradient_create_radial(
   value mlCenter1,
   value mlRadius1,
   value mlCenter2,
   value mlRadius2)
 {
-  CAMLparam5(mlCanvas, mlCenter1, mlRadius1, mlCenter2, mlRadius2);
+  CAMLparam4(mlCenter1, mlRadius1, mlCenter2, mlRadius2);
   CAMLlocal1(mlGradient);
   gradient_t *gradient =
     gradient_create_radial(Double_val(Field(mlCenter1, 0)),
@@ -513,7 +511,7 @@ ml_canvas_create_radial_gradient(
                            Double_val(Field(mlCenter2, 1)),
                            Double_val(mlRadius2));
   if (gradient == NULL) {
-    caml_failwith("Canvas.createRadialGradient: unable to create the specified radial gradient");
+    caml_failwith("Gradient.createRadial: unable to create the specified radial gradient");
   }
   mlGradient = Val_gradient(gradient);
   gradient_release(gradient); /* Because Val_gradient retains it */
@@ -521,19 +519,18 @@ ml_canvas_create_radial_gradient(
 }
 
 CAMLprim value
-ml_canvas_create_conic_gradient(
-  value mlCanvas,
+ml_canvas_gradient_create_conic(
   value mlCenter,
   value mlAngle)
 {
-  CAMLparam3(mlCanvas, mlCenter, mlAngle);
+  CAMLparam2(mlCenter, mlAngle);
   CAMLlocal1(mlGradient);
   gradient_t *gradient =
     gradient_create_conic(Double_val(Field(mlCenter, 0)),
                           Double_val(Field(mlCenter, 1)),
                           Double_val(mlAngle));
   if (gradient == NULL) {
-    caml_failwith("Canvas.createConicGradient: unable to create the specified conic gradient");
+    caml_failwith("Gradient.createConic: unable to create the specified conic gradient");
   }
   mlGradient = Val_gradient(gradient);
   gradient_release(gradient); /* Because Val_gradient retains it */
@@ -572,18 +569,16 @@ _ml_canvas_pattern_destroy_callback(
 }
 
 CAMLprim value
-ml_canvas_create_pattern(
-  value mlCanvas,
+ml_canvas_pattern_create(
   value mlPixmap,
   value mlRepeat)
 {
-  CAMLparam3(mlCanvas, mlPixmap, mlRepeat);
+  CAMLparam2(mlPixmap, mlRepeat);
   CAMLlocal1(mlPattern);
   pixmap_t pixmap = Pixmap_val(mlPixmap);
-  pattern_t *pattern = pattern_create(&pixmap,
-                                      Repeat_val(mlRepeat));
+  pattern_t *pattern = pattern_create(&pixmap, Repeat_val(mlRepeat));
   if (pattern == NULL) {
-    caml_failwith("Canvas.createPattern: unable to create the specified pattern");
+    caml_failwith("Pattern.create: unable to create the specified pattern");
   }
   mlPattern = Val_pattern(pattern);
   pattern_release(pattern); /* Because Val_pattern retains it */
@@ -1959,10 +1954,9 @@ ml_canvas_get_canvas(
   _ml_canvas_ensure_initialized();
   canvas_t *result = backend_get_canvas(Long_val(mlId));
   if (result == NULL) {
-    CAMLreturn(Val_none);
-  } else {
-    CAMLreturn(caml_alloc_some(Val_canvas(result)));
+    caml_raise_not_found();
   }
+  CAMLreturn(Val_canvas(result));
 }
 
 CAMLprim value

@@ -29,6 +29,12 @@ function _ml_canvas_valid_canvas_size(width, height) {
   return 0 < width && width <= 32767 && 0 < height && height <= 32767;
 }
 
+// Provides: _internal_canvas
+var _internal_canvas = document.createElement("canvas");
+
+// Provides: _internal_ctxt
+// Requires: _internal_canvas
+var _internal_ctxt = _internal_canvas.getContext("2d");
 
 
 
@@ -511,28 +517,30 @@ function ml_canvas_path_add_transformed(path1, path2, t) {
 
 /* Gradients */
 
-//Provides: ml_canvas_create_linear_gradient
-function ml_canvas_create_linear_gradient(canvas, pos1, pos2) {
-  return canvas.ctxt.createLinearGradient(pos1[1], pos1[2], pos2[1], pos2[2]);
+//Provides: ml_canvas_gradient_create_linear
+//Requires : _internal_ctxt
+function ml_canvas_gradient_create_linear(pos1, pos2) {
+  return _internal_ctxt.createLinearGradient(pos1[1], pos1[2],
+                                             pos2[1], pos2[2]);
 }
 
-//Provides: ml_canvas_create_radial_gradient
-function ml_canvas_create_radial_gradient(canvas,
-                                          center1, rad1,
-                                          center2, rad2) {
-  return canvas.ctxt.createRadialGradient(center1[1], center1[2], rad1,
-                                          center2[1], center2[2], rad2);
+//Provides: ml_canvas_gradient_create_radial
+//Requires : _internal_ctxt
+function ml_canvas_gradient_create_radial(center1, rad1, center2, rad2) {
+  return _internal_ctxt.createRadialGradient(center1[1], center1[2], rad1,
+                                             center2[1], center2[2], rad2);
 }
 
-//Provides: ml_canvas_create_conic_gradient
-function ml_canvas_create_conic_gradient(canvas, center, angle) {
-  return canvas.ctxt.createConicGradient(angle, center[1], center[2]);
+//Provides: ml_canvas_gradient_create_conic
+//Requires : _internal_ctxt
+function ml_canvas_gradient_create_conic(center, angle) {
+  return _internal_ctxt.createConicGradient(angle, center[1], center[2]);
 }
 
 //Provides: ml_canvas_gradient_add_color_stop
 //Requires: _color_of_int
-function ml_canvas_gradient_add_color_stop(grad, color, pos) {
-  grad.addColorStop(pos, _color_of_int(color));
+function ml_canvas_gradient_add_color_stop(gradient, color, pos) {
+  gradient.addColorStop(pos, _color_of_int(color));
   return 0;
 }
 
@@ -540,11 +548,11 @@ function ml_canvas_gradient_add_color_stop(grad, color, pos) {
 
 /* Patterns */
 
-//Provides: ml_canvas_create_pattern
-//Requires : Repeat_val, _ml_canvas_surface_of_ba
-function ml_canvas_create_pattern(canvas, image, repeat) {
+//Provides: ml_canvas_pattern_create
+//Requires : Repeat_val, _ml_canvas_surface_of_ba, _internal_ctxt
+function ml_canvas_pattern_create(image, repeat) {
   var img_canv = _ml_canvas_surface_of_ba(image);
-  return canvas.ctxt.createPattern(img_canv, Repeat_val(repeat));
+  return _internal_ctxt.createPattern(img_canv, Repeat_val(repeat));
 }
 
 
@@ -1608,14 +1616,15 @@ function ml_canvas_stop() {
 
 //Provides: ml_canvas_get_canvas
 //Requires: _ml_canvas_ensure_initialized
+//Requires: caml_raise_not_found
 function ml_canvas_get_canvas(id) {
   _ml_canvas_ensure_initialized();
   var surface = document.getElementById("s" + id);
   if (surface === null) {
-    return 0; // None
-  } else {
-    return [0, surface.canvas]; // Some
+    caml_raise_not_found();
+    return 0;
   }
+  return surface.canvas;
 }
 
 //Provides: ml_canvas_get_current_timestamp
