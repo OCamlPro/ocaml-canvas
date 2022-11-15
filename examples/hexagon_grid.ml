@@ -63,7 +63,7 @@ let () =
             ()
         | Some (hex_grid) ->
             state.counter <- state.counter +. 3.0;
-            let g = Canvas.createRadialGradient hex_grid
+            let g = Gradient.createRadial
                       ~center1:(400.0, 300.0) ~rad1:(state.counter *. 0.4)
                       ~center2:(400.0, 300.0) ~rad2:state.counter in
             Gradient.addColorStop g Color.orange 0.0;

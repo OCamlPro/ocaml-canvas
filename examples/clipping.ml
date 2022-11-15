@@ -47,7 +47,7 @@ let () =
   let event_dragonImage = ImageData.createFromPNG "assets/dragon.png" in
   retain_event @@
     React.E.map (fun dragonImage ->
-        let pattern = Canvas.createPattern c dragonImage RepeatXY in
+        let pattern = Pattern.create dragonImage RepeatXY in
         Canvas.setFillPattern c pattern;
         Canvas.scale c (0.1, 0.1);
         Canvas.rotate c (0.0 -. 0.3);

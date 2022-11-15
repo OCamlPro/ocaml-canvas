@@ -385,6 +385,16 @@ module V1 = struct
 
     type t
 
+    external createLinear : pos1:Point.t -> pos2:Point.t -> t
+      = "ml_canvas_gradient_create_linear"
+
+    external createRadial :
+      center1:Point.t -> rad1:float -> center2:Point.t -> rad2:float -> t
+      = "ml_canvas_gradient_create_radial"
+
+    external createConic : center:Point.t -> angle:float -> t
+      = "ml_canvas_gradient_create_conic"
+
     external addColorStop : t -> Color.t -> float -> unit
       = "ml_canvas_gradient_add_color_stop"
 
@@ -399,6 +409,9 @@ module V1 = struct
       | RepeatX
       | RepeatY
       | RepeatXY
+
+    external create : ImageData.t -> repeat -> t
+      = "ml_canvas_pattern_create"
 
   end
 
@@ -512,28 +525,7 @@ module V1 = struct
 
     type 'kind t = 'kind canvas
 
-    (* Gradients *)
-
-    external createLinearGradient :
-      'kind t -> pos1:Point.t -> pos2:Point.t -> Gradient.t
-      = "ml_canvas_create_linear_gradient"
-
-    external createRadialGradient :
-      'kind t -> center1:Point.t -> rad1:float ->
-      center2:Point.t -> rad2:float -> Gradient.t
-      = "ml_canvas_create_radial_gradient"
-
-    external createConicGradient :
-      'kind t -> center:Point.t -> angle:float -> Gradient.t
-      = "ml_canvas_create_conic_gradient"
-
-    (* Patterns *)
-
-    external createPattern :
-      'kind t -> ImageData.t -> Pattern.repeat -> Pattern.t
-      = "ml_canvas_create_pattern"
-
-    (* Comparison *)
+    (* Comparison and hash functions *)
 
     let () =
       Callback.register "Hashtbl.hash" Hashtbl.hash
@@ -1188,7 +1180,7 @@ module V1 = struct
     external getCurrentTimestamp : unit -> Event.timestamp
       = "ml_canvas_get_current_timestamp"
 
-    external getCanvas : int -> 'kind Canvas.t option
+    external getCanvas : int -> 'kind Canvas.t
       = "ml_canvas_get_canvas"
 
     let run k =
