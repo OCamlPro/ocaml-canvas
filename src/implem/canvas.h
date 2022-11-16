@@ -37,6 +37,7 @@ DECLARE_OBJECT_METHODS(canvas_t, canvas)
 
 canvas_t *
 canvas_create_onscreen(
+  bool autocommit,
   bool decorated,
   bool resizeable,
   bool minimize,
@@ -84,6 +85,14 @@ void canvas_close(
 
 bool canvas_is_closed(
   const canvas_t *canvas);
+
+
+
+/* Rendering */
+
+void
+canvas_commit(
+  canvas_t *canvas);
 
 
 

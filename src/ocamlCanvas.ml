@@ -551,12 +551,12 @@ module V1 = struct
     (* Creation *)
 
     external createOnscreen :
-      ?decorated:bool -> ?resizeable:bool -> ?minimize:bool ->
-      ?maximize:bool -> ?close:bool -> ?title:string ->
+      ?autocommit:bool -> ?decorated:bool -> ?resizeable:bool ->
+      ?minimize:bool -> ?maximize:bool -> ?close:bool -> ?title:string ->
       ?pos:(int * int) -> size:(int * int) -> unit -> [> `Onscreen] t
       = "ml_canvas_create_onscreen" "ml_canvas_create_onscreen_n"
 
-    external createOffscreen : size:(int * int) -> [> `Offscreen] t
+    external createOffscreen : size:(int * int) -> unit -> [> `Offscreen] t
       = "ml_canvas_create_offscreen"
 
     external createOffscreenFromImageData : ImageData.t -> [> `Offscreen] t
@@ -582,6 +582,11 @@ module V1 = struct
 
     external close : [< `Onscreen] t -> unit
       = "ml_canvas_close"
+
+    (* Rendering *)
+
+    external commit : [< `Onscreen] t -> unit
+      = "ml_canvas_commit"
 
     (* Configuration *)
 

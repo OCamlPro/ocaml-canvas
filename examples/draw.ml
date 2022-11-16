@@ -61,7 +61,7 @@ let () =
   Canvas.setStrokeColor c Color.white;
   Canvas.setLineDash c [| 20.0; 20.0 |];
 
-  let draw = Canvas.createOffscreen ~size:size_i in
+  let draw = Canvas.createOffscreen ~size:size_i () in
   Canvas.setStrokeColor draw Color.white;
   Canvas.setLineJoin draw Join.Round;
   Canvas.setLineCap draw Cap.Round;

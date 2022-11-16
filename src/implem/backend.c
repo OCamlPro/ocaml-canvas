@@ -63,7 +63,10 @@ _backend_process_event(
 
   switch (event->type) {
     case EVENT_PRESENT: /* internal event */
-      surface_present(canvas->surface, &event->desc.present.data);
+      if ((canvas->autocommit == true) || (canvas->committed == true)) {
+        canvas->committed = false;
+        surface_present(canvas->surface, &event->desc.present.data);
+      }
       result = true;
       break;
     case EVENT_RESIZE:
@@ -76,7 +79,7 @@ _backend_process_event(
     case EVENT_CLOSE:
       event_notify(next_listener, event);
       canvas_close(canvas);
-      result = false; // true to prevent close ?
+      result = false;
       break;
     default:
       result = event_notify(next_listener, event);

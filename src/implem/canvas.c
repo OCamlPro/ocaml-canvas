@@ -50,6 +50,7 @@ IMPLEMENT_OBJECT_METHODS(canvas_t, canvas, _canvas_destroy)
 static canvas_t *
 _canvas_create_internal(
   canvas_type_t type,
+  bool autocommit,    /* on-screen only */
   bool decorated,     /* on-screen only */
   bool resizeable,    /* on-screen only */
   bool minimize,      /* on-screen only */
@@ -139,6 +140,9 @@ _canvas_create_internal(
   canvas->clip_region = pixmap_null();
   canvas->clip_region_dirty = false;
 
+  canvas->autocommit = autocommit;
+  canvas->committed = false;
+
   canvas->id = backend_next_id();
 
   backend_add_canvas(canvas);
@@ -168,6 +172,7 @@ error_id:
 
 canvas_t *
 canvas_create_onscreen(
+  bool autocommit,
   bool decorated,
   bool resizeable,
   bool minimize,
@@ -179,7 +184,7 @@ canvas_create_onscreen(
   int32_t width,
   int32_t height)
 {
-  return _canvas_create_internal(CANVAS_ONSCREEN,
+  return _canvas_create_internal(CANVAS_ONSCREEN, autocommit,
                                  decorated, resizeable,
                                  minimize, maximize, close,
                                  title, x, y, width, height, NULL);
@@ -190,7 +195,7 @@ canvas_create_offscreen(
   int32_t width,
   int32_t height)
 {
-  return _canvas_create_internal(CANVAS_OFFSCREEN,
+  return _canvas_create_internal(CANVAS_OFFSCREEN, false,
                                  false, false, false, false, false,
                                  NULL, 0, 0, width, height, NULL);
 }
@@ -202,7 +207,7 @@ canvas_create_offscreen_from_pixmap(
   assert(pixmap != NULL);
   assert(pixmap_valid(*pixmap) == true);
 
-  return _canvas_create_internal(CANVAS_OFFSCREEN,
+  return _canvas_create_internal(CANVAS_OFFSCREEN, false,
                                  false, false, false, false, false,
                                  NULL, 0, 0, pixmap->width, pixmap->height,
                                  pixmap);
@@ -219,7 +224,7 @@ canvas_create_offscreen_from_png(
   if (res == false) {
     return NULL;
   }
-  return _canvas_create_internal(CANVAS_OFFSCREEN,
+  return _canvas_create_internal(CANVAS_OFFSCREEN, false,
                                  false, false, false, false, false,
                                  NULL, 0, 0, pixmap.width, pixmap.height,
                                  &pixmap);
@@ -320,6 +325,21 @@ bool canvas_is_closed(
   assert(canvas != NULL);
 
   return (canvas->window == NULL);
+}
+
+
+
+/* Rendering */
+
+void
+canvas_commit(
+  canvas_t *canvas)
+{
+  assert(canvas != NULL);
+
+  if (canvas->window != NULL) {
+    canvas->committed = true;
+  }
 }
 
 

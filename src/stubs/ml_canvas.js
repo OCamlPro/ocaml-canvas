@@ -615,8 +615,8 @@ function _ml_canvas_decorate(header, resizeable, minimize,
 //Provides: ml_canvas_create_onscreen
 //Requires: _ml_canvas_ensure_initialized, _ml_canvas_valid_canvas_size, _next_id, _header_down_handler, _surface_down_handler, _up_handler, _move_handler, _ml_canvas_decorate, Optional_bool_val, Optional_val
 //Requires: caml_invalid_argument
-function ml_canvas_create_onscreen(decorated, resizeable, minimize, maximize,
-                                   close, title, pos, size) {
+function ml_canvas_create_onscreen(autocmmit, decorated, resizeable, minimize,
+                                   maximize, close, title, pos, size) {
 
   _ml_canvas_ensure_initialized();
 
@@ -630,6 +630,7 @@ function ml_canvas_create_onscreen(decorated, resizeable, minimize, maximize,
   var x = pos[1];
   var y = pos[2];
 
+  var autocommit = Optional_bool_val(autocommit, true);
   var decorated = Optional_bool_val(decorated, true);
   var resizeable = Optional_bool_val(resizeable, true);
   var minimize = Optional_bool_val(minimize, true);
@@ -649,6 +650,7 @@ function ml_canvas_create_onscreen(decorated, resizeable, minimize, maximize,
     width: width,
     height: height,
     id: id,
+    autocommit: autocommit,
     resizeable: resizeable,
     minimize: minimize,
     maximize: maximize,
@@ -735,6 +737,7 @@ function ml_canvas_create_offscreen(size) {
     width: width,
     height: height,
     id: id,
+    autocommit: false,
     resizeable: false,
     minimize: false,
     maximize: false,
@@ -866,6 +869,15 @@ function ml_canvas_close(canvas) {
       canvas.frame = null;
     }
   }
+  return 0;
+}
+
+
+
+/* Rendering */
+
+// Provides: ml_canvas_commit
+function ml_canvas_commit(canvas) {
   return 0;
 }
 

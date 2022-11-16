@@ -34,6 +34,8 @@ typedef struct canvas_t {
   path2d_t *path_2d;
   pixmap_t clip_region;
   bool clip_region_dirty;
+  bool autocommit;
+  bool committed;
   int32_t id;
   canvas_type_t type;
 } canvas_t;
