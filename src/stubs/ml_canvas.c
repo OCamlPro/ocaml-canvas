@@ -113,8 +113,8 @@ ml_canvas_image_data_get_size(
   CAMLlocal1(mlResult);
   pixmap_t pixmap = Pixmap_val(mlPixmap);
   mlResult = caml_alloc_tuple(2);
-  Store_field(mlResult, 0, Val_int32_clip(pixmap.width));
-  Store_field(mlResult, 1, Val_int32_clip(pixmap.height));
+  Store_field(mlResult, 0, Val_int31_clip(pixmap.width));
+  Store_field(mlResult, 1, Val_int31_clip(pixmap.height));
   CAMLreturn(mlResult);
 }
 
@@ -139,13 +139,13 @@ ml_canvas_image_data_sub(
   value mlSize)
 {
   CAMLparam3(mlPixmap, mlPos, mlSize);
-  int32_t width = Int32_val_clip(Field(mlSize, 0));
-  int32_t height = Int32_val_clip(Field(mlSize, 1));
+  int32_t width = Int31_val_clip(Field(mlSize, 0));
+  int32_t height = Int31_val_clip(Field(mlSize, 1));
   if (!_ml_canvas_valid_canvas_size(width, height)) {
     caml_invalid_argument("ImageData.sub: invalid dimensions");
   }
-  int32_t sx = Int32_val_clip(Field(mlPos, 0));
-  int32_t sy = Int32_val_clip(Field(mlPos, 1));
+  int32_t sx = Int31_val_clip(Field(mlPos, 0));
+  int32_t sy = Int31_val_clip(Field(mlPos, 1));
   pixmap_t src_pixmap = Pixmap_val(mlPixmap);
   pixmap_t dst_pixmap = pixmap(width, height, NULL);
   if (pixmap_valid(dst_pixmap) == false) {
@@ -164,19 +164,19 @@ ml_canvas_image_data_blit(
   value mlSize)
 {
   CAMLparam5(mlDstPixmap, mlDPos, mlSrcPixmap, mlSPos, mlSize);
-  int32_t width = Int32_val_clip(Field(mlSize, 0));
-  int32_t height = Int32_val_clip(Field(mlSize, 1));
+  int32_t width = Int31_val_clip(Field(mlSize, 0));
+  int32_t height = Int31_val_clip(Field(mlSize, 1));
   if (!_ml_canvas_valid_canvas_size(width, height)) {
     caml_invalid_argument("ImageData.blit: invalid dimensions");
   }
   pixmap_t dst_pixmap = Pixmap_val(mlDstPixmap);
   pixmap_t src_pixmap = Pixmap_val(mlSrcPixmap);
   pixmap_blit(&dst_pixmap,
-              Int32_val_clip(Field(mlDPos, 0)),
-              Int32_val_clip(Field(mlDPos, 1)),
+              Int31_val_clip(Field(mlDPos, 0)),
+              Int31_val_clip(Field(mlDPos, 1)),
               &src_pixmap,
-              Int32_val_clip(Field(mlSPos, 0)),
-              Int32_val_clip(Field(mlSPos, 1)),
+              Int31_val_clip(Field(mlSPos, 0)),
+              Int31_val_clip(Field(mlSPos, 1)),
               width,
               height);
   CAMLreturn(Val_unit);
@@ -190,8 +190,8 @@ ml_canvas_image_data_get_pixel(
   CAMLparam2(mlPixmap, mlPos);
   pixmap_t pixmap = Pixmap_val(mlPixmap);
   CAMLreturn(caml_copy_int32(color_to_int(
-             pixmap_at(pixmap, Int32_val_clip(Field(mlPos, 1)),
-                               Int32_val_clip(Field(mlPos, 0))))));
+             pixmap_at(pixmap, Int31_val_clip(Field(mlPos, 1)),
+                               Int31_val_clip(Field(mlPos, 0))))));
 }
 
 CAMLprim value
@@ -202,8 +202,8 @@ ml_canvas_image_data_put_pixel(
 {
   CAMLparam3(mlPixmap, mlPos, mlColor);
   pixmap_t pixmap = Pixmap_val(mlPixmap);
-  pixmap_at(pixmap, Int32_val_clip(Field(mlPos, 1)),
-                    Int32_val_clip(Field(mlPos, 0))) =
+  pixmap_at(pixmap, Int31_val_clip(Field(mlPos, 1)),
+                    Int31_val_clip(Field(mlPos, 0))) =
     color_of_int(Int32_val(mlColor));
   CAMLreturn(Val_unit);
 }
@@ -220,8 +220,8 @@ ml_canvas_image_data_import_png(
   const char * filename = String_val(mlFilename);
   pixmap_t pixmap = Pixmap_val(mlPixmap);
   bool res = impexp_import_png(&pixmap,
-                               Int32_val_clip(Field(mlDPos, 0)),
-                               Int32_val_clip(Field(mlDPos, 1)),
+                               Int31_val_clip(Field(mlDPos, 0)),
+                               Int31_val_clip(Field(mlDPos, 1)),
                                filename);
   if ((res == false) || (pixmap_valid(pixmap) == false)) {
     caml_raise_with_string(*caml_named_value("Read_png_failed"), filename);
@@ -681,15 +681,15 @@ ml_canvas_create_onscreen_n(
   CAMLxparam5(mlClose, mlTitle, mlPos, mlSize, mlUnit);
   CAMLlocal1(mlCanvas);
   _ml_canvas_ensure_initialized();
-  int32_t width = Int32_val_clip(Field(mlSize, 0));
-  int32_t height = Int32_val_clip(Field(mlSize, 1));
+  int32_t width = Int31_val_clip(Field(mlSize, 0));
+  int32_t height = Int31_val_clip(Field(mlSize, 1));
   if (!_ml_canvas_valid_canvas_size(width, height)) {
     caml_invalid_argument("Canvas.createOnscreen: invalid dimensions");
   }
   int32_t x = 0, y = 0;
   if (Is_some(mlPos)) {
-    x = Int32_val_clip(Field(Some_val(mlPos), 0));
-    y = Int32_val_clip(Field(Some_val(mlPos), 1));
+    x = Int31_val_clip(Field(Some_val(mlPos), 0));
+    y = Int31_val_clip(Field(Some_val(mlPos), 1));
   }
   canvas_t *canvas =
     canvas_create_onscreen(Optional_bool_val(mlAutocommit, true),
@@ -717,8 +717,8 @@ ml_canvas_create_offscreen(
   CAMLparam1(mlSize);
   CAMLlocal1(mlCanvas);
   _ml_canvas_ensure_initialized();
-  int32_t width = Int32_val_clip(Field(mlSize, 0));
-  int32_t height = Int32_val_clip(Field(mlSize, 1));
+  int32_t width = Int31_val_clip(Field(mlSize, 0));
+  int32_t height = Int31_val_clip(Field(mlSize, 1));
   if (!_ml_canvas_valid_canvas_size(width, height)) {
     caml_invalid_argument("Canvas.createOffscreen: invalid dimensions");
   }
@@ -840,8 +840,8 @@ ml_canvas_get_size(
   CAMLlocal1(mlResult);
   pair_t(int32_t) result = canvas_get_size(Canvas_val(mlCanvas));
   mlResult = caml_alloc_tuple(2);
-  Store_field(mlResult, 0, Val_int32_clip(fst(result)));
-  Store_field(mlResult, 1, Val_int32_clip(snd(result)));
+  Store_field(mlResult, 0, Val_int31_clip(fst(result)));
+  Store_field(mlResult, 1, Val_int31_clip(snd(result)));
   CAMLreturn(mlResult);
 }
 
@@ -851,8 +851,8 @@ ml_canvas_set_size(
   value mlSize)
 {
   CAMLparam2(mlCanvas, mlSize);
-  int32_t width = Int32_val_clip(Field(mlSize, 0));
-  int32_t height = Int32_val_clip(Field(mlSize, 1));
+  int32_t width = Int31_val_clip(Field(mlSize, 0));
+  int32_t height = Int31_val_clip(Field(mlSize, 1));
   if (!_ml_canvas_valid_canvas_size(width, height)) {
     caml_invalid_argument("Canvas.setSize: invalid dimensions");
   }
@@ -869,8 +869,8 @@ ml_canvas_get_position(
   CAMLlocal1(mlResult);
   pair_t(int32_t) result = canvas_get_position(Canvas_val(mlCanvas));
   mlResult = caml_alloc_tuple(2);
-  Store_field(mlResult, 0, Val_int32_clip(fst(result)));
-  Store_field(mlResult, 1, Val_int32_clip(snd(result)));
+  Store_field(mlResult, 0, Val_int31_clip(fst(result)));
+  Store_field(mlResult, 1, Val_int31_clip(snd(result)));
   CAMLreturn(mlResult);
 }
 
@@ -881,8 +881,8 @@ ml_canvas_set_position(
 {
   CAMLparam2(mlCanvas, mlPos);
   canvas_set_position(Canvas_val(mlCanvas),
-                      Int32_val_clip(Field(mlPos, 0)),
-                      Int32_val_clip(Field(mlPos, 1)));
+                      Int31_val_clip(Field(mlPos, 0)),
+                      Int31_val_clip(Field(mlPos, 1)));
   CAMLreturn(Val_unit);
 }
 
@@ -1374,7 +1374,7 @@ ml_canvas_set_font(
                   String_val(mlFamily),
                   Double_val(mlSize),
                   Slant_val(mlSlant),
-                  Int32_val_clip(mlWeight));
+                  Int31_val_clip(mlWeight));
   CAMLreturn(Val_unit);
 }
 
@@ -1682,17 +1682,17 @@ ml_canvas_blit(
   value mlSize)
 {
   CAMLparam5(mlDstCanvas, mlDPos, mlSrcCanvas, mlSPos, mlSize);
-  int32_t width = Int32_val_clip(Field(mlSize, 0));
-  int32_t height = Int32_val_clip(Field(mlSize, 1));
+  int32_t width = Int31_val_clip(Field(mlSize, 0));
+  int32_t height = Int31_val_clip(Field(mlSize, 1));
   if (!_ml_canvas_valid_canvas_size(width, height)) {
     caml_invalid_argument("Canvas.blit: invalid dimensions");
   }
   canvas_blit(Canvas_val(mlDstCanvas),
-              Int32_val_clip(Field(mlDPos, 0)),
-              Int32_val_clip(Field(mlDPos, 1)),
+              Int31_val_clip(Field(mlDPos, 0)),
+              Int31_val_clip(Field(mlDPos, 1)),
               Canvas_val(mlSrcCanvas),
-              Int32_val_clip(Field(mlSPos, 0)),
-              Int32_val_clip(Field(mlSPos, 1)),
+              Int31_val_clip(Field(mlSPos, 0)),
+              Int31_val_clip(Field(mlSPos, 1)),
               width,
               height);
   CAMLreturn(Val_unit);
@@ -1710,8 +1710,8 @@ ml_canvas_get_pixel(
   CAMLparam2(mlCanvas, mlPos);
   CAMLreturn(caml_copy_int32(color_to_int(
              canvas_get_pixel(Canvas_val(mlCanvas),
-             Int32_val_clip(Field(mlPos, 0)),
-             Int32_val_clip(Field(mlPos, 1))))));
+             Int31_val_clip(Field(mlPos, 0)),
+             Int31_val_clip(Field(mlPos, 1))))));
 }
 
 CAMLprim value
@@ -1722,8 +1722,8 @@ ml_canvas_put_pixel(
 {
   CAMLparam3(mlCanvas, mlPos, mlColor);
   canvas_put_pixel(Canvas_val(mlCanvas),
-                   Int32_val_clip(Field(mlPos, 0)),
-                   Int32_val_clip(Field(mlPos, 1)),
+                   Int31_val_clip(Field(mlPos, 0)),
+                   Int31_val_clip(Field(mlPos, 1)),
                    color_of_int(Int32_val(mlColor)));
   CAMLreturn(Val_unit);
 }
@@ -1737,15 +1737,15 @@ ml_canvas_get_image_data(
   value mlSize)
 {
   CAMLparam3(mlCanvas, mlPos, mlSize);
-  int32_t width = Int32_val_clip(Field(mlSize, 0));
-  int32_t height = Int32_val_clip(Field(mlSize, 1));
+  int32_t width = Int31_val_clip(Field(mlSize, 0));
+  int32_t height = Int31_val_clip(Field(mlSize, 1));
   if (!_ml_canvas_valid_canvas_size(width, height)) {
     caml_invalid_argument("Canvas.getImageData: invalid dimensions");
   }
   pixmap_t pixmap =
     canvas_get_pixmap(Canvas_val(mlCanvas),
-                      Int32_val_clip(Field(mlPos, 0)),
-                      Int32_val_clip(Field(mlPos, 1)),
+                      Int31_val_clip(Field(mlPos, 0)),
+                      Int31_val_clip(Field(mlPos, 1)),
                       width,
                       height);
   if (pixmap_valid(pixmap) == false) {
@@ -1763,18 +1763,18 @@ ml_canvas_put_image_data(
   value mlSize)
 {
   CAMLparam5(mlCanvas, mlDPos, mlPixmap, mlSPos, mlSize);
-  int32_t width = Int32_val_clip(Field(mlSize, 0));
-  int32_t height = Int32_val_clip(Field(mlSize, 1));
+  int32_t width = Int31_val_clip(Field(mlSize, 0));
+  int32_t height = Int31_val_clip(Field(mlSize, 1));
   if (!_ml_canvas_valid_canvas_size(width, height)) {
     caml_invalid_argument("Canvas.putImageData: invalid dimensions");
   }
   pixmap_t pixmap = Pixmap_val(mlPixmap);
   canvas_put_pixmap(Canvas_val(mlCanvas),
-                    Int32_val_clip(Field(mlDPos, 0)),
-                    Int32_val_clip(Field(mlDPos, 1)),
+                    Int31_val_clip(Field(mlDPos, 0)),
+                    Int31_val_clip(Field(mlDPos, 1)),
                     &pixmap,
-                    Int32_val_clip(Field(mlSPos, 0)),
-                    Int32_val_clip(Field(mlSPos, 1)),
+                    Int31_val_clip(Field(mlSPos, 0)),
+                    Int31_val_clip(Field(mlSPos, 1)),
                     width,
                     height);
   CAMLreturn(Val_unit);
@@ -1790,8 +1790,8 @@ ml_canvas_import_png(
   CAMLparam4(mlCanvas, mlDPos, mlFilename, mlOnLoad);
   const char *filename = String_val(mlFilename);
   bool res = canvas_import_png(Canvas_val(mlCanvas),
-                               Int32_val_clip(Field(mlDPos, 0)),
-                               Int32_val_clip(Field(mlDPos, 1)),
+                               Int31_val_clip(Field(mlDPos, 0)),
+                               Int31_val_clip(Field(mlDPos, 1)),
                                filename);
   if (res == false) {
     caml_raise_with_string(*caml_named_value("Read_png_failed"), filename);

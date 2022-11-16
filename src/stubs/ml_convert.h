@@ -42,11 +42,11 @@ CAMLextern value caml_alloc_some(value v);
 #endif
 
 value
-Val_int32_clip(
-  int32_t i);
+Val_int31_clip(
+  intnat i);
 
-int32_t
-Int32_val_clip(
+intnat
+Int31_val_clip(
   value mlValue);
 
 bool
