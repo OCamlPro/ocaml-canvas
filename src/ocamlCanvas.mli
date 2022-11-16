@@ -788,26 +788,29 @@ module V1 : sig
     (** {1 Creation} *)
 
     val createOnscreen :
-      ?decorated:bool -> ?resizeable:bool -> ?minimize:bool ->
-      ?maximize:bool -> ?close:bool -> ?title:string ->
+      ?autocommit:bool -> ?decorated:bool -> ?resizeable:bool ->
+      ?minimize:bool -> ?maximize:bool -> ?close:bool -> ?title:string ->
       ?pos:(int * int) -> size:(int * int) -> unit -> [> `Onscreen] t
-    (** [createOnscreen ?decorated ?resizeable ?minimize ?maximize ?close
-        ?title ?pos ~size ()] creates a windowed canvas of size [size].
-        The window title and position can be specified using
-        the optional arguments [title] and [pos].
+    (** [createOnscreen ?autocommit ?decorated ?resizeable ?minimize
+        ?maximize ?close ?title ?pos ~size ()] creates a windowed
+        canvas of size [size]. The window title and position can be
+        specified using the optional arguments [title] and [pos].
         The window decorations, which are active by default, can
         be disabled using the optional arguments [decorated],
         [resizeable], [minimize], [maximize], and [close].
         The [decorated] argument has a higher priority: if set to false,
         all other decoration arguments will be ignored (considered to be
         false), and all decorations will be removed from the window.
+        The [autocommit] option, which is active by default, indicates whether
+        the canvas should be automatically presented after each frame event.
+        See {!Canvas.commit} for more info on [autocommit].
 
         {b Exceptions:}
         {ul
         {- {!Exception.Not_initialized} if {!Backend.init} was not called}
         {- {!Invalid_argument} if either component of [size] is outside the range 1-32767}} *)
 
-    val createOffscreen : size:(int * int) -> [> `Offscreen] t
+    val createOffscreen : size:(int * int) -> unit -> [> `Offscreen] t
     (** [createOffscreen ~size] creates an offscreen canvas of size [size]
 
         {b Exceptions:}
@@ -847,6 +850,18 @@ module V1 : sig
     (** [close c] closes the canvas [c], i.e. it permanently removes
         it from the screen and prevents it to receive events ;
         however it can still be used as an offscreen canvas. *)
+
+
+    (** {1 Rendering} *)
+
+    val commit : [< `Onscreen] t -> unit
+    (** [commit c] informs the backend that the canvas has been modified and
+        should be presented on screen. This is not necessary if the canvas has
+        been created with autocommit set to true, as in this case the canvas
+        will be automatically presented after each frame event. Note that
+        it is also useless when using the Javascript backend ; however, to
+        maintain consistent behavior between the various backends, do remember
+        to use [commit] on any canvas created with autocommit set to false. *)
 
 
     (** {1 Configuration} *)

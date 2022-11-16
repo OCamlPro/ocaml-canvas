@@ -61,7 +61,7 @@ let () =
 
   Canvas.show c;
 
-  let c2 = Canvas.createOffscreen ~size:(20, 20) in
+  let c2 = Canvas.createOffscreen ~size:(20, 20) () in
   Canvas.setFillColor c2 Color.blue;
   Canvas.fillRect c2 ~pos:(0.0, 0.0) ~size:(20.0, 20.0);
   Canvas.save c;

@@ -58,6 +58,10 @@ CAMLprim value name(value *a, int n) \
 CAMLprim value name(value *a, int n) \
 { return name##_n(a[0],a[1],a[2],a[3],a[4],a[5],a[6],a[7],a[8],a[9]); }
 
+#define BYTECODE_STUB_11(name) \
+CAMLprim value name(value *a, int n) \
+{ return name##_n(a[0],a[1],a[2],a[3],a[4],a[5],a[6],a[7],a[8],a[9],a[10]); }
+
 
 
 static bool _ml_canvas_initialized = false;
@@ -662,6 +666,7 @@ _ml_canvas_canvas_destroy_callback(
 
 CAMLprim value
 ml_canvas_create_onscreen_n(
+  value mlAutocommit, /* bool, optional, default = true */
   value mlDecorated,  /* bool, optional, default = true */
   value mlResizeable, /* bool, optional, default = true */
   value mlMinimize,   /* bool, optional, default = true */
@@ -672,8 +677,8 @@ ml_canvas_create_onscreen_n(
   value mlSize,       /* (int * int), non-optional */
   value mlUnit)
 {
-  CAMLparam5(mlDecorated, mlResizeable, mlMinimize, mlMaximize, mlClose);
-  CAMLxparam4(mlTitle, mlPos, mlSize, mlUnit);
+  CAMLparam5(mlAutocommit, mlDecorated, mlResizeable, mlMinimize, mlMaximize);
+  CAMLxparam5(mlClose, mlTitle, mlPos, mlSize, mlUnit);
   CAMLlocal1(mlCanvas);
   _ml_canvas_ensure_initialized();
   int32_t width = Int32_val_clip(Field(mlSize, 0));
@@ -687,7 +692,8 @@ ml_canvas_create_onscreen_n(
     y = Int32_val_clip(Field(Some_val(mlPos), 1));
   }
   canvas_t *canvas =
-    canvas_create_onscreen(Optional_bool_val(mlDecorated, true),
+    canvas_create_onscreen(Optional_bool_val(mlAutocommit, true),
+                           Optional_bool_val(mlDecorated, true),
                            Optional_bool_val(mlResizeable, true),
                            Optional_bool_val(mlMinimize, true),
                            Optional_bool_val(mlMaximize, true),
@@ -702,7 +708,7 @@ ml_canvas_create_onscreen_n(
   CAMLreturn(mlCanvas);
 }
 
-BYTECODE_STUB_9(ml_canvas_create_onscreen)
+BYTECODE_STUB_10(ml_canvas_create_onscreen)
 
 CAMLprim value
 ml_canvas_create_offscreen(
@@ -799,6 +805,18 @@ ml_canvas_close(
 {
   CAMLparam1(mlCanvas);
   canvas_close(Canvas_val(mlCanvas));
+  CAMLreturn(Val_unit);
+}
+
+
+
+/* Rendering */
+CAMLprim value
+ml_canvas_commit(
+  value mlCanvas)
+{
+  CAMLparam1(mlCanvas);
+  canvas_commit(Canvas_val(mlCanvas));
   CAMLreturn(Val_unit);
 }
 
