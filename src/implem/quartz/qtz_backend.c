@@ -327,10 +327,10 @@ _qtz_mouse_event_button(
       return BUTTON_LEFT;
     case NSEventTypeRightMouseDown:
     case NSEventTypeRightMouseUp:
-      return BUTTON_MIDDLE;
+      return BUTTON_RIGHT;
     case NSEventTypeOtherMouseDown:
     case NSEventTypeOtherMouseUp:
-      return BUTTON_RIGHT;
+      return BUTTON_MIDDLE;
     case NSEventTypeScrollWheel:
       if (ev.deltaZ > 0.0) { return BUTTON_WHEEL_UP; }
       else { return BUTTON_WHEEL_DOWN; }

@@ -75,7 +75,7 @@ surface_create_x11_impl(
   assert(target->wid != XCB_WINDOW_NONE);
   // cid ?
   assert(width > 0);
-  assert(height  > 0);
+  assert(height > 0);
   assert(data != NULL);
   assert(*data == NULL);
 

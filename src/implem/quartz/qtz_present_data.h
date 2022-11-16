@@ -14,7 +14,7 @@
 #include <stdbool.h>
 
 typedef struct qtz_present_data_t {
-  bool use_lock;
+  void *dummy;
 } qtz_present_data_t;
 
 #endif /* __QTZ_PRESENT_DATA_H */

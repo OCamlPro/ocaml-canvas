@@ -94,16 +94,12 @@ surface_create_qtz_impl(
     return NULL;
   }
 
-  /* Flip vertical coordinates, so origin is at the top-left */
-  //CGContextConcatCTM(ctxt, CGAffineTransformMake(1, 1, 0, -1, 0, height));
-
   impl->type = IMPL_QUARTZ;
   impl->nsview = target->nsview;
   impl->ctxt = ctxt;
 
   return impl;
 }
-
 
 void
 surface_destroy_qtz_impl(
@@ -188,88 +184,23 @@ surface_present_qtz_impl(
   assert(impl != NULL);
   assert(present_data != NULL);
   assert(width > 0);
-  assert(height  > 0);
+  assert(height > 0);
 
-  if (present_data->use_lock) {
-    if (![impl->nsview lockFocusIfCanDraw])
-      printf("Can't lock\n");
-  }
-
-  CGContextRef ctxt = [[NSGraphicsContext currentContext] graphicsPort];
-
+  CGContextRef ctxt = [[NSGraphicsContext currentContext] CGContext];
+  // CGContext on 10.10 and above, graphicsPort on 10.13 and below
 
   CGContextSaveGState(ctxt);
 
-  //CGAffineTransform at = CGContextGetCTM(ctxt);
-  //printf("Transf: %f, %f, %f, %f, %f, %f\n", at.a, at.b, at.c, at.d, at.tx, at.ty);
-
-  /* Flip vertical coordinates, so origin is at the top-left */
-  //CGContextConcatCTM(impl->ctxt, CGAffineTransformMake(1, 0, 0, -1, 0, height));
-
-
-
-//static CGFloat colors[4] = { 1.0, 1.0, 1.0, 1.0 };
-/*
-if (colors[0] == 0.0) { colors[0] = 1.0; colors[1] = 0.0; }
-else if (colors[1] == 0.0) { colors[1] = 1.0; colors[2] = 0.0; }
-else if (colors[2] == 0.0) { colors[2] = 1.0; colors[0] = 0.0; }
-*/
-/*
-CGContextSetLineWidth(impl->ctxt, 4.0);
-CGContextSetStrokeColor(impl->ctxt, colors);
-CGContextSetFillColor(impl->ctxt, colors);
-CGContextMoveToPoint(impl->ctxt, 10, 40);
-CGContextAddLineToPoint(impl->ctxt, 50, 20);
-CGContextDrawPath(impl->ctxt, kCGPathStroke);
-*/
-/*
-CGFontRef font = CGFontCreateWithFontName(CFSTR("Arial"));
-if (font == NULL) printf("Font failure\n");
-CGContextSetFont(impl->ctxt, font);
-CGContextSetFontSize(impl->ctxt, 12.0);*//*
-CGContextSelectFont(impl->ctxt, "Arial", 40, kCGEncodingMacRoman);
-//CGContextSetTextPosition(impl->ctxt, 50, 50);
-CGContextSetTextDrawingMode(impl->ctxt, kCGTextFill);
-CGContextSetTextMatrix(impl->ctxt, CGAffineTransformIdentity);
-CGContextShowTextAtPoint(impl->ctxt, 50, 50, "Test", 4);
-*/
-
-  // the underlying memory is copy-on write, so we should
-  // just create this object before blitting and then
-  // release it immediately
-
+  // The underlying memory is copy-on write, so we should just create
+  // this object before blitting and then release it immediately
   CGImageRef img = CGBitmapContextCreateImage(impl->ctxt);
   CGContextDrawImage(ctxt, CGRectMake(0, impl->nsview.frame.size.height - height, width, height), img);
-  CGImageRelease(img);
-
-  CGContextRestoreGState(ctxt);
 
   [[NSGraphicsContext currentContext] flushGraphics];
 
-  if (present_data->use_lock) {
-    [impl->nsview unlockFocus];
-  }
-
-
-/*
-  NSGraphicsContext *cc = [NSGraphicsContext currentContext];
-
-  NSGraphicsContext *wc = [NSGraphicsContext graphicsContextWithWindow:[impl->nsview window]];
-  [NSGraphicsContext setCurrentContext:wc];
-
-  CGContextRef ctxt = [wc CGContext];
-
-  // the underlying memory is copy-on write, so we should
-  // just create this object before blitting and then
-  // release it immediately
-  CGImageRef img = CGBitmapContextCreateImage(impl->ctxt);
-  CGContextDrawImage(ctxt, CGRectMake(0, 0, width, height), img);
   CGImageRelease(img);
 
-  [wc flushGraphics];
-
-  [NSGraphicsContext setCurrentContext:cc];
-*/
+  CGContextRestoreGState(ctxt);
 }
 
 #else

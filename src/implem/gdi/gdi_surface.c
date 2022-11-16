@@ -83,7 +83,7 @@ surface_create_gdi_impl(
   assert(target != NULL);
   assert(target->hwnd != NULL);
   assert(width > 0);
-  assert(height  > 0);
+  assert(height > 0);
   assert(data != NULL);
   assert(*data == NULL);
 
