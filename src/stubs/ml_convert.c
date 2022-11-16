@@ -99,32 +99,30 @@ CAMLexport int caml_weak_array_get(value eph, mlsize_t offset, value *key)
 
 
 value
-Val_int32_clip(
-  int32_t i)
+Val_int31_clip(
+  intnat i)
 {
   CAMLparam0();
-  if (sizeof(intnat) == 4) {
-    if (i < INT32_MIN/2) {
-      i = INT32_MIN/2;
-    } else if (i > INT32_MAX/2) {
-      i = INT32_MAX/2;
-    }
+  if (i < INT32_MIN/2) {
+    i = INT32_MIN/2;
+  } else if (i > INT32_MAX/2) {
+    i = INT32_MAX/2;
   }
   CAMLreturn(Val_long(i));
 }
 
-int32_t
-Int32_val_clip(
+intnat
+Int31_val_clip(
   value mlValue)
 {
   CAMLparam1(mlValue);
   intnat i = Long_val(mlValue);
-  if (i < INT32_MIN) {
-    i = INT32_MIN;
-  } else if (i > INT32_MAX) {
-    i = INT32_MAX;
+  if (i < INT32_MIN/2) {
+    i = INT32_MIN/2;
+  } else if (i > INT32_MAX/2) {
+    i = INT32_MAX/2;
   }
-  CAMLreturnT(int32_t, i);
+  CAMLreturnT(intnat, i);
 }
 
 bool
@@ -591,8 +589,8 @@ Val_resize_event(
   mlSize = caml_alloc_tuple(2);
   Store_field(mlEventDesc, 0, Val_canvas((canvas_t *)(event->target)));
   Store_field(mlEventDesc, 1, caml_copy_int64(event->time));
-  Store_field(mlSize, 0, Val_int32_clip(event->desc.resize.width));
-  Store_field(mlSize, 1, Val_int32_clip(event->desc.resize.height));
+  Store_field(mlSize, 0, Val_int31_clip(event->desc.resize.width));
+  Store_field(mlSize, 1, Val_int31_clip(event->desc.resize.height));
   Store_field(mlEventDesc, 2, mlSize);
   CAMLreturn(mlEventDesc);
 }
@@ -607,8 +605,8 @@ Val_move_event(
   mlPos = caml_alloc_tuple(2);
   Store_field(mlEventDesc, 0, Val_canvas((canvas_t *)(event->target)));
   Store_field(mlEventDesc, 1, caml_copy_int64(event->time));
-  Store_field(mlPos, 0, Val_int32_clip(event->desc.move.x));
-  Store_field(mlPos, 1, Val_int32_clip(event->desc.move.y));
+  Store_field(mlPos, 0, Val_int31_clip(event->desc.move.x));
+  Store_field(mlPos, 1, Val_int31_clip(event->desc.move.y));
   Store_field(mlEventDesc, 2, mlPos);
   CAMLreturn(mlEventDesc);
 }
@@ -652,8 +650,8 @@ Val_button_event(
   mlPos = caml_alloc_tuple(2);
   Store_field(mlEventDesc, 0, Val_canvas((canvas_t *)(event->target)));
   Store_field(mlEventDesc, 1, caml_copy_int64(event->time));
-  Store_field(mlPos, 0, Val_int32_clip(event->desc.button.x));
-  Store_field(mlPos, 1, Val_int32_clip(event->desc.button.y));
+  Store_field(mlPos, 0, Val_int31_clip(event->desc.button.x));
+  Store_field(mlPos, 1, Val_int31_clip(event->desc.button.y));
   Store_field(mlEventDesc, 2, mlPos);
   Store_field(mlEventDesc, 3, Val_button(event->desc.button.button));
   Store_field(mlEventDesc, 4, Val_button_state(event->desc.button.state));
@@ -670,8 +668,8 @@ Val_cursor_event(
   mlPos = caml_alloc_tuple(2);
   Store_field(mlEventDesc, 0, Val_canvas((canvas_t *)(event->target)));
   Store_field(mlEventDesc, 1, caml_copy_int64(event->time));
-  Store_field(mlPos, 0, Val_int32_clip(event->desc.cursor.x));
-  Store_field(mlPos, 1, Val_int32_clip(event->desc.cursor.y));
+  Store_field(mlPos, 0, Val_int31_clip(event->desc.cursor.x));
+  Store_field(mlPos, 1, Val_int31_clip(event->desc.cursor.y));
   Store_field(mlEventDesc, 2, mlPos);
   CAMLreturn(mlEventDesc);
 }
