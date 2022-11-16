@@ -183,14 +183,11 @@
     evt.type = EVENT_PRESENT;
     evt.time = qtz_get_time();
     evt.target = (void *)w;
-    evt.desc.present.data.qtz.use_lock = true;//with user data field
     event_notify(qtz_back->listener, &evt);
   }
 }
 
 @end
-
-
 
 
 
