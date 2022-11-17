@@ -10,8 +10,6 @@
 
 #ifdef HAS_GDI
 
-#include <stdio.h>
-
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -119,7 +117,7 @@ gdi_backend_init(
   wcex.hIconSm        = NULL;
   wcex.lpszMenuName   = NULL;
   wcex.hCursor        = LoadCursor(NULL, IDC_ARROW);
-  wcex.hbrBackground  = NULL; //(HBRUSH)(COLOR_WINDOW+1);
+  wcex.hbrBackground  = (HBRUSH)GetStockObject(BLACK_BRUSH);
   wcex.hInstance      = gdi_back->hinst;
   wcex.lpfnWndProc    = _gdi_window_proc;
 
@@ -212,7 +210,7 @@ _gdi_present_window(
     evt.type = EVENT_PRESENT;
     evt.time = gdi_get_time();
     evt.target = (void *)w;
-    evt.desc.present.data.gdi.use_begin = false;//with user data field
+    evt.desc.present.data.gdi.use_begin = false;
     event_notify(gdi_back->listener, &evt);
   }
 }
@@ -224,8 +222,13 @@ _gdi_render_all_windows(
   event_t evt;
   gdi_window_t *w = NULL;
   hashtable_iterator_t *i = NULL;
-  evt.type = EVENT_FRAME;
+
+  evt.type = EVENT_FRAME_CYCLE;
   evt.time = gdi_get_time();
+  evt.target = (void *)NULL;
+  event_notify(gdi_back->listener, &evt);
+
+  evt.type = EVENT_FRAME;
   i = ht_get_iterator(gdi_back->hwnd_to_win);
   if (i != NULL) {
     while ((w = (gdi_window_t *)ht_iterator_next(i)) != NULL) {
@@ -371,27 +374,6 @@ _gdi_window_proc(
   event_t evt;
 
   if (gdi_back->listener == NULL) {
-    printf("Listener not set for event %d\n", msg);
-/*
-   1     WM_CREATE
-   3     WM_MOVE
-   5     WM_SIZE
-   6     WM_ACTIVATE
-   7     WM_SETFOCUS
-  20(x2) WM_ERASEBKGND
-  24     WM_SHOWWINDOW
-  28     WM_ACTIVATEAPP
-  36     WM_GETMINMAXINFO
-  70(x3) WM_WINDOWPOSCHANGING
-  71     WM_WINDOWPOSCHANGED
- 127(x3) WM_GETICON
- 129     WM_NCCREATE
- 131(x2) WM_NCCALCSIZE
- 133(x2) WM_NCPAINT
- 134     WM_NCACTIVATE
- 641     WM_IME_SETCONTEXT
- 642     WM_IME_NOTIFY
-*/
     return DefWindowProc(hwnd, msg, wparam, lparam);
   }
 
@@ -402,8 +384,9 @@ _gdi_window_proc(
       if (!gdi_back->modal_op) {
         gdi_back->modal_op = true;
         gdi_back->modal_timer = SetTimer(NULL, 0, 1, _gdi_modal_timer_proc);
-        if (gdi_back->modal_timer == 0)
-          printf("Set timer failed\n");
+        if (gdi_back->modal_timer == 0) {
+          // Failed
+        }
       }
       return 0;
 
@@ -420,48 +403,15 @@ _gdi_window_proc(
 
     case WM_PAINT: {
       PAINTSTRUCT ps;
-      /*HDC hdc =*/ BeginPaint(hwnd, &ps);
+      BeginPaint(hwnd, &ps);
       EndPaint(hwnd, &ps);
-/*
-      w = gdi_backend_get_window(hwnd);
-      if (w != NULL) {
-        bool paint = true;
-        evt.type = EVENT_EXPOSE;
-        evt.time = gdi_get_time();
-        evt.target = (void *)w;
-        evt.desc.expose.data = (void *)&paint;
-        event_notify(gdi_back->listener, &evt);
-      }
-*/
       return 0;
     }
 
-/*
-    // Window size/position changed by SetWindowPos or window management fct
-    // DefWindowProc generates WM_SIZE/WM_MOVE messages
-    case WM_WINDOWPOSCHANGED:
-      w = gdi_backend_get_window(msg.hwnd);
-      if (w != NULL) {
-        WINDOWPOS *window_pos = (WINDOWPOS *)(msg.lParam);
-        int width = window_pos->cx;
-        int height = window_pos->cy;
-        //int width = (msg.lParam & 0x0000FFFF);
-        //int height = (msg.lParam & 0xFFFF0000) >> 16;
-        evt.type = EVENT_RESIZE;
-        evt.target = (void *)w;
-        evt.desc.resize.width = width;
-        evt.desc.resize.height = height;
-        event_notify(listener, &evt);
-        }
-      return 0;
-*/
-
-    case WM_DESTROY:
-   //   PostQuitMessage(0);
-  // send special message when all windows closed ?
+    case WM_DESTROY: // Windows actually closed
       return 0;
 
-    case WM_CLOSE: // close button clicked
+    case WM_CLOSE: // Close button clicked
       w = gdi_backend_get_window(hwnd);
       if (w != NULL) {
         evt.type = EVENT_CLOSE;
@@ -513,8 +463,6 @@ _gdi_window_proc(
       return 0;
 
     case WM_APPCOMMAND:
-      printf("App command: %02llX\n", wparam);
-      fflush(stdout);
       return 0;
 
     /* Note: for some reason, there are two messages when CapsLock is pressed */

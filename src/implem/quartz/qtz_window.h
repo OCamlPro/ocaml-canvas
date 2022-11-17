@@ -11,6 +11,9 @@
 #ifndef __QTZ_WINDOW_H
 #define __QTZ_WINDOW_H
 
+#include <stdint.h>
+#include <stdbool.h>
+
 #include "qtz_target.h"
 
 typedef struct qtz_window_t qtz_window_t;

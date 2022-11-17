@@ -14,6 +14,7 @@
 #include <stdint.h>
 
 #include "point.h"
+#include "path.h"
 
 #define NB_PRIMS 5
 

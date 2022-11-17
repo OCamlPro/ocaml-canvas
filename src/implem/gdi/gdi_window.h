@@ -11,6 +11,9 @@
 #ifndef __GDI_WINDOW_H
 #define __GDI_WINDOW_H
 
+#include <stdint.h>
+#include <stdbool.h>
+
 #include "gdi_target.h"
 
 typedef struct gdi_window_t gdi_window_t;

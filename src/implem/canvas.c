@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <memory.h>
+#include <string.h>
 #include <math.h>
 #include <assert.h>
 
@@ -937,11 +937,6 @@ canvas_set_font(
   assert(weight >= 0);
 
   font_desc_set(c->state->font_desc, family, size, slant, weight);
-/*
-  double sx, sy;
-  transform_extract_scale(c->state->transform, &sx, &sy);
-  font_desc_scale(c->state->font_desc, sy);
-*/
 }
 
 color_t_
@@ -1596,13 +1591,7 @@ canvas_fill_text(
   assert(c->state != NULL);
   assert(text != NULL);
 
-/*
-  double sx, sy;
-  transform_extract_scale(c->state->transform, &sx, &sy);
-  font_desc_scale(c->state->font_desc, sy);
-*/
-
-// TODO: handle both vector and bitmap fonts
+  // TODO: handle both vector and bitmap fonts
 
   _canvas_clip_region_ensure(c);
 

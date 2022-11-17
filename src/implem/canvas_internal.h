@@ -12,6 +12,7 @@
 #define __CANVAS_INTERNAL_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "object.h"
 #include "list.h"
@@ -20,6 +21,7 @@
 #include "state.h"
 #include "font.h"
 #include "path2d.h"
+#include "pixmap.h"
 #include "canvas.h"
 
 typedef struct canvas_t {

@@ -14,7 +14,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <memory.h>
+#include <string.h>
 #include <setjmp.h>
 #include <assert.h>
 

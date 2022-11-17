@@ -3,10 +3,8 @@
 
 (env
  (dev (flags -g)
-      (c_flags -O0 -g -ggdb -Wall -Werror -fstrict-aliasing
-       -Wstrict-aliasing -Wno-missing-braces))
- (release (c_flags -O2 -DNDEBUG -Wall -Werror -fstrict-aliasing
-           -Wstrict-aliasing -Wno-missing-braces)))
+      (c_flags -O0 -g -ggdb -Wall -Wstrict-aliasing -Werror))
+ (release (c_flags -O2 -DNDEBUG -Wall -Wstrict-aliasing)))
 
 (rule
  (targets ccopt.sexp cclib.sexp)

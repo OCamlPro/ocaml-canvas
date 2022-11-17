@@ -67,7 +67,8 @@ _qtz_backend_update_layout(
 {
   TISInputSourceRef inputSourceRef = TISCopyCurrentKeyboardLayoutInputSource();
   CFDataRef layoutDataRef =
-    (CFDataRef)TISGetInputSourceProperty(inputSourceRef, kTISPropertyUnicodeKeyLayoutData);
+    (CFDataRef)TISGetInputSourceProperty(inputSourceRef,
+                                         kTISPropertyUnicodeKeyLayoutData);
   qtz_back->layout = (UCKeyboardLayout *)CFDataGetBytePtr(layoutDataRef);
   CFRelease(inputSourceRef);
 }
@@ -113,13 +114,8 @@ qtz_backend_init(
 
   [NSApplication sharedApplication];
 
-  //  if (![[NSRunningApplication currentApplication] isFinishedLaunching])
-  //  [NSApp run];
-
   [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular]; /* needed to have menu + brings app to front */
   [NSApp activateIgnoringOtherApps:YES];
-
-// need autorelease pool ?
 
   id appName = [[NSProcessInfo processInfo] processName];
 
@@ -211,8 +207,13 @@ _qtz_render_all_windows(
   event_t evt;
   qtz_window_t *w = NULL;
   hashtable_iterator_t *i = NULL;
-  evt.type = EVENT_FRAME;
+
+  evt.type = EVENT_FRAME_CYCLE;
   evt.time = qtz_get_time();
+  evt.target = (void *)NULL;
+  event_notify(qtz_back->listener, &evt);
+
+  evt.type = EVENT_FRAME;
   i = ht_get_iterator(qtz_back->nswin_to_win);
   if (i != NULL) {
     while ((w = (qtz_window_t *)ht_iterator_next(i)) != NULL) {
@@ -481,14 +482,6 @@ qtz_backend_run(
           }
           break;
 
-          /*
-                  case NSEventTypeMouseEntered:
-                    printf("Mouse entered\n");
-                    break;
-                  case NSEventTypeMouseExited:
-                    printf("Mouse exited\n");
-                    break;
-          */
         case NSEventTypeMouseMoved:
         case NSEventTypeLeftMouseDragged:
         case NSEventTypeRightMouseDragged:
@@ -522,7 +515,6 @@ qtz_backend_run(
         }
 
         default:
-        //printf("Unknown event (%d, %d)\n", [ev type], [ev subtype]);
           //[NSApp sendEvent:ev];
           break;
       }
@@ -551,84 +543,3 @@ qtz_backend_stop(
 const int qtz_backend = 0;
 
 #endif /* HAS_QUARTZ */
-
-/*
-CFRunLoopObserverRef runloopObserver = CFRunLoopObserverCreateWithHandler(
-  kCFAllocatorDefault, kCFRunLoopAllActivities, YES, 0,
-  ^(CFRunLoopObserverRef observer, CFRunLoopActivity activity) {
-// 1 2 4 128
-// 1 2 4 32,64 128
-// 1 = Entry
-// 2 = BeforeTimers
-// 4 = BeforeSources
-// 32 = BeforeWaiting
-// 64 = AfterWaiting
-// 128 = RunLoopExit
-  });
-
-CFRunLoopAddObserver(runloop, runloopObserver, kCFRunLoopDefaultMode);
-//CFRunLoopAddObserver(runloop, runloopObserver, NSEventTrackingRunLoopMode);
-*/
-/*
-CFRunLoopTimerRef runloopTimer = CFRunLoopTimerCreateWithHandler(
-  kCFAllocatorDefault, CFAbsoluteTimeGetCurrent() + 0.01667, 0.01667, 0, 0,
-  ^(CFRunLoopTimerRef timer) {
-    _qtz_render_all_windows();
-  });
-
-//CFRunLoopAddTimer(runloop, runloopTimer, kCFRunLoopDefaultMode);
-CFRunLoopAddTimer(runloop, runloopTimer, kCFRunLoopCommonModes);
-//CFRunLoopAddTimer(runloop, runloopTimer, NSEventTrackingRunLoopMode);
-//[NSThread detachNewThreadSelector:@selector(aMethod:) toTarget:[MyObject class] withObject:nil];
-*/
-
-/*
-
-  while (qtz_back->running) {
-    ev = [NSApp nextEventMatchingMask:NSEventMaskAny // before 10.12: NSAnyEventMask
-      untilDate:nil inMode:NSDefaultRunLoopMode dequeue:YES];
-      // distantFuture
-    if (ev) {
-/ *
-      if (([ev type] == NSSystemDefined))
-        printf("Event: %ld (%d)\n", [ev type], [ev subtype]);
-      else
-        printf("Event: %ld\n", [ev type]);
-
-        if ([ev type] == NSEventTypeLeftMouseDown) {
-          printf("LMD, user=%d, prog=%d\n", user_lmd, prog_lme);
-          if (!prog_lme)
-             user_lmd = true;
-        } else if ([ev type] == NSEventTypeLeftMouseUp) {
-          printf("LMU, user=%d, prog=%d\n", user_lmd, prog_lme);
-          if (!prog_lme)
-            user_lmd = false;
-          else
-            prog_lme = false;
-        };
-*/
-        /*
-      if ([ev type] == NSEventTypeLeftMouseDown) {
-        NSWindow *w = [ev window];
-        NSRect frame = [w frame];
-        printf("Clicked window (x,y), (w, h) = (%f, %f), (%f, %f)\n", frame.origin.x, frame.origin.y, frame.size.width, frame.size.height);
-        ev locationInWindow
-      } else {*//*
-        [NSApp sendEvent:ev];
-      //}
-    } else {
-      // Wait
-      [NSThread sleepForTimeInterval:0.008];
-    }
-//printf("%d\n", xxx++);
-    // frame if needed
-    //cur_time = _gdi_get_time();
-
-//    if (1
-          / *cur_time - gdi_back->last_frame >= 1000000/60*//*) {
-      //gdi_back->last_frame = cur_time;
-//      _qtz_render_all_windows();
-//    }
-
-//  };
-*/

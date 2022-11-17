@@ -8,7 +8,6 @@
 /*                                                                        */
 /**************************************************************************/
 
-#include <stdlib.h>
 #include <stdbool.h>
 #include <math.h>
 #include <assert.h>
@@ -493,7 +492,6 @@ _comp_set_sat(
   return col;
 
 }
-
 
 color_t_
 comp_hue(

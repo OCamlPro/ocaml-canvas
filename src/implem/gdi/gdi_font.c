@@ -136,7 +136,7 @@ gdi_font_char_as_poly(
   GLYPHMETRICS gm = { 0 };
 
   DWORD size = GetGlyphOutlineW(f->hdc, c, GGO_NATIVE, &gm, 0, NULL, &mat);
-  if (size == GDI_ERROR || size < 0) {
+  if (size == GDI_ERROR) {
     return false;
   }
 
@@ -146,7 +146,7 @@ gdi_font_char_as_poly(
   }
 
   DWORD res = GetGlyphOutlineW(f->hdc, c, GGO_NATIVE, &gm, size, data, &mat);
-  if (res == GDI_ERROR || res < 0) {
+  if (res == GDI_ERROR) {
     free(data);
     return false;
   }
@@ -173,7 +173,7 @@ gdi_font_char_as_poly(
       switch (curve->wType) {
 
         case TT_PRIM_LINE:
-          for (size_t i = 0; i < curve->cpfx; ++i) {
+          for (int i = 0; i < curve->cpfx; ++i) {
             lp.x = pen->x + _fixed_to_double(curve->apfx[i].x);
             lp.y = pen->y - _fixed_to_double(curve->apfx[i].y);
             transform_apply(t, &lp);
@@ -183,7 +183,7 @@ gdi_font_char_as_poly(
           break;
 
         case TT_PRIM_QSPLINE:
-          for (size_t i = 0; i < curve->cpfx - 1; ++i) {
+          for (int i = 0; i < curve->cpfx - 1; ++i) {
             cp.x = pen->x + _fixed_to_double(curve->apfx[i].x);
             cp.y = pen->y - _fixed_to_double(curve->apfx[i].y);
             np.x = pen->x + _fixed_to_double(curve->apfx[i+1].x);
@@ -202,7 +202,7 @@ gdi_font_char_as_poly(
           break;
 
         case TT_PRIM_CSPLINE:
-          for (size_t i = 0; i < curve->cpfx - 2; i += 3) {
+          for (int i = 0; i < curve->cpfx - 2; i += 3) {
             cp.x = pen->x + _fixed_to_double(curve->apfx[i].x);
             cp.y = pen->y - _fixed_to_double(curve->apfx[i].y);
             cp2.x = pen->x + _fixed_to_double(curve->apfx[i+1].x);

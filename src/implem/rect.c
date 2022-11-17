@@ -8,7 +8,7 @@
 /*                                                                        */
 /**************************************************************************/
 
-#include <stdlib.h>
+#include <stddef.h>
 #include <assert.h>
 
 #include "point.h"
@@ -20,6 +20,7 @@ rect_expand(
   point_t p)
 {
   assert(r != NULL);
+
   if (p.x < r->p1.x) {
     r->p1.x = p.x;
   }

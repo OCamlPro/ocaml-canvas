@@ -215,13 +215,6 @@ error_provider:
   return res;
 }
 
-/*
-https://stackoverflow.com/questions/10412206/how-to-get-the-raw-pixel-data-from-cgimage
-
-create a data consumer (that writes to buffer)
-link with data provider (created from image)
-*/
-
 #else
 
 const int qtz_impexp = 0;

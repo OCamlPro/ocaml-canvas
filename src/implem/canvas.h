@@ -68,8 +68,6 @@ void
 canvas_set_destroy_callback(
   void (*callback_function)(canvas_t *));
 
-
-
 /* Visibility */
 
 void
@@ -86,15 +84,11 @@ void canvas_close(
 bool canvas_is_closed(
   const canvas_t *canvas);
 
-
-
 /* Rendering */
 
 void
 canvas_commit(
   canvas_t *canvas);
-
-
 
 /* Configuration */
 
@@ -132,8 +126,6 @@ canvas_set_position(
   int32_t x,
   int32_t y);
 
-
-
 /* State */
 
 bool
@@ -143,8 +135,6 @@ canvas_save(
 void
 canvas_restore(
   canvas_t *canvas);
-
-
 
 /* Transform */
 
@@ -180,8 +170,6 @@ void
 canvas_rotate(
   canvas_t *canvas,
   double a);
-
-
 
 /* Style / config */
 
@@ -433,8 +421,6 @@ canvas_ellipse(
   double df,
   bool ccw);
 
-
-
 /* Path stroking/filling */
 
 void
@@ -462,7 +448,7 @@ canvas_clip(
   canvas_t *c,
   bool non_zero);
 
-void 
+void
 canvas_clip_path(
   canvas_t *c,
   path2d_t *path,
@@ -512,8 +498,6 @@ canvas_blit(
   int32_t sy,
   int32_t width,
   int32_t height);
-
-
 
 /* Direct pixel access */
 

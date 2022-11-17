@@ -11,8 +11,7 @@
 #ifndef __ARC_H
 #define __ARC_H
 
-//#include <stdint.h>
-//#include <stdbool.h>
+#include <stdbool.h>
 
 #include "point.h"
 

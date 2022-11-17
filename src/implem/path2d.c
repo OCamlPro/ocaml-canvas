@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <assert.h>
 
+#include "object.h"
 #include "path.h"
 #include "transform.h"
 #include "arc.h"

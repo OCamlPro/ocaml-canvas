@@ -20,7 +20,8 @@ typedef struct list_iterator_t list_iterator_t;
 typedef void free_val_fun_t(void *entry);
 
 list_t *
-list_new(free_val_fun_t *free_val);
+list_new(
+  free_val_fun_t *free_val);
 
 void
 list_delete(

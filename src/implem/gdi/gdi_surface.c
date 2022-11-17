@@ -45,7 +45,7 @@ _surface_create_gdi_bitmap(
   assert(*data == NULL);
 
   BITMAPINFO bmi;
-  bmi.bmiHeader.biSize = sizeof(BITMAPINFO); // or BITMAPINFOHEADER ?
+  bmi.bmiHeader.biSize = sizeof(BITMAPINFO);
   bmi.bmiHeader.biWidth = width;
   bmi.bmiHeader.biHeight = -height; // must be negative, otherwise mirrored
   bmi.bmiHeader.biPlanes = 1;
@@ -150,6 +150,7 @@ _raw_surface_copy(
   assert(d_data != NULL);
   assert(d_width > 0);
   assert(d_height > 0);
+
   uint32_t min_width = d_width < s_width ? d_width : s_width;
   uint32_t min_height = d_height < s_height ? d_height : s_height;
   for (size_t i = 0; i < min_height; ++i) {
@@ -186,7 +187,6 @@ surface_resize_gdi_impl(
   }
 
   _raw_surface_copy(*s_data, s_width, s_height, *d_data, d_width, d_height);
-  //_surface_copy_to_buffer(s, data, width, height);
 
   if (impl->bmp) {
     DeleteObject(impl->bmp);
@@ -209,8 +209,6 @@ surface_present_gdi_impl(
   assert(width > 0);
   assert(height  > 0);
 
-  //FillRect(hdc, &ps.rcPaint, (HBRUSH) (COLOR_WINDOW+2));
-  //bool use_begin = (extra != NULL) && (*(bool *)extra == true);
   PAINTSTRUCT ps;
   HDC hdc =
     present_data->use_begin ? BeginPaint(impl->hwnd, &ps) : GetDC(impl->hwnd);

@@ -11,7 +11,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <memory.h>
 #include <math.h>
 #include <assert.h>
 
@@ -147,8 +146,7 @@ surface_destroy(
     switch_IMPL() {
       case_GDI(surface_destroy_gdi_impl((surface_impl_gdi_t *)s->impl);
                s->data = NULL; /* freed but not nulled */);
-      case_QUARTZ(surface_destroy_qtz_impl((surface_impl_qtz_t *)s->impl);
-                  /* s->data = NULL; // if not done already -- check */);
+      case_QUARTZ(surface_destroy_qtz_impl((surface_impl_qtz_t *)s->impl));
       case_X11(surface_destroy_x11_impl((surface_impl_x11_t *)s->impl));
       case_WAYLAND(surface_destroy_wl_impl((surface_impl_wl_t *)s->impl));
       default_fail();
@@ -200,7 +198,7 @@ surface_resize(
 
   color_t_ *data = NULL;
 
-// TODO: fill extra data with background color
+  // TODO: fill extra data with background color
 
   if (s->impl == NULL) {
 

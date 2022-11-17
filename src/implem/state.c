@@ -9,8 +9,6 @@
 /**************************************************************************/
 
 #include <stdlib.h>
-#include <stdint.h>
-#include <stdbool.h>
 #include <assert.h>
 
 #include "util.h"
@@ -48,7 +46,7 @@ state_create(
 
   s->line_dash = NULL;
 
-  s->clip_path = list_new((free_val_fun_t*)path_fill_instr_destroy);
+  s->clip_path = list_new((free_val_fun_t *)path_fill_instr_destroy);
   if (s->clip_path == NULL) {
     transform_destroy(s->transform);
     font_desc_destroy(s->font_desc);

@@ -299,7 +299,8 @@ module V1 = struct
     let process () =
       match !list with
       | [] -> ()
-      | _ ->
+      | l ->
+          list := [];
           List.iter (function
               | ImageData (event, send_event, id) ->
                   send_event ?step:None id;
@@ -307,8 +308,7 @@ module V1 = struct
               | Canvas (event, send_event, c) ->
                   send_event ?step:None c;
                   React.E.stop event
-            ) (List.rev !list);
-          list := []
+            ) (List.rev l);
 
   end
 
@@ -1099,6 +1099,10 @@ module V1 = struct
 
     open Event
 
+    type frame_cycle_event = {
+      timestamp: timestamp;
+    }
+
     type frame_event = {
       canvas: [`Onscreen] Canvas.t;
       timestamp: timestamp;
@@ -1159,6 +1163,7 @@ module V1 = struct
     }
 
     type t =
+      | FrameCycle of frame_cycle_event
       | Frame of frame_event
       | CanvasFocused of canvas_focused_event
       | CanvasResized of canvas_resized_event
@@ -1193,6 +1198,9 @@ module V1 = struct
       let open Event in
       let h e =
         (match e with
+        | FrameCycle { timestamp } ->
+            (* Internal usage *)
+            ()
         | Frame { canvas; timestamp } ->
             let e = { canvas; timestamp; data = () } in
             set_event_timestamp e.timestamp; send_frame e

@@ -8,7 +8,6 @@
 /*                                                                        */
 /**************************************************************************/
 
-#include "color.h"
 #include "gradient.h"
 #include "pattern.h"
 #include "draw_style.h"

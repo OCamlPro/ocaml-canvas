@@ -62,7 +62,7 @@ window_set_size(
 
 pair_t(int32_t)
 window_get_position(
-  window_t *window);
+  const window_t *window);
 
 void
 window_set_position(

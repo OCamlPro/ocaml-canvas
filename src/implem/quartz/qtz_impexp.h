@@ -11,8 +11,8 @@
 #ifndef __QTZ_IMPEXP_H
 #define __QTZ_IMPEXP_H
 
-#include <stdbool.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "../pixmap.h"
 

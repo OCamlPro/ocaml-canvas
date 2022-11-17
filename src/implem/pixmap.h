@@ -11,6 +11,7 @@
 #ifndef __PIXMAP_H
 #define __PIXMAP_H
 
+#include <stdlib.h>
 #include <stdint.h>
 
 #include "util.h"

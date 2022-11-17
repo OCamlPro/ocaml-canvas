@@ -42,7 +42,7 @@ path_reset(
 
 bool
 path_empty(
-  path_t *path);
+  const path_t *path);
 
 bool
 path_add_close_path(

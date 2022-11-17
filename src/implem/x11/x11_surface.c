@@ -73,7 +73,6 @@ surface_create_x11_impl(
 {
   assert(target != NULL);
   assert(target->wid != XCB_WINDOW_NONE);
-  // cid ?
   assert(width > 0);
   assert(height > 0);
   assert(data != NULL);
@@ -85,7 +84,7 @@ surface_create_x11_impl(
     return NULL;
   }
 
-// allow xcb / SHM
+  // TODO: allow xcb / SHM
 
   xcb_image_t *img = _surface_create_x11_image(x11_back->c,
                                                x11_back->screen->root_depth,
@@ -130,6 +129,7 @@ _raw_surface_copy(
   assert(d_data != NULL);
   assert(d_width > 0);
   assert(d_height > 0);
+
   uint32_t min_width = d_width < s_width ? d_width : s_width;
   uint32_t min_height = d_height < s_height ? d_height : s_height;
   for (size_t i = 0; i < min_height; ++i) {

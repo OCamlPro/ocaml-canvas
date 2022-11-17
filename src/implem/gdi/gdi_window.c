@@ -16,8 +16,6 @@
 #include <assert.h>
 
 #include <windows.h>
-#undef min
-#undef max
 
 #include "../util.h"
 #include "../unicode.h"
@@ -132,7 +130,7 @@ gdi_window_create(
                    MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
   }
 
-  /* Add to managed winddows */
+  /* Add to managed windows */
   gdi_backend_add_window(window);
 
   return window;
