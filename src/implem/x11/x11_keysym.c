@@ -188,7 +188,6 @@ static const uint16_t regular_map[N_REGULAR] = {
   [0x00d6] = 0x00D6,
   [0x00d7] = 0x00D7,
   [0x00d8] = 0x00D8,
-//  [0x00d8] = 0x00D8,
   [0x00d9] = 0x00D9,
   [0x00da] = 0x00DA,
   [0x00db] = 0x00DB,
@@ -221,7 +220,6 @@ static const uint16_t regular_map[N_REGULAR] = {
   [0x00f6] = 0x00F6,
   [0x00f7] = 0x00F7,
   [0x00f8] = 0x00F8,
-//  [0x00f8] = 0x00F8,
   [0x00f9] = 0x00F9,
   [0x00fa] = 0x00FA,
   [0x00fb] = 0x00FB,
@@ -1551,34 +1549,6 @@ x11_keysym_of_event(
 {
   assert(x11_back != NULL);
   assert(x11_back->xkb_get_map_reply != NULL);
-
-/*
-    XCB_MOD_MASK_SHIFT = 1,   // 0x32 (LShift) / 0x3E (Rshift)
-    XCB_MOD_MASK_LOCK = 2,    // 0x42 (CapsLock)
-    XCB_MOD_MASK_CONTROL = 4, // 0x25 (LCtrl) / 0x69 (RCtrl)
-    XCB_MOD_MASK_1 = 8,       // 0x40 (LAlt) / 0xCD (Meta) // WHICH META ?
-                                     - Also Mode switch on X11 on OSX
-
-    XCB_MOD_MASK_2 = 16,  // 0x45 (NumLock) - Also meta on X11 on OSX
-    XCB_MOD_MASK_3 = 32,  // unused
-    XCB_MOD_MASK_4 = 64,  // 0x85 (LWin) 0x86 (RWin) 0xCE (Super) 0xCF (Hyper)
-                          // L/R Super (Windows), L Hyper, (mac meta ???)
-    XCB_MOD_MASK_5 = 128, // 0x5C (RAlt) 0xCB (ModeSwitch))
-                          // AltGr (aka ISO Level3 shift), Mode_switch
-                          // 5C should be 0x6C (Level3)
-*/
-/*
-  int alt = (x11_back->modifiers & MOD_ALT) != 0;
-  int shift = (x11_back->modifiers & MOD_SHIFT) != 0;
-  int caps = (x11_back->modifiers & MOD_CAPSLOCK) != 0;
-*/
-/*
-  int altgr = (e->state & XCB_MOD_MASK_5) != 0; // Not always
-  int shift = (e->state & XCB_MOD_MASK_SHIFT) != 0;
-  int caps = (e->state & XCB_MOD_MASK_LOCK) != 0;
-*/
-
-/* https://www.x.org/releases/X11R7.7/doc/kbproto/xkbproto.html#Computing_A_State_Field_from_an_XKB_State */
 
   x11_keysyms_t *ks = &(x11_back->keysyms[e->detail]);
 

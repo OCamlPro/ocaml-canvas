@@ -134,7 +134,7 @@ path_reset(
 
 bool
 path_empty(
-  path_t *path)
+  const path_t *path)
 {
   assert(path != NULL);
   assert(path->prims != NULL);

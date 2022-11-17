@@ -50,8 +50,6 @@ _qtz_font_weight(
   return 1.0;
 }
 
-
-
 qtz_font_t *
 qtz_font_create(
   font_desc_t *fd)

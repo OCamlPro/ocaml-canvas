@@ -12,6 +12,7 @@
 #include <stdbool.h>
 #include <assert.h>
 
+#include "object.h"
 #include "pixmap.h"
 #include "image_interpolation.h"
 #include "pattern.h"

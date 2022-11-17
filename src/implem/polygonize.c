@@ -8,7 +8,6 @@
 /*                                                                        */
 /**************************************************************************/
 
-#include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <math.h> // Note: on Win32, add #define _USE_MATH_DEFINES for M_PI
@@ -25,7 +24,6 @@
 #include "polygon_internal.h"
 #include "polygonize.h"
 
-
 void
 quadratic_to_poly(
   point_t p1,
@@ -38,8 +36,9 @@ quadratic_to_poly(
   assert(n >= 0);
 
   if (n <= 0) {
-    if (p->nb_points == 0)
+    if (p->nb_points == 0) {
       polygon_add_point(p, p1);
+    }
     polygon_add_point(p, p2);
     polygon_add_point(p, p3);
   } else {
@@ -72,8 +71,9 @@ bezier_to_poly(
   assert(n >= 0);
 
   if (n <= 0) {
-    if (p->nb_points == 0)
+    if (p->nb_points == 0) {
       polygon_add_point(p, p1);
+    }
     polygon_add_point(p, p2);
     polygon_add_point(p, p3);
     polygon_add_point(p, p4);
@@ -116,6 +116,7 @@ _arc_to_poly_transform(
   point_t dp = point((p1.x - p2.x) / 2.0, (p1.y - p2.y) / 2.0);
   point_t center = point((p1.x + p2.x) / 2.0, (p1.y + p2.y) / 2.0);
   transform_apply(inv_linear, &dp);
+
   for (int i = 1; i < precision; i++) {
     double cs = cos(((double)(-i)) * M_PI / precision);
     double ss = sin(((double)(-i)) * M_PI / precision);
@@ -126,7 +127,7 @@ _arc_to_poly_transform(
   }
 }
 
-// Same as previous, but now we don't assume the points are on opposite ends.
+// Same as previous, but now we don't assume the points are on opposite ends
 static void
 _arc_to_poly_transform_center(
   point_t center,
@@ -655,6 +656,3 @@ polygonize_outline(
 
   return true;
 }
-
-
-

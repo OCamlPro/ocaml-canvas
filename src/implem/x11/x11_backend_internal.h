@@ -74,7 +74,6 @@ typedef struct x11_backend_t {
   xcb_atom_t _NET_WM_WINDOW_TYPE;
   xcb_atom_t _NET_WM_WINDOW_TYPE_SPLASH;
 
-// glx stuff
 } x11_backend_t;
 
 extern x11_backend_t *x11_back;

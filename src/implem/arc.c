@@ -8,16 +8,12 @@
 /*                                                                        */
 /**************************************************************************/
 
-#include <stdlib.h>
 #include <stdbool.h>
 #include <math.h> // Note: on Win32, add #define _USE_MATH_DEFINES for M_PI
 #include <assert.h>
 
 #include "util.h"
-//#include "types.h"
 #include "point.h"
-
-
 
 // Requires (abs(a2 - a1) < Pi)
 // if a1 < a2 -> draws clockwise
@@ -107,8 +103,6 @@ arc_to_bezier(
   }
 }
 
-
-
 int
 arc_to_bezier_p(
   double *values,
@@ -136,8 +130,6 @@ arc_to_bezier_p(
   // Draw the arc
   return arc_to_bezier(values, c.x, c.y, r, r, a1, a2, ccw);
 }
-
-
 
 int
 arcto_to_bezier(
@@ -191,93 +183,3 @@ arcto_to_bezier(
   // Draw the arc
   return arc_to_bezier_p(values, c, r, i1, i2);
 }
-
-
-
-
-
-/*
-
-// Requires (abs(a2 - a1) < Pi)
-// if a1 < a2 -> draws clockwise
-// if a2 < a1 -> draws counter-clockwise
-static bool
-_path_add_arc_internal(
-  path_t *path,
-  double x,
-  double y,
-  double r,
-  double a1,
-  double a2)
-{
-  assert(path != NULL);
-  assert(fabs(a2 - a1) < M_PI);
-
-  double cos_a1 = cos(a1);
-  double cos_a2 = cos(a2);
-  double sin_a1 = sin(a1);
-  double sin_a2 = sin(a2);
-  double k = 4.0/3.0 * tan((a2 - a1) / 4.0);
-
-  return path_add_bezier_curve_to(path,
-                                  c.x + r * (cos_a1 - k * sin_a1),
-                                  c.y + r * (sin_a1 + k * cos_a1),
-                                  c.x + r * (cos_a2 + k * sin_a2),
-                                  c.y + r * (sin_a2 - k * cos_a2),
-                                  c.x + r * cos_a2,
-                                  c.y + r * sin_a2);
-}
-
-bool
-path_add_arc(
-  path_t *path,
-  double x,
-  double y,
-  double r,
-  double a1,
-  double a2,
-  bool ccw)
-{
-  assert(path != NULL);
-
-  double d = 0.0;
-
-  if (!ccw) {
-    if (a1 < a2) d = min(a2 - a1, 2.0 * M_PI);
-    else if (a1 > a2) d = normalize_angle(a2 - a1);
-    a1 = normalize_angle(a1);
-    a2 = a1 + d;
-  } else {
-    if (a1 > a2) d = min(a1 - a2, 2.0 * M_PI);
-    else if (a1 < a2) d = normalize_angle(a1 - a2);
-    a2 = normalize_angle(a2);
-    a1 = a2 + d;
-  }
-
-  if (path_add_line_to(path, c.x + r * cos(a1), c.y + r * sin(a1)) == false) {
-    return false;
-  }
-
-  if (d < M_PI_2) {
-    return _path_add_arc_internal(path, x, y, r, a1, a2);
-
-  } else if (d < M_PI) {
-    return
-      _path_add_arc_internal(path, x, y, r, a1, a1 + (a2 - a1) * 0.5) &&
-      _path_add_arc_internal(path, x, y, r, a1 + (a2 - a1) * 0.5, a2);
-
-  } else {
-    return
-      _path_add_arc_internal(path, x, y, r,
-                             a1, a1 + (a2 - a1) * 0.25) &&
-      _path_add_arc_internal(path, x, y, r,
-                             a1 + (a2 - a1) * 0.25, a1 + (a2 - a1) * 0.5) &&
-      _path_add_arc_internal(path, x, y, r,
-                             a1 + (a2 - a1) * 0.5, a1 + (a2 - a1) * 0.75) &&
-      _path_add_arc_internal(path, x, y, r,
-                             a1 + (a2 - a1) * 0.75, a2);
-  }
-}
-
-*/
-

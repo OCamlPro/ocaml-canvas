@@ -8,9 +8,9 @@
 /*                                                                        */
 /**************************************************************************/
 
-#include <stdbool.h>
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
 
 #include "config.h"
 #include "tuples.h"
@@ -184,7 +184,7 @@ window_set_size(
 
 pair_t(int32_t)
 window_get_position(
-  window_t *window)
+  const window_t *window)
 {
   assert(window != NULL);
 

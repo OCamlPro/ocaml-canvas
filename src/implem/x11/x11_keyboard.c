@@ -10,6 +10,7 @@
 
 #ifdef HAS_X11
 
+#include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
@@ -20,9 +21,6 @@
 
 #include "../event.h"
 #include "x11_backend_internal.h"
-
-/* keycode -> keyname -> universalkeycode */
-/* key event : key code */
 
 static uint16_t
 _x11_keyname_int(
@@ -126,7 +124,7 @@ _x11_keyname_to_keycode(
     [ 9] = KEY_L,
     [10] = KEY_SEMICOLON_COLON,
     [11] = KEY_QUOTE_DOUBLEQUOTE,
-    [12] = KEY_NONUS_NUMBER_TILDE, /* not seen on output... */
+    [12] = KEY_NONUS_NUMBER_TILDE, /* not seen on output */
     [13] = KEY_UNDEFINED,
   };
 
@@ -366,8 +364,8 @@ x11_keyboard_refresh(
     x11_ks->grp_width = sm->width;
     x11_ks->grp_kt = sm->kt_index;
 
-      //int nb_syms = xcb_xkb_key_sym_map_syms_length(sm);
-      //or just sm->nSyms ; nb_syms = nb_grp * grp_width
+    //int nb_syms = xcb_xkb_key_sym_map_syms_length(sm);
+    //or just sm->nSyms ; nb_syms = nb_grp * grp_width
 
     xcb_xkb_key_sym_map_next(&sym_map_iter);
   }
@@ -391,7 +389,6 @@ x11_keyboard_refresh(
   }
 
   /* xkb_gm_rep intentionally not freed */
-
 
   /* Process key names */
 
@@ -430,7 +427,6 @@ x11_keyboard_translate_keycode(
 
   return x11_back->keycodes[keycode];
 }
-
 
 #else
 

@@ -182,17 +182,6 @@ gdi_keyboard_translate_scancode(
 
     [0x7E] = -1,
     [0x7F] = -1,
-
-/*
-    [kVK_ANSI_KeypadEquals] = KEY_PAD_EQUALS,
-    [kVK_VolumeUp] = KEY_VOLUMEUP,
-    [kVK_VolumeDown] = KEY_VOLUMEDOWN,
-    [kVK_Mute] = KEY_MUTE,
-    [kVK_Help] = KEY_HELP,
-    [kVK_JIS_KeypadComma] = KEY_INTERNATIONAL6,
-    [kVK_JIS_Eisu] = KEY_LANG2, // or KEY_INTERNATIONAL2
-    [kVK_JIS_Kana] = KEY_LANG1, // or KEY_INTERNATIONAL2
-*/
   };
 
   if (extended) {
@@ -216,7 +205,7 @@ gdi_keyboard_translate_scancode(
       case 0x5B: return KEY_LMETA;
       case 0x5C: return KEY_RMETA;
       case 0x5D: return KEY_MENU;
-      default: return map[scancode]; // assert(!"Unknown extended key");
+      default: return map[scancode];
     }
   } else {
     return map[scancode];

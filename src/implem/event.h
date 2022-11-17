@@ -22,17 +22,17 @@
 #endif
 
 typedef enum {
-  EVENT_NULL      = 0, // internal use
-  EVENT_FRAME     = 1,
-  EVENT_FOCUS     = 2,
-  EVENT_RESIZE    = 3,
-  EVENT_MOVE      = 4,
-  EVENT_CLOSE     = 5,
-  EVENT_KEY       = 6,
-  EVENT_BUTTON    = 7,
-  EVENT_CURSOR    = 8,
-
-  EVENT_PRESENT = 64 // internal event
+  EVENT_NULL        = 0, // internal use
+  EVENT_FRAME_CYCLE = 1,
+  EVENT_FRAME       = 2,
+  EVENT_FOCUS       = 3,
+  EVENT_RESIZE      = 4,
+  EVENT_MOVE        = 5,
+  EVENT_CLOSE       = 6,
+  EVENT_KEY         = 7,
+  EVENT_BUTTON      = 8,
+  EVENT_CURSOR      = 9,
+  EVENT_PRESENT     = 64 // internal event
 } event_type_t;
 
 typedef enum {
@@ -214,19 +214,6 @@ typedef enum {
 
   /* Extensions (0x99-0xDD), mostly obsolete */
 
-// 65 Keyboard Application (10)
-// 66 Keyboard Power (9)
-// mac : eject button between f12 and f13 is not a key but an OSC
-// function key on bottom left ?
-
-// ANSI TKL : 87
-// ISO TKL : 88
-// ANSI + KP17 : 104
-// ANSI + KP18 : 105
-// ISO + KP17 : 105
-// ISO = KP18 : 106
-// ANSI 75% : 82 keys
-// ANSI 60% : 61 keys
 } key_code_t;
 
 typedef enum {
@@ -258,22 +245,13 @@ typedef enum {
   BUTTON_DOWN = 1
 } button_state_t;
 
-/*
-X11 buttons
-1 = left button
-2 = middle button (pressing the scroll wheel)
-3 = right button
-4 = turn scroll wheel up
-5 = turn scroll wheel down
-6 = push scroll wheel left
-7 = push scroll wheel right
-8 = 4th button (aka browser backward button)
-9 = 5th button (aka browser forward button)
-*/
-
 typedef struct {
   void *dummy;
 } event_null_t;
+
+typedef struct {
+  void *dummy;
+} event_frame_cycle_t;
 
 typedef struct {
   void *dummy;
@@ -319,6 +297,7 @@ typedef struct {
 
 typedef union {
   event_null_t null;
+  event_frame_cycle_t frame_cycle;
   event_frame_t frame;
   event_focus_t focus;
   event_resize_t resize;

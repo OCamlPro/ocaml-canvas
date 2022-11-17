@@ -11,8 +11,8 @@
 #ifndef __GDI_IMPEXP_H
 #define __GDI_IMPEXP_H
 
-#include <stdbool.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "../pixmap.h"
 

@@ -11,6 +11,9 @@
 #ifndef __GDI_BACKEND_INTERNAL_H
 #define __GDI_BACKEND_INTERNAL_H
 
+#include <stdint.h>
+#include <stdbool.h>
+
 #include <windows.h>
 
 #include "../hashtable.h"

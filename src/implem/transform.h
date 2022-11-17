@@ -146,5 +146,4 @@ point_offset_ortho_transform(
   const transform_t *lin,
   const transform_t *inv_lin);
 
-
 #endif /* __TRANSFORM_H */

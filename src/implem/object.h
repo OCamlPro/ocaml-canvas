@@ -12,6 +12,7 @@
 #define __OBJECT_H
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <assert.h>
 
 typedef struct object_t {

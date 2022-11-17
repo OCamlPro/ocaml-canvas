@@ -49,6 +49,12 @@ _backend_process_event(
   bool result = false;
 
   window_t *window = (window_t *)event->target;
+
+  /* For events that do not have a window */
+  if (window == NULL) {
+    return event_notify(next_listener, event);
+  }
+
   canvas_t *canvas = (canvas_t *)window_get_data(window);
 
   /* Safeguard against early events (i.e. events generated during
@@ -70,7 +76,6 @@ _backend_process_event(
       result = true;
       break;
     case EVENT_RESIZE:
-// Ensure width/height > 0
       _canvas_set_size_internal(canvas,
                                 event->desc.resize.width,
                                 event->desc.resize.height);

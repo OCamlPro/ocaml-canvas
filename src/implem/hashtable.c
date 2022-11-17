@@ -45,6 +45,7 @@ ht_new(
   assert(key_hash != NULL);
   assert(key_equal != NULL);
   assert(size > 0);
+
   hashtable_t *ht = (hashtable_t *)calloc(1, sizeof(hashtable_t));
   if (ht == NULL) {
     return NULL;
@@ -66,6 +67,7 @@ ht_delete(
 {
   assert(ht != NULL);
   assert(ht->data != NULL);
+
   for (size_t i = 0; i < ht->size; ++i) {
       hashtable_entry_t *n = ht->data[i];
       hashtable_entry_t *e;
@@ -103,6 +105,7 @@ ht_add(
 {
   assert(ht != NULL);
   assert(ht->data != NULL);
+
   hash_t h = _ht_key_hash(ht, key);
   hashtable_entry_t **p = &(ht->data[h]);
   hashtable_entry_t *e;
@@ -132,6 +135,7 @@ ht_remove(
 {
   assert(ht != NULL);
   assert(ht->data != NULL);
+
   hash_t h = _ht_key_hash(ht, key);
   hashtable_entry_t **p = &(ht->data[h]);
   hashtable_entry_t *e;
@@ -154,6 +158,7 @@ ht_find(
 {
   assert(ht != NULL);
   assert(ht->data != NULL);
+
   hash_t h = _ht_key_hash(ht, key);
   hashtable_entry_t *e = ht->data[h];
   while (e) {
@@ -173,6 +178,7 @@ _ht_iterator_skip_empty(
   assert(i != NULL);
   assert(i->hashtable != NULL);
   assert(i->hashtable->size > 0);
+
   while ((i->entry == NULL) && (i->current_hash < i->hashtable->size - 1)) {
     i->entry = i->hashtable->data[++(i->current_hash)];
   }
@@ -184,6 +190,7 @@ ht_get_iterator(
 {
   assert(ht != NULL);
   assert(ht->data != NULL);
+
   hashtable_iterator_t *i =
     (hashtable_iterator_t *)calloc(1, sizeof(hashtable_iterator_t));
   i->hashtable = ht;
@@ -205,6 +212,7 @@ ht_iterator_next(
   hashtable_iterator_t *i)
 {
   assert(i != NULL);
+
   void *val = NULL;
   if (i->entry != NULL) {
     val = i->entry->val;

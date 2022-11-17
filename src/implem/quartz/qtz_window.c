@@ -53,7 +53,7 @@
 - (instancetype)initWithContentRect:(NSRect)contentRect
                           styleMask:(NSWindowStyleMask)style
                             backing:(NSBackingStoreType)backingStoreType
-                              defer:(BOOL)flag;
+                              defer:(BOOL)flag
 {
   [[NSNotificationCenter defaultCenter]
     addObserver:self
@@ -91,7 +91,6 @@
 }
 
 // window is being resized by user or setFrame
-// can return a custom size
 //- (void)windowDidResize:(NSNotification *)notification
 - (NSSize)windowWillResize:(NSWindow *)sender toSize:(NSSize)frameSize
 {

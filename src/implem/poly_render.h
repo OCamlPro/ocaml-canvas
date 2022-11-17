@@ -11,7 +11,6 @@
 #ifndef __POLY_RENDER_H
 #define __POLY_RENDER_H
 
-#include <stdint.h>
 #include <stdbool.h>
 
 #include "rect.h"
@@ -20,7 +19,6 @@
 #include "draw_style.h"
 #include "color_composition.h"
 #include "polygon.h"
-#include "surface.h"
 
 void
 poly_render_init(

@@ -11,6 +11,7 @@
 #ifndef __POLYGONIZE_H
 #define __POLYGONIZE_H
 
+#include <stdint.h>
 #include <stdbool.h>
 
 #include "point.h"

@@ -11,8 +11,6 @@
 #ifndef __FONT_INTERNAL_H
 #define __FONT_INTERNAL_H
 
-#include <stdint.h>
-
 #include "font_desc.h"
 
 typedef struct font_t {

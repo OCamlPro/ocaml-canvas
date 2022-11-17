@@ -189,14 +189,15 @@ typedef enum button_state_tag_t {
 } button_state_tag_t;
 
 typedef enum event_tag_t {
-  TAG_FRAME          = 0,
-  TAG_CANVAS_FOCUSED = 1,
-  TAG_CANVAS_RESIZED = 2,
-  TAG_CANVAS_MOVED   = 3,
-  TAG_CANVAS_CLOSED  = 4,
-  TAG_KEY_ACTION     = 5,
-  TAG_BUTTON_ACTION  = 6,
-  TAG_MOUSE_MOVE     = 7
+  TAG_FRAME_CYCLE    = 0,
+  TAG_FRAME          = 1,
+  TAG_CANVAS_FOCUSED = 2,
+  TAG_CANVAS_RESIZED = 3,
+  TAG_CANVAS_MOVED   = 4,
+  TAG_CANVAS_CLOSED  = 5,
+  TAG_KEY_ACTION     = 6,
+  TAG_BUTTON_ACTION  = 7,
+  TAG_MOUSE_MOVE     = 8
 } event_tag_t;
 
 typedef enum style_tag_t {

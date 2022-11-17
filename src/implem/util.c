@@ -11,10 +11,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include <memory.h>
-#include <math.h>
 #include <limits.h>
-#include <wchar.h>
+#include <math.h>
 #include <assert.h>
 
 int16_t

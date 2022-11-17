@@ -8,7 +8,7 @@
 /*                                                                        */
 /**************************************************************************/
 
-#include <stdlib.h>
+#include <stddef.h>
 #include <stdbool.h>
 #include <assert.h>
 
@@ -20,18 +20,11 @@ event_notify(
   event_t *event)
 {
   assert(event != NULL);
+
   if (event_listener) {
     assert(event_listener->process_event != NULL);
     return event_listener->process_event(event, event_listener->next_listener);
   } else {
     return false;
   }
-/*
-  bool result = false;
-  while ((result == false) && (event_listener != NULL)) {
-    result = event_listener->process_event(event);
-    event_listener = event_listener->next_listener;
-  }
-  return result;
-*/
 }

@@ -555,6 +555,17 @@ Val_button_state(
 }
 
 value
+Val_frame_cycle_event(
+  event_t *event)
+{
+  CAMLparam0();
+  CAMLlocal1(mlEventDesc);
+  mlEventDesc = caml_alloc_tuple(1);
+  Store_field(mlEventDesc, 0, caml_copy_int64(event->time));
+  CAMLreturn(mlEventDesc);
+}
+
+value
 Val_frame_event(
   event_t *event)
 {
@@ -686,6 +697,10 @@ Val_event(
       break;
     case EVENT_PRESENT:
       assert(!"Present event crossing C boundary");
+      break;
+    case EVENT_FRAME_CYCLE:
+      mlEvent = caml_alloc(1, TAG_FRAME_CYCLE);
+      Store_field(mlEvent, 0, Val_frame_cycle_event(event));
       break;
     case EVENT_FRAME:
       mlEvent = caml_alloc(1, TAG_FRAME);

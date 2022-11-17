@@ -14,10 +14,10 @@
 #include <math.h>
 #include <assert.h>
 
+#include "object.h"
 #include "util.h"
 #include "color.h"
 #include "transform.h"
-#include "object.h"
 #include "gradient.h"
 #include "gradient_internal.h"
 
@@ -105,7 +105,7 @@ gradient_add_color_stop(
 
   if (gradient->nodes == NULL) {
 
-    gradient->nodes = (gradient_node_t *)calloc(1,sizeof(gradient_node_t));
+    gradient->nodes = (gradient_node_t *)calloc(1, sizeof(gradient_node_t));
     if (gradient->nodes == NULL) {
       return false;
     }
@@ -117,7 +117,7 @@ gradient_add_color_stop(
 
     gradient_node_t *run = gradient->nodes;
     gradient_node_t *new_node =
-      (gradient_node_t *)calloc(1,sizeof(gradient_node_t));
+      (gradient_node_t *)calloc(1, sizeof(gradient_node_t));
     if (new_node == NULL) {
       return false;
     }

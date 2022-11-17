@@ -11,8 +11,6 @@
 #ifndef __QTZ_PRESENT_DATA_H
 #define __QTZ_PRESENT_DATA_H
 
-#include <stdbool.h>
-
 typedef struct qtz_present_data_t {
   void *dummy;
 } qtz_present_data_t;

@@ -15,7 +15,6 @@
 #include <stdbool.h>
 
 #include <Cocoa/Cocoa.h>
-#include <Carbon/Carbon.h>
 
 #include "../event.h"
 

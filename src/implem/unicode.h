@@ -11,6 +11,7 @@
 #ifndef __UNICODE_H
 #define __UNICODE_H
 
+#include <stddef.h>
 #include <stdint.h>
 #include <wchar.h>
 

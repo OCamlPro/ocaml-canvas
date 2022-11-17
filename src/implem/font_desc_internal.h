@@ -12,7 +12,6 @@
 #define __FONT_DESC_INTERNAL_H
 
 #include <stdint.h>
-#include <stdbool.h>
 
 #include "font_desc.h"
 

@@ -8,7 +8,6 @@
 /*                                                                        */
 /**************************************************************************/
 
-#include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <math.h>
@@ -16,7 +15,6 @@
 
 #include "util.h"
 #include "pixmap.h"
-#include "filters.h"
 
 static void
 _filter_blur_compute_boxes(

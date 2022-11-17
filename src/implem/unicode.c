@@ -11,9 +11,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include <memory.h>
-#include <math.h>
-#include <limits.h>
 #include <wchar.h>
 #include <assert.h>
 
@@ -129,7 +126,6 @@ decode_utf8_char(
 
   return c;
 }
-
 
 #if defined(_WIN32) || defined(_WIN64)
 

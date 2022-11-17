@@ -13,7 +13,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <string.h>
 #include <assert.h>
 
@@ -299,25 +298,6 @@ x11_backend_init(
   x11_back->_NET_WM_WINDOW_TYPE_SPLASH =
     _x11_query_atom(x11_back->c, "_NET_WM_WINDOW_TYPE_SPLASH");
 
-/*
-_NET_WM_WINDOW_TYPE_DESKTOP       disappears
-_NET_WM_WINDOW_TYPE_SPLASH        no decorations
-_NET_WM_WINDOW_TYPE_DND           no decorations
-
-_NET_WM_WINDOW_TYPE_POPUP_MENU    no decorations, stays on top
-_NET_WM_WINDOW_TYPE_DROPDOWN_MENU no decorations, stays on top
-_NET_WM_WINDOW_TYPE_COMBO         no decorations, stays on top
-_NET_WM_WINDOW_TYPE_TOOLBAR       no decorations, stays on top
-_NET_WM_WINDOW_TYPE_TOOLTIP       no decorations, stays on top
-_NET_WM_WINDOW_TYPE_NOTIFICATION  no decorations, stays on top
-_NET_WM_WINDOW_TYPE_DOCK          no decorations, stays on top
-
-_NET_WM_WINDOW_TYPE_MENU          thiner title bar, only close button
-_NET_WM_WINDOW_TYPE_UTILITY       thiner title bar, only close button
-_NET_WM_WINDOW_TYPE_DIALOG        thickier title bar, only close button
-_NET_WM_WINDOW_TYPE_NORMAL        normal
-*/
-
   return true;
 }
 
@@ -411,7 +391,6 @@ _x11_present_window(
     evt.type = EVENT_PRESENT;
     evt.time = x11_get_time();
     evt.target = (void *)w;
-    evt.desc.present.data.x11.dummy = NULL; // with a user data field
     event_notify(x11_back->listener, &evt);
   }
 }
@@ -426,8 +405,12 @@ _x11_render_all_windows(
   x11_window_t *w = NULL;
   hashtable_iterator_t *i = NULL;
 
-  evt.type = EVENT_FRAME;
+  evt.type = EVENT_FRAME_CYCLE;
   evt.time = x11_get_time();
+  evt.target = (void *)NULL;
+  event_notify(x11_back->listener, &evt);
+
+  evt.type = EVENT_FRAME;
   i = ht_get_iterator(x11_back->wid_to_win);
   if (i != NULL) {
     while ((w = (x11_window_t *)ht_iterator_next(i)) != NULL) {
@@ -585,13 +568,6 @@ x11_backend_run(
           break;
 
         case XCB_EXPOSE:
- /*
-          w = x11_backend_get_window(e.expose->window);
-          if (w != NULL) {
-            evt.type = EVENT_EXPOSE;
-            evt.target = (void *)w;
-            event_notify(x11_back->listener, &evt);
-          } */
           break;
 
         case XCB_GRAPHICS_EXPOSURE:
@@ -701,14 +677,10 @@ x11_backend_run(
                              (const char *)e.client_message);
               xcb_flush(x11_back->c); // MUST flush
             } else if (proto == x11_back->WM_TAKE_FOCUS) {
-              //printf("XCB_CLIENT_MESSAGE / WM_PROTOCOLS / WM_TAKE_FOCUS\n");
+
             } else if (proto == x11_back->_NET_WM_SYNC_REQUEST) {
-              //printf("XCB_CLIENT_MESSAGE / WM_PROTOCOLS / _NET_WM_SYNC_REQUEST\n");
-            } else {
-              //printf("XCB_CLIENT_MESSAGE / WM_PROTOCOLS / Unknown proto: %d\n", proto);
+
             }
-          } else {
-            //printf("XCB_CLIENT_MESSAGE / Unknown type: %d\n", e.client_message->type);
           }
           break;
 
@@ -738,10 +710,8 @@ x11_backend_run(
             }
             break;
           }
-          printf("Unknown event: %d\n", event_type);
           break;
       }
-
 
       free(e.generic); // Beware, when using extended events (generic), have to free more data
 

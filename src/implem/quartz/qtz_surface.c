@@ -109,7 +109,8 @@ surface_destroy_qtz_impl(
   assert(impl->type == IMPL_QUARTZ);
 
   if (impl->ctxt) {
-    CGContextRelease(impl->ctxt); // Does it affect s->data ?
+    // Note: does not free the underlying memory if explicitly given
+    CGContextRelease(impl->ctxt);
   }
 }
 
@@ -128,6 +129,7 @@ _raw_surface_copy(
   assert(d_data != NULL);
   assert(d_width > 0);
   assert(d_height > 0);
+
   uint32_t min_width = d_width < s_width ? d_width : s_width;
   uint32_t min_height = d_height < s_height ? d_height : s_height;
   for (size_t i = 0; i < min_height; ++i) {

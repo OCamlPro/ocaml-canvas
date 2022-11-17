@@ -11,6 +11,7 @@
 #ifndef __FONT_H
 #define __FONT_H
 
+#include <stdint.h>
 #include <stdbool.h>
 
 #include "point.h"

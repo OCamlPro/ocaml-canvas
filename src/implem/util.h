@@ -11,8 +11,8 @@
 #ifndef __UTIL_H
 #define __UTIL_H
 
+#include <stddef.h>
 #include <stdint.h>
-#include <wchar.h>
 
 #define swap(t,a,b) do { \
   t tmp = (a); \

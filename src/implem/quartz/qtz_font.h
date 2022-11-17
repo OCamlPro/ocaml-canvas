@@ -11,6 +11,9 @@
 #ifndef __QTZ_FONT_H
 #define __QTZ_FONT_H
 
+#include <stdint.h>
+#include <stdbool.h>
+
 #include "../point.h"
 #include "../rect.h"
 #include "../polygon.h"

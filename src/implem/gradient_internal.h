@@ -11,9 +11,6 @@
 #ifndef __GRADIENT_INTERNAL_H
 #define __GRADIENT_INTERNAL_H
 
-#include <stdint.h>
-#include <stdbool.h>
-
 #include "object.h"
 #include "color.h"
 
