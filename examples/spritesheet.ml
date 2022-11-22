@@ -25,7 +25,7 @@ type look_dir =
   | Right
 
 type state = {
-  mutable sprite_sheet_opt : [`Offscreen] Canvas.t option;
+  mutable sprite_sheet_opt : Canvas.t option;
   mutable look_direction : look_dir;
   mutable animation_frame : int;
   mutable clock : Int64.t;

@@ -19,8 +19,8 @@ let clear_events () =
   events := []
 
 type state = {
-  mutable cat_image_opt : [`Offscreen] Canvas.t option;
-  mutable spectrum_image_opt : [`Offscreen] Canvas.t option;
+  mutable cat_image_opt : Canvas.t option;
+  mutable spectrum_image_opt : Canvas.t option;
 }
 
 let state = {
