@@ -1,6 +1,6 @@
 opam-version: "2.0"
 name: "ocaml-canvas"
-version: "0.9"
+version: "1.0.0"
 synopsis: "The OCaml-Canvas library"
 description: """
 The OCaml-Canvas library provides a portable Canvas for OCaml.

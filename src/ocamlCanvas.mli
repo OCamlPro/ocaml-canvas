@@ -144,10 +144,9 @@
 
 module V1 : sig
 (** The OCaml-Canvas module is versioned. This is version 1.
-    When OCaml-Canvas 1.0 will be officially released, it will be
-    guaranteed that this interface will always remain compatible with
-    existing programs, provided that the modules defined here ARE NEVER
-    included in other modules nor opened globally.
+    It is guaranteed that this interface will always remain compatible
+    with existing programs, provided that the modules defined here
+    ARE NEVER included in other modules nor opened globally.
     Local opens should be performed very carefully, as new identifiers
     may be introduced in modules and thus shadow any identifier defined
     before the open directive. An effort will be made to avoid introducing
