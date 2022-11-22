@@ -308,7 +308,7 @@ module V1 = struct
               | Canvas (event, send_event, c) ->
                   send_event ?step:None c;
                   React.E.stop event
-            ) (List.rev l);
+            ) (List.rev l)
 
   end
 
@@ -1225,7 +1225,6 @@ module V1 = struct
         Pending.process ()
       in
       run_internal h k
-
   end
 
 end

@@ -21,7 +21,8 @@ let add_executable name assets =
  (libraries ocaml-canvas react)|} name name (if has_jsoo then " js" else "") name;
   if has_jsoo && assets <> [] then
     Printf.printf {|
- (js_of_ocaml (javascript_files %s-extfs.js)))
+ (js_of_ocaml
+  (javascript_files %s-extfs.js)))
 
 (rule
  (target %s-extfs.js)

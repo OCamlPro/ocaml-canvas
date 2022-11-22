@@ -477,8 +477,9 @@ module V1 : sig
         {- {!Invalid_argument} if either component of [size] is outside the range 1-32767}} *)
 
     val createFromPNG : string -> t React.event
-    (** [createFromPNG filename] creates an image data
-        with the contents of PNG file [filename]
+    (** [createFromPNG filename] creates an image data with
+        the contents of PNG file [filename]. The returned
+        event will be triggered once the image is loaded.
 
         {b Exceptions:}
         {ul
@@ -525,8 +526,9 @@ module V1 : sig
 
     val importPNG : t -> pos:(int * int) -> string -> t React.event
     (** [importPNG id ~pos filename] loads the file [filename]
-        into image data [id] at position [pos]. Any pixel
-        that falls outside the image bounds is ignored.
+        into image data [id] at position [pos]. Any pixel that
+        falls outside the image bounds is ignored. The returned
+        event will be triggered once the image is loaded.
 
         {b Exceptions:}
         {ul
@@ -802,8 +804,9 @@ module V1 : sig
         {- {!Exception.Not_initialized} if {!Backend.init} was not called}} *)
 
     val createOffscreenFromPNG : string -> t React.event
-    (** [createOffscreen filename] creates an offscreen
-        canvas with the contents of PNG file [filename]
+    (** [createOffscreen filename] creates an offscreen canvas
+        with the contents of PNG file [filename]. The returned
+        event will be triggered once the image is loaded.
 
         {b Exceptions:}
         {ul
@@ -1190,8 +1193,9 @@ module V1 : sig
 
     val importPNG :
       t -> pos:(int * int) -> string -> t React.event
-    (** [importPNG c ~pos filename] loads the file
-        [filename] into canvas [c] at position [pos]
+    (** [importPNG c ~pos filename] loads the file [filename]
+        into canvas [c] at position [pos]. The returned
+        event will be triggered once the image is loaded.
 
         {b Exceptions:}
         {ul
