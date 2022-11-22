@@ -273,7 +273,7 @@ module V1 = struct
 
   end
 
-  type 'kind canvas
+  type canvas
 
   type image_data =
     (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array3.t
@@ -285,8 +285,8 @@ module V1 = struct
           image_data React.event *
             (?step:React.step -> image_data -> unit) * image_data -> t
       | Canvas :
-          'kind canvas React.event *
-            (?step:React.step -> 'kind canvas -> unit) * 'kind canvas -> t
+          canvas React.event *
+            (?step:React.step -> canvas -> unit) * canvas -> t
 
     let list : t list ref = ref []
 
@@ -523,50 +523,38 @@ module V1 = struct
 
   module Canvas = struct
 
-    type 'kind t = 'kind canvas
+    type t = canvas
 
     (* Comparison and hash functions *)
 
     let () =
       Callback.register "Hashtbl.hash" Hashtbl.hash
 
-    external hash : 'kind t -> int
-      = "ml_canvas_hash"
-
-    external compare : 'kind1 t -> 'kind2 t -> int
+    external compare : t -> t -> int
       = "ml_canvas_compare"
 
-    let equal c1 c2 = compare c1 c2 = 0
+    external hash : t -> int
+      = "ml_canvas_hash"
 
-    let (=) c1 c2 = compare c1 c2 = 0
-    let (<>) c1 c2 = compare c1 c2 <> 0
-    let (<) c1 c2 = compare c1 c2 < 0
-    let (>) c1 c2 = compare c1 c2 > 0
-    let (<=) c1 c2 = compare c1 c2 <= 0
-    let (>=) c1 c2 = compare c1 c2 >= 0
-
-    external (==) : 'kind1 t -> 'kind2 t -> bool = "%eq"
-    external (!=) : 'kind1 t -> 'kind2 t -> bool = "%noteq"
 
     (* Creation *)
 
     external createOnscreen :
       ?autocommit:bool -> ?decorated:bool -> ?resizeable:bool ->
       ?minimize:bool -> ?maximize:bool -> ?close:bool -> ?title:string ->
-      ?pos:(int * int) -> size:(int * int) -> unit -> [> `Onscreen] t
+      ?pos:(int * int) -> size:(int * int) -> unit -> t
       = "ml_canvas_create_onscreen" "ml_canvas_create_onscreen_n"
 
-    external createOffscreen : size:(int * int) -> unit -> [> `Offscreen] t
+    external createOffscreen : size:(int * int) -> unit -> t
       = "ml_canvas_create_offscreen"
 
-    external createOffscreenFromImageData : ImageData.t -> [> `Offscreen] t
+    external createOffscreenFromImageData : ImageData.t -> t
       = "ml_canvas_create_offscreen_from_image_data"
 
-    external createOffscreenFromPNG_internal :
-      string -> ([> `Offscreen] t -> unit) -> unit
+    external createOffscreenFromPNG_internal : string -> (t -> unit) -> unit
       = "ml_canvas_create_offscreen_from_png"
 
-    let createOffscreenFromPNG filename : [> `Offscreen] t React.event =
+    let createOffscreenFromPNG filename : t React.event =
       let event, send_event = React.E.create () in
       createOffscreenFromPNG_internal filename
         (fun c -> Pending.add_canvas event send_event c);
@@ -574,275 +562,275 @@ module V1 = struct
 
     (* Visibility *)
 
-    external show : [< `Onscreen] t -> unit
+    external show : t -> unit
       = "ml_canvas_show"
 
-    external hide : [< `Onscreen] t -> unit
+    external hide : t -> unit
       = "ml_canvas_hide"
 
-    external close : [< `Onscreen] t -> unit
+    external close : t -> unit
       = "ml_canvas_close"
 
     (* Rendering *)
 
-    external commit : [< `Onscreen] t -> unit
+    external commit : t -> unit
       = "ml_canvas_commit"
 
     (* Configuration *)
 
-    external getId : 'kind t -> int
+    external getId : t -> int
       = "ml_canvas_get_id"
 
-    external getSize : 'kind t -> (int * int)
+    external getSize : t -> (int * int)
       = "ml_canvas_get_size"
 
-    external setSize : 'kind t -> (int * int) -> unit
+    external setSize : t -> (int * int) -> unit
       = "ml_canvas_set_size"
 
-    external getPosition : [< `Onscreen] t -> (int * int)
+    external getPosition : t -> (int * int)
       = "ml_canvas_get_position"
 
-    external setPosition : [< `Onscreen] t -> (int * int) -> unit
+    external setPosition : t -> (int * int) -> unit
       = "ml_canvas_set_position"
 
     (* State *)
 
-    external save : 'kind t -> unit
+    external save : t -> unit
       = "ml_canvas_save"
 
-    external restore : 'kind t -> unit
+    external restore : t -> unit
       = "ml_canvas_restore"
 
     (* Transformations *)
-    external setTransform : 'kind t -> Transform.t -> unit
+    external setTransform : t -> Transform.t -> unit
       = "ml_canvas_set_transform"
 
-    external transform : 'kind t -> Transform.t -> unit
+    external transform : t -> Transform.t -> unit
       = "ml_canvas_transform"
 
-    external translate : 'kind t -> Vector.t -> unit
+    external translate : t -> Vector.t -> unit
       = "ml_canvas_translate"
 
-    external scale : 'kind t -> Vector.t -> unit
+    external scale : t -> Vector.t -> unit
       = "ml_canvas_scale"
 
-    external shear : 'kind t -> Vector.t -> unit
+    external shear : t -> Vector.t -> unit
       = "ml_canvas_shear"
 
-    external rotate : 'kind t -> float -> unit
+    external rotate : t -> float -> unit
       = "ml_canvas_rotate"
 
     (* Style / config *)
 
-    external getLineWidth : 'kind t -> float
+    external getLineWidth : t -> float
       = "ml_canvas_get_line_width"
 
-    external setLineWidth : 'kind t -> float -> unit
+    external setLineWidth : t -> float -> unit
       = "ml_canvas_set_line_width"
 
-    external getLineJoin : 'kind t -> Join.t
+    external getLineJoin : t -> Join.t
       = "ml_canvas_get_line_join"
 
-    external setLineJoin : 'kind t -> Join.t -> unit
+    external setLineJoin : t -> Join.t -> unit
       = "ml_canvas_set_line_join"
 
-    external getLineCap : 'kind t -> Cap.t
+    external getLineCap : t -> Cap.t
       = "ml_canvas_get_line_cap"
 
-    external setLineCap : 'kind t -> Cap.t -> unit
+    external setLineCap : t -> Cap.t -> unit
       = "ml_canvas_set_line_cap"
 
-    external getMiterLimit : 'kind t -> float
+    external getMiterLimit : t -> float
       = "ml_canvas_get_miter_limit"
 
-    external setMiterLimit : 'kind t -> float -> unit
+    external setMiterLimit : t -> float -> unit
       = "ml_canvas_set_miter_limit"
 
-    external getLineDashOffset : 'kind t -> float
+    external getLineDashOffset : t -> float
       = "ml_canvas_get_line_dash_offset"
 
-    external setLineDashOffset : 'kind t -> float -> unit
+    external setLineDashOffset : t -> float -> unit
       = "ml_canvas_set_line_dash_offset"
 
-    external getLineDash : 'kind t -> float array
+    external getLineDash : t -> float array
       = "ml_canvas_get_line_dash"
 
-    external setLineDash : 'kind t -> float array -> unit
+    external setLineDash : t -> float array -> unit
       = "ml_canvas_set_line_dash"
 
-    external getStrokeColor : 'kind t -> Color.t
+    external getStrokeColor : t -> Color.t
       = "ml_canvas_get_stroke_color"
 
-    external setStrokeColor : 'kind t -> Color.t -> unit
+    external setStrokeColor : t -> Color.t -> unit
       = "ml_canvas_set_stroke_color"
 
-    external setStrokeGradient : 'kind t -> Gradient.t -> unit
+    external setStrokeGradient : t -> Gradient.t -> unit
       = "ml_canvas_set_stroke_gradient"
 
-    external setStrokePattern : 'kind t -> Pattern.t -> unit
+    external setStrokePattern : t -> Pattern.t -> unit
       = "ml_canvas_set_stroke_pattern"
 
-    external getStrokeStyle : 'kind t -> Style.t
+    external getStrokeStyle : t -> Style.t
       = "ml_canvas_get_stroke_style"
 
-    external setStrokeStyle : 'kind t -> Style.t -> unit
+    external setStrokeStyle : t -> Style.t -> unit
       = "ml_canvas_set_stroke_style"
 
-    external getFillColor : 'kind t -> Color.t
+    external getFillColor : t -> Color.t
       = "ml_canvas_get_fill_color"
 
-    external setFillColor : 'kind t -> Color.t -> unit
+    external setFillColor : t -> Color.t -> unit
       = "ml_canvas_set_fill_color"
 
-    external setFillGradient : 'kind t -> Gradient.t -> unit
+    external setFillGradient : t -> Gradient.t -> unit
       = "ml_canvas_set_fill_gradient"
 
-    external setFillPattern : 'kind t -> Pattern.t -> unit
+    external setFillPattern : t -> Pattern.t -> unit
       = "ml_canvas_set_fill_pattern"
 
-    external getFillStyle : 'kind t -> Style.t
+    external getFillStyle : t -> Style.t
       = "ml_canvas_get_fill_style"
 
-    external setFillStyle : 'kind t -> Style.t -> unit
+    external setFillStyle : t -> Style.t -> unit
       = "ml_canvas_set_fill_style"
 
-    external getGlobalAlpha : 'kind t -> float
+    external getGlobalAlpha : t -> float
       = "ml_canvas_get_global_alpha"
 
-    external setGlobalAlpha : 'kind t -> float -> unit
+    external setGlobalAlpha : t -> float -> unit
       = "ml_canvas_set_global_alpha"
 
-    external getGlobalCompositeOperation : 'kind t -> CompositeOp.t
+    external getGlobalCompositeOperation : t -> CompositeOp.t
       = "ml_canvas_get_global_composite_operation"
 
-    external setGlobalCompositeOperation : 'kind t -> CompositeOp.t -> unit
+    external setGlobalCompositeOperation : t -> CompositeOp.t -> unit
       = "ml_canvas_set_global_composite_operation"
 
-    external getShadowColor : 'kind t -> Color.t
+    external getShadowColor : t -> Color.t
       = "ml_canvas_get_shadow_color"
 
-    external setShadowColor : 'kind t -> Color.t -> unit
+    external setShadowColor : t -> Color.t -> unit
       = "ml_canvas_set_shadow_color"
 
-    external getShadowBlur : 'kind t -> float
+    external getShadowBlur : t -> float
       = "ml_canvas_get_shadow_blur"
 
-    external setShadowBlur : 'kind t -> float -> unit
+    external setShadowBlur : t -> float -> unit
       = "ml_canvas_set_shadow_blur"
 
-    external getShadowOffset : 'kind t -> Vector.t
+    external getShadowOffset : t -> Vector.t
       = "ml_canvas_get_shadow_offset"
 
-    external setShadowOffset : 'kind t -> Vector.t -> unit
+    external setShadowOffset : t -> Vector.t -> unit
       = "ml_canvas_set_shadow_offset"
 
     external setFont :
-      'kind t -> string -> size:Font.size -> slant:Font.slant ->
+      t -> string -> size:Font.size -> slant:Font.slant ->
       weight:Font.weight -> unit
       = "ml_canvas_set_font"
 
     (* Paths *)
 
-    external clearPath : 'kind t -> unit
+    external clearPath : t -> unit
       = "ml_canvas_clear_path"
 
-    external closePath : 'kind t -> unit
+    external closePath : t -> unit
       = "ml_canvas_close_path"
 
-    external moveTo : 'kind t -> Point.t -> unit
+    external moveTo : t -> Point.t -> unit
       = "ml_canvas_move_to"
 
-    external lineTo : 'kind t -> Point.t -> unit
+    external lineTo : t -> Point.t -> unit
       = "ml_canvas_line_to"
 
     external arc :
-      'kind t -> center:Point.t -> radius:float ->
+      t -> center:Point.t -> radius:float ->
       theta1:float -> theta2:float -> ccw:bool -> unit
       = "ml_canvas_arc" "ml_canvas_arc_n"
 
-    external arcTo : 'kind t -> p1:Point.t -> p2:Point.t -> radius:float -> unit
+    external arcTo : t -> p1:Point.t -> p2:Point.t -> radius:float -> unit
       = "ml_canvas_arc_to"
 
-    external quadraticCurveTo : 'kind t -> cp:Point.t -> p:Point.t -> unit
+    external quadraticCurveTo : t -> cp:Point.t -> p:Point.t -> unit
       = "ml_canvas_quadratic_curve_to"
 
     external bezierCurveTo :
-      'kind t -> cp1:Point.t -> cp2:Point.t -> p:Point.t -> unit
+      t -> cp1:Point.t -> cp2:Point.t -> p:Point.t -> unit
       = "ml_canvas_bezier_curve_to"
 
-    external rect : 'kind t -> pos:Point.t -> size:Vector.t -> unit
+    external rect : t -> pos:Point.t -> size:Vector.t -> unit
       = "ml_canvas_rect"
 
     external ellipse :
-      'kind t -> center:Point.t -> radius:Vector.t ->
+      t -> center:Point.t -> radius:Vector.t ->
       rotation:float -> theta1:float -> theta2:float -> ccw:bool -> unit
       = "ml_canvas_ellipse" "ml_canvas_ellipse_n"
 
-    external fill : 'kind t -> nonzero:bool -> unit
+    external fill : t -> nonzero:bool -> unit
       = "ml_canvas_fill"
 
-    external fillPath : 'kind t -> Path.t -> nonzero:bool -> unit
+    external fillPath : t -> Path.t -> nonzero:bool -> unit
       = "ml_canvas_fill_path"
 
-    external stroke : 'kind t -> unit
+    external stroke : t -> unit
       = "ml_canvas_stroke"
 
-    external strokePath : 'kind t -> Path.t -> unit
+    external strokePath : t -> Path.t -> unit
       = "ml_canvas_stroke_path"
 
-    external clip : 'kind t -> nonzero:bool -> unit
+    external clip : t -> nonzero:bool -> unit
       = "ml_canvas_clip"
 
-    external clipPath : 'kind t -> Path.t -> nonzero:bool -> unit
+    external clipPath : t -> Path.t -> nonzero:bool -> unit
       = "ml_canvas_clip_path"
 
     (* Immediate drawing *)
 
-    external fillRect : 'kind t -> pos:Point.t -> size:Vector.t -> unit
+    external fillRect : t -> pos:Point.t -> size:Vector.t -> unit
       = "ml_canvas_fill_rect"
 
-    external strokeRect : 'kind t -> pos:Point.t -> size:Vector.t -> unit
+    external strokeRect : t -> pos:Point.t -> size:Vector.t -> unit
       = "ml_canvas_stroke_rect"
 
-    external fillText : 'kind t -> string -> Point.t -> unit
+    external fillText : t -> string -> Point.t -> unit
       = "ml_canvas_fill_text"
 
-    external strokeText : 'kind t -> string -> Point.t -> unit
+    external strokeText : t -> string -> Point.t -> unit
       = "ml_canvas_stroke_text"
 
     external blit :
-      dst:'kind1 t -> dpos:(int * int) ->
-      src:'kind2 t -> spos:(int * int) -> size:(int * int) -> unit
+      dst:t -> dpos:(int * int) ->
+      src:t -> spos:(int * int) -> size:(int * int) -> unit
       = "ml_canvas_blit"
 
     (* Direct pixel access *)
 
-    external getPixel : 'kind t -> (int * int) -> Color.t
+    external getPixel : t -> (int * int) -> Color.t
       = "ml_canvas_get_pixel"
 
-    external putPixel : 'kind t -> (int * int) -> Color.t -> unit
+    external putPixel : t -> (int * int) -> Color.t -> unit
       = "ml_canvas_put_pixel"
 
     external getImageData :
-      'kind t -> pos:(int * int) -> size:(int * int) -> ImageData.t
+      t -> pos:(int * int) -> size:(int * int) -> ImageData.t
       = "ml_canvas_get_image_data"
 
     external putImageData :
-      'kind t -> dpos:(int * int) -> ImageData.t ->
+      t -> dpos:(int * int) -> ImageData.t ->
       spos:(int * int) -> size:(int * int) -> unit
       = "ml_canvas_put_image_data"
 
     external importPNG_internal :
-      'kind t -> pos:(int * int) -> string -> ('kind t -> unit) -> unit
+      t -> pos:(int * int) -> string -> (t -> unit) -> unit
       = "ml_canvas_import_png"
 
-    let importPNG (c : 'kind t) ~pos filename : 'kind t React.event =
+    let importPNG (c : t) ~pos filename : t React.event =
       let event, send_event = React.E.create () in
       importPNG_internal c ~pos filename
         (fun c -> Pending.add_canvas event send_event c);
       event
 
-    external exportPNG : 'kind t -> string -> unit
+    external exportPNG : t -> string -> unit
       = "ml_canvas_export_png"
 
   end
@@ -852,7 +840,7 @@ module V1 = struct
     type timestamp = Int64.t
 
     type 'a canvas_event = {
-      canvas: [`Onscreen] Canvas.t;
+      canvas: Canvas.t;
       timestamp: timestamp;
       data: 'a;
     }
@@ -1104,7 +1092,7 @@ module V1 = struct
     }
 
     type frame_event = {
-      canvas: [`Onscreen] Canvas.t;
+      canvas: Canvas.t;
       timestamp: timestamp;
     }
 
@@ -1113,25 +1101,25 @@ module V1 = struct
       | In
 
     type canvas_focused_event = {
-      canvas: [`Onscreen] Canvas.t;
+      canvas: Canvas.t;
       timestamp: timestamp;
       focus: focus_direction;
     }
 
     type canvas_resized_event = {
-      canvas: [`Onscreen] Canvas.t;
+      canvas: Canvas.t;
       timestamp: timestamp;
       size: int * int;
     }
 
     type canvas_moved_event = {
-      canvas: [`Onscreen] Canvas.t;
+      canvas: Canvas.t;
       timestamp: timestamp;
       position: int * int;
     }
 
     type canvas_closed_event = {
-      canvas: [`Onscreen] Canvas.t;
+      canvas: Canvas.t;
       timestamp: timestamp;
     }
 
@@ -1140,7 +1128,7 @@ module V1 = struct
       | Down
 
     type key_action_event = {
-      canvas: [`Onscreen] Canvas.t;
+      canvas: Canvas.t;
       timestamp: timestamp;
       key: key;
       char: Uchar.t;
@@ -1149,7 +1137,7 @@ module V1 = struct
     }
 
     type button_action_event = {
-      canvas: [`Onscreen] Canvas.t;
+      canvas: Canvas.t;
       timestamp: timestamp;
       position: int * int;
       button: button;
@@ -1157,7 +1145,7 @@ module V1 = struct
     }
 
     type mouse_move_event = {
-      canvas: [`Onscreen] Canvas.t;
+      canvas: Canvas.t;
       timestamp: timestamp;
       position: int * int;
     }
@@ -1190,7 +1178,7 @@ module V1 = struct
     external getCurrentTimestamp : unit -> Event.timestamp
       = "ml_canvas_get_current_timestamp"
 
-    external getCanvas : int -> 'kind Canvas.t
+    external getCanvas : int -> Canvas.t
       = "ml_canvas_get_canvas"
 
     let run k =

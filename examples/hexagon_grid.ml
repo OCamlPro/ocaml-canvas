@@ -19,7 +19,7 @@ let clear_events () =
   events := []
 
 type state = {
-  mutable hex_grid_opt : [`Offscreen] Canvas.t option;
+  mutable hex_grid_opt : Canvas.t option;
   mutable counter : float;
 }
 

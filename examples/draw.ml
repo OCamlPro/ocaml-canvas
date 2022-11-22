@@ -29,7 +29,7 @@ type state = {
   mutable line_width : float;
   mutable selected_color : Color.t;
   mutable selecting_color : bool;
-  mutable color_map_opt : [`Offscreen] Canvas.t option;
+  mutable color_map_opt : Canvas.t option;
 }
 
 let state = {

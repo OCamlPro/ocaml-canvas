@@ -607,18 +607,6 @@ _ml_canvas_get_id_raw(
   }
 }
 
-CAMLprim value
-ml_canvas_hash(
-  value mlCanvas)
-{
-  CAMLparam1(mlCanvas);
-  static const value *mlHash = NULL;
-  if (mlHash == NULL) {
-    mlHash = caml_named_value("Hashtbl.hash");
-  }
-  CAMLreturn(caml_callback(*mlHash, Val_long(_ml_canvas_get_id_raw(mlCanvas))));
-}
-
 int
 ml_canvas_compare_raw(
   value mlCanvas1,
@@ -644,6 +632,18 @@ ml_canvas_compare(
 {
   CAMLparam2(mlCanvas1, mlCanvas2);
   CAMLreturn(Val_long(ml_canvas_compare_raw(mlCanvas1, mlCanvas2)));
+}
+
+CAMLprim value
+ml_canvas_hash(
+  value mlCanvas)
+{
+  CAMLparam1(mlCanvas);
+  static const value *mlHash = NULL;
+  if (mlHash == NULL) {
+    mlHash = caml_named_value("Hashtbl.hash");
+  }
+  CAMLreturn(caml_callback(*mlHash, Val_long(_ml_canvas_get_id_raw(mlCanvas))));
 }
 
 

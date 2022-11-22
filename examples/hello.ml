@@ -19,7 +19,7 @@ let clear_events () =
   events := []
 
 type state = {
-  mutable frog_opt : [`Offscreen] Canvas.t option;
+  mutable frog_opt : Canvas.t option;
   mutable frames : Int64.t
 }
 
