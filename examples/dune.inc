@@ -11,7 +11,8 @@
  (modes byte_complete native js)
  (modules hello)
  (libraries ocaml-canvas react)
- (js_of_ocaml (javascript_files hello-extfs.js)))
+ (js_of_ocaml
+  (javascript_files hello-extfs.js)))
 
 (rule
  (target hello-extfs.js)
@@ -73,7 +74,8 @@
  (modes byte_complete native js)
  (modules compositions)
  (libraries ocaml-canvas react)
- (js_of_ocaml (javascript_files compositions-extfs.js)))
+ (js_of_ocaml
+  (javascript_files compositions-extfs.js)))
 
 (rule
  (target compositions-extfs.js)
@@ -96,7 +98,8 @@
  (modes byte_complete native js)
  (modules clipping)
  (libraries ocaml-canvas react)
- (js_of_ocaml (javascript_files clipping-extfs.js)))
+ (js_of_ocaml
+  (javascript_files clipping-extfs.js)))
 
 (rule
  (target clipping-extfs.js)
@@ -110,7 +113,8 @@
  (modes byte_complete native js)
  (modules hexagon_grid)
  (libraries ocaml-canvas react)
- (js_of_ocaml (javascript_files hexagon_grid-extfs.js)))
+ (js_of_ocaml
+  (javascript_files hexagon_grid-extfs.js)))
 
 (rule
  (target hexagon_grid-extfs.js)
@@ -124,7 +128,8 @@
  (modes byte_complete native js)
  (modules ball)
  (libraries ocaml-canvas react)
- (js_of_ocaml (javascript_files ball-extfs.js)))
+ (js_of_ocaml
+  (javascript_files ball-extfs.js)))
 
 (rule
  (target ball-extfs.js)
@@ -138,7 +143,8 @@
  (modes byte_complete native js)
  (modules spritesheet)
  (libraries ocaml-canvas react)
- (js_of_ocaml (javascript_files spritesheet-extfs.js)))
+ (js_of_ocaml
+  (javascript_files spritesheet-extfs.js)))
 
 (rule
  (target spritesheet-extfs.js)
@@ -152,7 +158,8 @@
  (modes byte_complete native js)
  (modules draw)
  (libraries ocaml-canvas react)
- (js_of_ocaml (javascript_files draw-extfs.js)))
+ (js_of_ocaml
+  (javascript_files draw-extfs.js)))
 
 (rule
  (target draw-extfs.js)
