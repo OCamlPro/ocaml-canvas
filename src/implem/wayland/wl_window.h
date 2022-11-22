@@ -11,6 +11,9 @@
 #ifndef __WL_WINDOW_H
 #define __WL_WINDOW_H
 
+#include <stdint.h>
+#include <stdbool.h>
+
 #include "wl_target.h"
 
 typedef struct wl_window_t wl_window_t;

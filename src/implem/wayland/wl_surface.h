@@ -14,8 +14,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include <wayland-client.h>
-
 #include "../color.h"
 #include "wl_target.h"
 #include "wl_present_data.h"
