@@ -1,6 +1,6 @@
 (lang dune 2.1)
 (name ocaml-canvas)
-(version 0.9)
+(version 1.0.0)
 
 (formatting disabled)
 (generate_opam_files false)
@@ -33,7 +33,7 @@
   (conf-libxcb-keysyms (and (<> :os macos) (<> :os win32))))
 
  (depopts
-  (js_of_ocaml (and :build (>= 3.6)))
+  (js_of_ocaml (>= 3.6))
   (conf-libwayland (and (<> :os macos) (<> :os win32)))
   (conf-wayland-protocols (and (<> :os macos) (<> :os win32))))
 
