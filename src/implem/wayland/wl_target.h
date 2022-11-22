@@ -11,17 +11,13 @@
 #ifndef __WL_TARGET_H
 #define __WL_TARGET_H
 
-#include <wayland-client.h>
-
 typedef struct wl_target_t {
-  struct wl_shm *wl_shm;
-  struct wl_surface *wl_surface;
+  void *dummy;
 } wl_target_t;
 
 wl_target_t *
 wl_target_create(
-  struct wl_shm *wl_shm,
-  struct wl_surface *wl_surface);
+  void *dummy);
 
 void
 wl_target_destroy(

@@ -132,7 +132,7 @@ backend_get_time(
     case_GDI(result = gdi_get_time());
     case_QUARTZ(result = qtz_get_time());
     case_X11(result = x11_get_time());
-    case_WAYLAND(/*result = wl_get_time()*/);
+    case_WAYLAND(result = wl_get_time());
     default_fail();
   }
 
@@ -165,7 +165,7 @@ backend_init(
     case_GDI(result = gdi_backend_init());
     case_QUARTZ(result = qtz_backend_init());
     case_X11(result = x11_backend_init());
-    case_WAYLAND(/*result = wl_backend_init()*/);
+    case_WAYLAND(result = wl_backend_init());
     default_ignore();
   }
 
