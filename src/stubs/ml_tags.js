@@ -180,14 +180,15 @@ var BUTTON_STATE_TAG = {
 
 // Provides: EVENT_TAG
 var EVENT_TAG = {
-  FRAME          : 0,
-  CANVAS_FOCUSED : 1,
-  CANVAS_RESIZED : 2,
-  CANVAS_MOVED   : 3,
-  CANVAS_CLOSED  : 4,
-  KEY_ACTION     : 5,
-  BUTTON_ACTION  : 6,
-  MOUSE_MOVE     : 7
+  FRAME_CYCLE    : 0,
+  FRAME          : 1,
+  CANVAS_FOCUSED : 2,
+  CANVAS_RESIZED : 3,
+  CANVAS_MOVED   : 4,
+  CANVAS_CLOSED  : 5,
+  KEY_ACTION     : 6,
+  BUTTON_ACTION  : 7,
+  MOUSE_MOVE     : 8
 };
 
 //Provides: STYLE_TAG
