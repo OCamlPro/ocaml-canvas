@@ -18,6 +18,7 @@
 #include <assert.h>
 
 #include <windows.h>
+#include <windowsx.h>
 
 #include "../hashtable.h"
 #include "../event.h"
@@ -273,7 +274,7 @@ _gdi_mouse_event_button(
     case WM_MBUTTONUP:
       return BUTTON_MIDDLE;
     case WM_MOUSEWHEEL:
-      if ((wparam & 0xFFFF0000) > 0) { return BUTTON_WHEEL_UP; }
+      if (GET_WHEEL_DELTA_WPARAM(wparam) > 0) { return BUTTON_WHEEL_UP; }
       else { return BUTTON_WHEEL_DOWN; }
     default:
       assert(!"Unhandled mouse event button");
@@ -424,8 +425,8 @@ _gdi_window_proc(
     case WM_SIZE:
       w = gdi_backend_get_window(hwnd);
       if (w != NULL) {
-        w->base.width = (lparam & 0x0000FFFF);
-        w->base.height = (lparam & 0xFFFF0000) >> 16;
+        w->base.width = LOWORD(lparam);
+        w->base.height = HIWORD(lparam);
         evt.type = EVENT_RESIZE;
         evt.time = gdi_get_time();
         evt.target = (void *)w;
@@ -438,8 +439,8 @@ _gdi_window_proc(
     case WM_MOVE:
       w = gdi_backend_get_window(hwnd);
       if (w != NULL) {
-        w->base.x = (lparam & 0x0000FFFF);
-        w->base.y = (lparam & 0xFFFF0000) >> 16;
+        w->base.x = LOWORD(lparam);
+        w->base.y = HIWORD(lparam);
         evt.type = EVENT_MOVE;
         evt.time = gdi_get_time();
         evt.target = (void *)w;
@@ -505,8 +506,15 @@ _gdi_window_proc(
         evt.type = EVENT_BUTTON;
         evt.time = gdi_get_time();
         evt.target = (void *)w;
-        evt.desc.button.x = (lparam & 0x0000FFFF);
-        evt.desc.button.y = (lparam & 0xFFFF0000) >> 16;
+        if (msg == WM_MOUSEWHEEL) {
+          POINT pt = { .x = GET_X_LPARAM(lparam), .y = GET_Y_LPARAM(lparam) };
+          ScreenToClient(hwnd, &pt);
+          evt.desc.button.x = pt.x;
+          evt.desc.button.y = pt.y;
+        } else {
+          evt.desc.button.x = GET_X_LPARAM(lparam);
+          evt.desc.button.y = GET_Y_LPARAM(lparam);
+        }
         evt.desc.button.button = _gdi_mouse_event_button(msg, wparam, lparam);
         evt.desc.button.state = _gdi_mouse_event_state(msg, wparam, lparam);
         event_notify(gdi_back->listener, &evt);
@@ -519,8 +527,8 @@ _gdi_window_proc(
         evt.type = EVENT_CURSOR;
         evt.time = gdi_get_time();
         evt.target = (void *)w;
-        evt.desc.cursor.x = (lparam & 0x0000FFFF);
-        evt.desc.cursor.y = (lparam & 0xFFFF0000) >> 16;
+        evt.desc.cursor.x = GET_X_LPARAM(lparam);
+        evt.desc.cursor.y = GET_Y_LPARAM(lparam);
         event_notify(gdi_back->listener, &evt);
       }
       return 0;
@@ -530,8 +538,6 @@ _gdi_window_proc(
     default:
       return DefWindowProc(hwnd, msg, wparam, lparam);
   }
-
-  assert(!"Unhandled event");
 }
 
 #else
