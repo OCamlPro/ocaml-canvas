@@ -12,3 +12,4 @@ Authors
 -------
 
 * David Declerck <david.declerck@ocamlpro.com>
+* Hachem Ben Abdelbaki
