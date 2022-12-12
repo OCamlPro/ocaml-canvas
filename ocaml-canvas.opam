@@ -55,7 +55,7 @@ post-messages: [
         conf-libxcb-keysyms:installed) }
 ]
 build: [
-  ["dune" "subst"] { pinned }
+  ["dune" "subst"] { dev }
   ["sh" "-c" "dune build -p %{name}% @configure --auto-promote || true" ]
   ["dune" "build" "-p" name "-j" jobs
    "@install" "@runtest" { with-test } "@doc" { with-doc }]
