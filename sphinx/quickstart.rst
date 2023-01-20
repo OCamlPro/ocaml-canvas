@@ -119,12 +119,12 @@ program. It will show the number of frames displayed when quitting.
             Canvas.setFillColor c Color.red;
             Canvas.clearPath c;
             Canvas.arc c ~center:(float_of_int x, float_of_int y)
-              ~radius:5.0 ~theta1:0.0 ~theta2:(2.0 * Const.pi) ~ccw:false;
+              ~radius:5.0 ~theta1:0.0 ~theta2:(2.0 *. Const.pi) ~ccw:false;
             Canvas.fill c ~nonzero:false
           ) Event.button_down
       in
 
-      let frames = ref 0 in
+      let frames = ref 0L in
 
       let e4 =
         React.E.map (fun { Event.canvas = _; timestamp = _ } ->
