@@ -5,8 +5,8 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quick start &mdash; ocaml-canvas master
- (b977657
-) (2022/12/12 11:19) documentation</title>
+ (6bd7f69
+) (2023/01/20 14:31) documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/fixes.css" type="text/css" />
@@ -32,7 +32,7 @@
           </a>
               <div class="version">
                 master
- (b977657
+ (6bd7f69
 )
               </div>
 <div role="search">
@@ -197,12 +197,12 @@ program. It will show the number of frames displayed when quitting.</p>
         <span class="nn">Canvas</span><span class="p">.</span><span class="n">setFillColor</span> <span class="n">c</span> <span class="nn">Color</span><span class="p">.</span><span class="n">red</span><span class="o">;</span>
         <span class="nn">Canvas</span><span class="p">.</span><span class="n">clearPath</span> <span class="n">c</span><span class="o">;</span>
         <span class="nn">Canvas</span><span class="p">.</span><span class="n">arc</span> <span class="n">c</span> <span class="o">~</span><span class="n">center</span><span class="o">:(</span><span class="n">float_of_int</span> <span class="n">x</span><span class="o">,</span> <span class="n">float_of_int</span> <span class="n">y</span><span class="o">)</span>
-          <span class="o">~</span><span class="n">radius</span><span class="o">:</span><span class="mi">5</span><span class="o">.</span><span class="mi">0</span> <span class="o">~</span><span class="n">theta1</span><span class="o">:</span><span class="mi">0</span><span class="o">.</span><span class="mi">0</span> <span class="o">~</span><span class="n">theta2</span><span class="o">:(</span><span class="mi">2</span><span class="o">.</span><span class="mi">0</span> <span class="o">*</span> <span class="nn">Const</span><span class="p">.</span><span class="n">pi</span><span class="o">)</span> <span class="o">~</span><span class="n">ccw</span><span class="o">:</span><span class="bp">false</span><span class="o">;</span>
+          <span class="o">~</span><span class="n">radius</span><span class="o">:</span><span class="mi">5</span><span class="o">.</span><span class="mi">0</span> <span class="o">~</span><span class="n">theta1</span><span class="o">:</span><span class="mi">0</span><span class="o">.</span><span class="mi">0</span> <span class="o">~</span><span class="n">theta2</span><span class="o">:(</span><span class="mi">2</span><span class="o">.</span><span class="mi">0</span> <span class="o">*.</span> <span class="nn">Const</span><span class="p">.</span><span class="n">pi</span><span class="o">)</span> <span class="o">~</span><span class="n">ccw</span><span class="o">:</span><span class="bp">false</span><span class="o">;</span>
         <span class="nn">Canvas</span><span class="p">.</span><span class="n">fill</span> <span class="n">c</span> <span class="o">~</span><span class="n">nonzero</span><span class="o">:</span><span class="bp">false</span>
       <span class="o">)</span> <span class="nn">Event</span><span class="p">.</span><span class="n">button_down</span>
   <span class="k">in</span>
 
-  <span class="k">let</span> <span class="n">frames</span> <span class="o">=</span> <span class="n">ref</span> <span class="mi">0</span> <span class="k">in</span>
+  <span class="k">let</span> <span class="n">frames</span> <span class="o">=</span> <span class="n">ref</span> <span class="mi">0</span><span class="n">L</span> <span class="k">in</span>
 
   <span class="k">let</span> <span class="n">e4</span> <span class="o">=</span>
     <span class="nn">React</span><span class="p">.</span><span class="nn">E</span><span class="p">.</span><span class="n">map</span> <span class="o">(</span><span class="k">fun</span> <span class="o">{</span> <span class="nn">Event</span><span class="p">.</span><span class="n">canvas</span> <span class="o">=</span> <span class="o">_;</span> <span class="n">timestamp</span> <span class="o">=</span> <span class="o">_</span> <span class="o">}</span> <span class="o">-&gt;</span>
