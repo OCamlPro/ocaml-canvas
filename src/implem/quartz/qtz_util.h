@@ -8,20 +8,12 @@
 /*                                                                        */
 /**************************************************************************/
 
-#ifndef __SURFACE_INTERNAL_H
-#define __SURFACE_INTERNAL_H
+#ifndef __QTZ_UTIL_H
+#define __QTZ_UTIL_H
 
-#include <stdint.h>
+#include <Cocoa/Cocoa.h>
 
-#include "color.h"
+#define ALLOC_POOL NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init]
+#define RELEASE_POOL [pool release]
 
-typedef struct surface_impl_t surface_impl_t;
-
-typedef struct surface_t {
-  surface_impl_t *impl;
-  color_t_ *data;
-  int32_t width;
-  int32_t height;
-} surface_t;
-
-#endif /* __SURFACE_INTERNAL_H */
+#endif /* __QTZ_UTIL_H */

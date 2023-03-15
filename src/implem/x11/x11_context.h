@@ -8,61 +8,46 @@
 /*                                                                        */
 /**************************************************************************/
 
-#ifdef HAS_WAYLAND
+#ifndef __X11_CONTEXT_H
+#define __X11_CONTEXT_H
 
-#include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "../config.h"
+#include <xcb/xcb.h>
+
 #include "../color.h"
-#include "wl_target.h"
-#include "wl_present_data.h"
+#include "x11_target.h"
+#include "x11_present_data.h"
 
-typedef struct surface_impl_wl_t {
-  impl_type_t type;
-} surface_impl_wl_t;
+typedef struct context_impl_x11_t context_impl_x11_t;
 
-surface_impl_wl_t *
-surface_create_wl_impl(
-  wl_target_t *wl_target,
+context_impl_x11_t *
+context_create_x11_impl(
+  x11_target_t *target,
   int32_t width,
   int32_t height,
-  color_t_ **data)
-{
-  return NULL;
-}
+  color_t_ **data);
 
 void
-surface_destroy_wl_impl(
-  surface_impl_wl_t *impl)
-{
-}
+context_destroy_x11_impl(
+  context_impl_x11_t *impl);
 
 bool
-surface_resize_wl_impl(
-  surface_impl_wl_t *impl,
+context_resize_x11_impl(
+  context_impl_x11_t *impl,
   int32_t s_width,
   int32_t s_height,
   color_t_ **s_data,
   int32_t d_width,
   int32_t d_height,
-  color_t_ **d_data)
-{
-  return false;
-}
+  color_t_ **d_data);
 
 void
-surface_present_wl_impl(
-  surface_impl_wl_t *impl,
+context_present_x11_impl(
+  context_impl_x11_t *impl,
   int32_t width,
   int32_t height,
-  wl_present_data_t *present_data)
-{
-}
+  x11_present_data_t *present_data);
 
-#else
-
-const int wl_surface = 0;
-
-#endif /* HAS_WAYLAND */
+#endif /* __X11_CONTEXT_H */

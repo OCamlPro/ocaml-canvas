@@ -9,11 +9,11 @@
  (foreign_stubs
   (language c)
   (names config util unicode point rect list hashtable event
-         gdi_keyboard gdi_backend gdi_target gdi_window gdi_surface
-         qtz_keyboard qtz_backend qtz_target qtz_window qtz_surface
-         x11_keysym x11_keyboard x11_backend x11_target x11_window x11_surface
-         wl_backend wl_target wl_window wl_surface
-         window pixmap image_interpolation filters surface transform draw_instr
+         gdi_keyboard gdi_backend gdi_target gdi_window gdi_context
+         qtz_keyboard qtz_backend qtz_target qtz_window qtz_context
+         x11_keysym x11_keyboard x11_backend x11_target x11_window x11_context
+         wl_backend wl_target wl_window wl_context
+         window pixmap image_interpolation filters context transform draw_instr
          font_desc gdi_font qtz_font unx_font font
          gdi_impexp qtz_impexp unx_impexp impexp
          path arc path2d polygon polygonize

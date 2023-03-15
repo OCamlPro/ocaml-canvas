@@ -15,13 +15,11 @@
 
 typedef struct x11_target_t {
   xcb_window_t wid;
-  xcb_gcontext_t cid;
 } x11_target_t;
 
 x11_target_t *
 x11_target_create(
-  xcb_window_t wid,
-  xcb_gcontext_t cid);
+  xcb_window_t wid);
 
 void
 x11_target_destroy(

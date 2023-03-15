@@ -22,7 +22,6 @@ typedef struct x11_window_t {
 
   /* Specific to X11 windows */
   xcb_window_t wid;
-  xcb_gcontext_t cid;
 
 } x11_window_t;
 

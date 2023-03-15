@@ -8,34 +8,32 @@
 /*                                                                        */
 /**************************************************************************/
 
-#ifndef __QTZ_SURFACE_H
-#define __QTZ_SURFACE_H
+#ifndef __WL_CONTEXT_H
+#define __WL_CONTEXT_H
 
 #include <stdint.h>
 #include <stdbool.h>
 
-#include <Cocoa/Cocoa.h>
-
 #include "../color.h"
-#include "qtz_target.h"
-#include "qtz_present_data.h"
+#include "wl_target.h"
+#include "wl_present_data.h"
 
-typedef struct surface_impl_qtz_t surface_impl_qtz_t;
+typedef struct context_impl_wl_t context_impl_wl_t;
 
-surface_impl_qtz_t *
-surface_create_qtz_impl(
-  qtz_target_t *target,
+context_impl_wl_t *
+context_create_wl_impl(
+  wl_target_t *wl_target,
   int32_t width,
   int32_t height,
   color_t_ **data);
 
 void
-surface_destroy_qtz_impl(
-  surface_impl_qtz_t *impl);
+context_destroy_wl_impl(
+  context_impl_wl_t *impl);
 
 bool
-surface_resize_qtz_impl(
-  surface_impl_qtz_t *impl,
+context_resize_wl_impl(
+  context_impl_wl_t *impl,
   int32_t s_width,
   int32_t s_height,
   color_t_ **s_data,
@@ -44,10 +42,10 @@ surface_resize_qtz_impl(
   color_t_ **d_data);
 
 void
-surface_present_qtz_impl(
-  surface_impl_qtz_t *impl,
+context_present_wl_impl(
+  context_impl_wl_t *impl,
   int32_t width,
   int32_t height,
-  qtz_present_data_t *present_data);
+  wl_present_data_t *present_data);
 
-#endif /* __QTZ_SURFACE_H */
+#endif /* __WL_CONTEXT_H */

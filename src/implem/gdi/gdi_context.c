@@ -21,18 +21,17 @@
 #include "../config.h"
 #include "../color.h"
 #include "gdi_backend.h"
-#include "gdi_window.h"
 #include "gdi_target.h"
 
-typedef struct surface_impl_gdi_t {
+typedef struct context_impl_gdi_t {
   impl_type_t type;
   HBITMAP bmp;
   HDC hdc;
   HWND hwnd;
-} surface_impl_gdi_t;
+} context_impl_gdi_t;
 
 static HBITMAP
-_surface_create_gdi_bitmap(
+_context_create_gdi_bitmap(
   HDC hdc,
   int32_t width,
   int32_t height,
@@ -73,8 +72,8 @@ _surface_create_gdi_bitmap(
   return bmp;
 }
 
-surface_impl_gdi_t *
-surface_create_gdi_impl(
+context_impl_gdi_t *
+context_create_gdi_impl(
   gdi_target_t *target,
   int32_t width,
   int32_t height,
@@ -87,8 +86,8 @@ surface_create_gdi_impl(
   assert(data != NULL);
   assert(*data == NULL);
 
-  surface_impl_gdi_t *impl =
-    (surface_impl_gdi_t *)calloc(1, sizeof(surface_impl_gdi_t));
+  context_impl_gdi_t *impl =
+    (context_impl_gdi_t *)calloc(1, sizeof(context_impl_gdi_t));
   if (impl == NULL) {
     return NULL;
   }
@@ -106,7 +105,7 @@ surface_create_gdi_impl(
     return NULL;
   }
 
-  HBITMAP bmp = _surface_create_gdi_bitmap(hdc, width, height, data);
+  HBITMAP bmp = _context_create_gdi_bitmap(hdc, width, height, data);
   if (bmp == NULL) {
     assert(*data == NULL);
     DeleteDC(hdc);
@@ -116,15 +115,15 @@ surface_create_gdi_impl(
 
   impl->type = IMPL_GDI;
   impl->bmp = bmp;
-  impl->hwnd = target->hwnd;
   impl->hdc = hdc;
+  impl->hwnd = target->hwnd;
 
   return impl;
 }
 
 void
-surface_destroy_gdi_impl(
-  surface_impl_gdi_t *impl)
+context_destroy_gdi_impl(
+  context_impl_gdi_t *impl)
 {
   assert(impl != NULL);
   assert(impl->type == IMPL_GDI);
@@ -136,7 +135,7 @@ surface_destroy_gdi_impl(
 }
 
 static void
-_raw_surface_copy(
+_raw_context_copy(
   color_t_ *s_data,
   int32_t s_width,
   int32_t s_height,
@@ -161,8 +160,8 @@ _raw_surface_copy(
 }
 
 bool
-surface_resize_gdi_impl(
-  surface_impl_gdi_t *impl,
+context_resize_gdi_impl(
+  context_impl_gdi_t *impl,
   int32_t s_width,
   int32_t s_height,
   color_t_ **s_data,
@@ -181,12 +180,12 @@ surface_resize_gdi_impl(
   assert(*d_data == NULL);
 
   HBITMAP bmp =
-    _surface_create_gdi_bitmap(impl->hdc, d_width, d_height, d_data);
+    _context_create_gdi_bitmap(impl->hdc, d_width, d_height, d_data);
   if (bmp == NULL) {
     return false;
   }
 
-  _raw_surface_copy(*s_data, s_width, s_height, *d_data, d_width, d_height);
+  _raw_context_copy(*s_data, s_width, s_height, *d_data, d_width, d_height);
 
   if (impl->bmp) {
     DeleteObject(impl->bmp);
@@ -198,8 +197,8 @@ surface_resize_gdi_impl(
 }
 
 void
-surface_present_gdi_impl(
-  surface_impl_gdi_t *impl,
+context_present_gdi_impl(
+  context_impl_gdi_t *impl,
   int32_t width,
   int32_t height,
   gdi_present_data_t *present_data)
@@ -224,6 +223,6 @@ surface_present_gdi_impl(
 
 #else
 
-const int gdi_surface = 0;
+const int gdi_context = 0;
 
 #endif /* HAS_GDI */

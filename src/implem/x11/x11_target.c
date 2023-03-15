@@ -19,15 +19,13 @@
 
 x11_target_t *
 x11_target_create(
-  xcb_window_t wid,
-  xcb_gcontext_t cid)
+  xcb_window_t wid)
 {
   x11_target_t *target = (x11_target_t *)calloc(1, sizeof(x11_target_t));
   if (target == NULL) {
     return NULL;
   }
   target->wid = wid;
-  target->cid = cid;
   return target;
 }
 

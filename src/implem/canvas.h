@@ -514,7 +514,7 @@ canvas_put_pixel(
   int32_t y,
   color_t_ color);
 
-// Creates a copy of the surface pixels
+// Creates a copy of the context pixels
 // Be sure to free the data pointer when done
 pixmap_t
 canvas_get_pixmap(

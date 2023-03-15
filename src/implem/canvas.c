@@ -24,7 +24,7 @@
 #include "list.h"
 #include "window.h"
 #include "target.h"
-#include "surface.h"
+#include "context.h"
 #include "pixmap.h"
 #include "impexp.h"
 #include "state.h"
@@ -97,16 +97,16 @@ _canvas_create_internal(
     canvas->window = NULL;
 
     if (pixmap == NULL) {
-      canvas->surface = surface_create(width, height);
+      canvas->context = context_create(width, height);
     } else {
-      // Record the width and height first, as surface_create_from_pixmap
+      // Record the width and height first, as context_create_from_pixmap
       // steals the image data and resets the dimensions
       width = pixmap->width;
       height = pixmap->height;
-      canvas->surface = surface_create_from_pixmap(pixmap);
+      canvas->context = context_create_from_pixmap(pixmap);
     }
-    if (canvas->surface == NULL) {
-      goto error_offscreen_surface;
+    if (canvas->context == NULL) {
+      goto error_offscreen_context;
     }
 
   } else if (type == CANVAS_ONSCREEN) {
@@ -127,10 +127,10 @@ _canvas_create_internal(
       goto error_target;
     }
 
-    canvas->surface = surface_create_onscreen(target, width, height);
+    canvas->context = context_create_onscreen(target, width, height);
     free(target);
-    if (canvas->surface == NULL) {
-      goto error_onscreen_surface;
+    if (canvas->context == NULL) {
+      goto error_onscreen_context;
     }
   }
 
@@ -154,11 +154,11 @@ _canvas_create_internal(
 
   return canvas;
 
-error_onscreen_surface:
+error_onscreen_context:
 error_target:
   window_destroy(canvas->window);
 error_window:
-error_offscreen_surface:
+error_offscreen_context:
   list_delete(canvas->state_stack);
 error_state_stack:
   state_destroy(canvas->state);
@@ -244,7 +244,7 @@ _canvas_destroy(
   canvas_t *canvas)
 {
   assert(canvas != NULL);
-  assert(canvas->surface != NULL);
+  assert(canvas->context != NULL);
   assert(canvas->state != NULL);
   assert(canvas->state_stack != NULL);
   assert(canvas->path_2d != NULL);
@@ -255,7 +255,7 @@ _canvas_destroy(
 
   backend_remove_canvas(canvas);
 
-  surface_destroy(canvas->surface);
+  context_destroy(canvas->context);
 
   /* Offscreen and closed canvas do not have windows */
   if (canvas->window != NULL) {
@@ -285,7 +285,7 @@ canvas_show(
   canvas_t *canvas)
 {
   assert(canvas != NULL);
-  assert(canvas->surface != NULL);
+  assert(canvas->context != NULL);
 
   if (canvas->window != NULL) {
     window_show(canvas->window);
@@ -297,7 +297,7 @@ canvas_hide(
   canvas_t *canvas)
 {
   assert(canvas != NULL);
-  assert(canvas->surface != NULL);
+  assert(canvas->context != NULL);
 
   if (canvas->window != NULL) {
     window_hide(canvas->window);
@@ -369,7 +369,7 @@ canvas_get_size(
   const canvas_t *canvas)
 {
   assert(canvas != NULL);
-  assert(canvas->surface != NULL);
+  assert(canvas->context != NULL);
 
   return pair(int32_t, canvas->width, canvas->height);
 }
@@ -399,14 +399,14 @@ _canvas_set_size_internal(
   int32_t height)
 {
   assert(canvas != NULL);
-  assert(canvas->surface != NULL);
+  assert(canvas->context != NULL);
 
   _canvas_reset_state(canvas);
 
   width = max(1, width);
   height = max(1, height);
 
-  if (!surface_resize(canvas->surface, width, height)) {
+  if (!context_resize(canvas->context, width, height)) {
     return;
   }
 
@@ -416,9 +416,10 @@ _canvas_set_size_internal(
   if (canvas->window != NULL) {
 // should probably perform an internal present event instead
 // unless this is already requested internally
+// in particular, on macOS, we can't present when we want
     present_data_t pd;
     memset((void *)&pd, 0, sizeof(present_data_t));
-    surface_present(canvas->surface, &pd);
+    context_present(canvas->context, &pd);
   }
 }
 
@@ -429,7 +430,7 @@ canvas_set_size(
   int32_t height)
 {
   assert(canvas != NULL);
-  assert(canvas->surface != NULL);
+  assert(canvas->context != NULL);
 
   width = max(1, width);
   height = max(1, height);
@@ -446,7 +447,7 @@ canvas_get_position(
   const canvas_t *canvas)
 {
   assert(canvas != NULL);
-  assert(canvas->surface != NULL);
+  assert(canvas->context != NULL);
 
   if (canvas->window != NULL) {
     return window_get_position(canvas->window);
@@ -461,7 +462,7 @@ canvas_set_position(
   int32_t y)
 {
   assert(canvas != NULL);
-  assert(canvas->surface != NULL);
+  assert(canvas->context != NULL);
 
   if (canvas->window != NULL) {
     window_set_position(canvas->window, x, y);
@@ -1231,7 +1232,7 @@ canvas_fill(
   assert(c != NULL);
   assert(c->path_2d != NULL);
   assert(c->state != NULL);
-  assert(c->surface != NULL);
+  assert(c->context != NULL);
 
   _canvas_clip_region_ensure(c);
 
@@ -1243,7 +1244,7 @@ canvas_fill(
 
   rect_t bbox = { 0 };
   if (polygonize(path2d_get_path(c->path_2d), p, &bbox) == true) {
-    pixmap_t pm = surface_get_raw_pixmap(c->surface);
+    pixmap_t pm = context_get_raw_pixmap(c->context);
     poly_render(&pm, p, &bbox,
                 c->state->fill_style, c->state->global_alpha,
                 c->state->shadow_color, c->state->shadow_blur,
@@ -1263,7 +1264,7 @@ canvas_fill_path(
 {
   assert(c != NULL);
   assert(c->state != NULL);
-  assert(c->surface != NULL);
+  assert(c->context != NULL);
   assert(path != NULL);
 
   _canvas_clip_region_ensure(c);
@@ -1296,7 +1297,7 @@ canvas_fill_path(
     bbox.p1 = point(xmin, ymin);
     bbox.p2 = point(xmax, ymax);
 
-    pixmap_t pm = surface_get_raw_pixmap(c->surface);
+    pixmap_t pm = context_get_raw_pixmap(c->context);
     poly_render(&pm, p, &bbox,
                 c->state->fill_style, c->state->global_alpha,
                 c->state->shadow_color, c->state->shadow_blur,
@@ -1314,7 +1315,7 @@ canvas_stroke(
 {
   assert(c != NULL);
   assert(c->state != NULL);
-  assert(c->surface != NULL);
+  assert(c->context != NULL);
   assert(c->path_2d != NULL);
 
   _canvas_clip_region_ensure(c);
@@ -1333,7 +1334,7 @@ canvas_stroke(
                          c->state->transform, true,
                          c->state->line_dash, c->state->line_dash_len,
                          c->state->line_dash_offset) == true) {
-    pixmap_t pm = surface_get_raw_pixmap(c->surface);
+    pixmap_t pm = context_get_raw_pixmap(c->context);
     poly_render(&pm, p, &bbox,
                 c->state->stroke_style, c->state->global_alpha,
                 c->state->shadow_color, c->state->shadow_blur,
@@ -1352,7 +1353,7 @@ canvas_stroke_path(
 {
   assert(c != NULL);
   assert(c->state != NULL);
-  assert(c->surface != NULL);
+  assert(c->context != NULL);
   assert(path != NULL);
 
   _canvas_clip_region_ensure(c);
@@ -1371,7 +1372,7 @@ canvas_stroke_path(
                          c->state->transform, false,
                          c->state->line_dash, c->state->line_dash_len,
                          c->state->line_dash_offset) == true) {
-    pixmap_t pm = surface_get_raw_pixmap(c->surface);
+    pixmap_t pm = context_get_raw_pixmap(c->context);
     poly_render(&pm, p, &bbox,
                 c->state->stroke_style, c->state->global_alpha,
                 c->state->shadow_color, c->state->shadow_blur,
@@ -1502,7 +1503,7 @@ canvas_fill_rect(
     return;
   }
 
-  pixmap_t pm = surface_get_raw_pixmap(c->surface);
+  pixmap_t pm = context_get_raw_pixmap(c->context);
   poly_render(&pm, p, &bbox,
               c->state->fill_style, c->state->global_alpha,
               c->state->shadow_color, c->state->shadow_blur,
@@ -1547,7 +1548,7 @@ canvas_stroke_rect(
                  c->state->transform, true, c->state->line_dash,
                  c->state->line_dash_len, c->state->line_dash_offset);
 
-  pixmap_t pm = surface_get_raw_pixmap(c->surface);
+  pixmap_t pm = context_get_raw_pixmap(c->context);
   poly_render(&pm, tp, &bbox,
               c->state->stroke_style, c->state->global_alpha,
               c->state->shadow_color, c->state->shadow_blur,
@@ -1611,7 +1612,7 @@ canvas_fill_text(
     rect_t bbox = { 0 };
     if (font_char_as_poly(c->font, c->state->transform,
                           chr, &pen, p, &bbox) == true) {
-      pixmap_t pm = surface_get_raw_pixmap(c->surface);
+      pixmap_t pm = context_get_raw_pixmap(c->context);
       poly_render(&pm, p, &bbox,
                   c->state->fill_style, c->state->global_alpha,
                   c->state->shadow_color, c->state->shadow_blur,
@@ -1655,7 +1656,7 @@ canvas_stroke_text(
     if (font_char_as_poly_outline(c->font, c->state->transform,
                                   chr, c->state->line_width,
                                   &pen, p, &bbox) == true) {
-      pixmap_t pm = surface_get_raw_pixmap(c->surface);
+      pixmap_t pm = context_get_raw_pixmap(c->context);
       poly_render(&pm, p, &bbox,
                   c->state->stroke_style, c->state->global_alpha,
                   c->state->shadow_color, c->state->shadow_blur,
@@ -1680,9 +1681,9 @@ canvas_blit(
   int32_t height)
 {
   assert(dc != NULL);
-  assert(dc->surface != NULL);
+  assert(dc->context != NULL);
   assert(sc != NULL);
-  assert(sc->surface != NULL);
+  assert(sc->context != NULL);
 
   bool draw_shadows =
     (dc->state->shadow_blur > 0.0 ||
@@ -1691,8 +1692,8 @@ canvas_blit(
     dc->state->global_composite_operation != COPY &&
     dc->state->shadow_color.a != 0;
 
-  const pixmap_t sp = surface_get_raw_pixmap((surface_t *)sc->surface);
-  pixmap_t dp = surface_get_raw_pixmap(dc->surface);
+  const pixmap_t sp = context_get_raw_pixmap((context_t *)sc->context);
+  pixmap_t dp = context_get_raw_pixmap(dc->context);
 
   if ((transform_is_pure_translation(dc->state->transform) == true) &&
       (draw_shadows == false)) {
@@ -1762,7 +1763,7 @@ canvas_blit(
     transform_t *temp_transform = transform_copy(dc->state->transform);
     transform_translate(temp_transform, dx - sx, dy - sy);
 
-    pixmap_t pm = surface_get_raw_pixmap((surface_t *)dc->surface);
+    pixmap_t pm = context_get_raw_pixmap((context_t *)dc->context);
     poly_render(&pm, p, &bbox,
                 draw_style, dc->state->global_alpha,
                 dc->state->shadow_color, dc->state->shadow_blur,
@@ -1784,11 +1785,11 @@ canvas_get_pixel(
   int32_t y)
 {
   assert(c != NULL);
-  assert(c->surface != NULL);
+  assert(c->context != NULL);
 
   color_t_ color = color_black;
 
-  const pixmap_t pm = surface_get_raw_pixmap((surface_t *)c->surface);
+  const pixmap_t pm = context_get_raw_pixmap((context_t *)c->context);
   if (pixmap_valid(pm) == true) {
     if ((x >= 0) && (x < pm.width) && (y >= 0) && (y < pm.height)) {
       color = pixmap_at(pm, y, x);
@@ -1806,9 +1807,9 @@ canvas_put_pixel(
   color_t_ color)
 {
   assert(c != NULL);
-  assert(c->surface != NULL);
+  assert(c->context != NULL);
 
-  pixmap_t pm = surface_get_raw_pixmap(c->surface);
+  pixmap_t pm = context_get_raw_pixmap(c->context);
   if (pixmap_valid(pm) == true) {
     if ((x >= 0) && (x < pm.width) && (y >= 0) && (y < pm.height)) {
       pixmap_at(pm, y, x) = color;
@@ -1825,11 +1826,11 @@ canvas_get_pixmap(
   int32_t height)
 {
   assert(c != NULL);
-  assert(c->surface != NULL);
+  assert(c->context != NULL);
 
   pixmap_t dp = { 0 };
 
-  const pixmap_t sp = surface_get_raw_pixmap((surface_t *)c->surface);
+  const pixmap_t sp = context_get_raw_pixmap((context_t *)c->context);
   if (pixmap_valid(sp) == true) {
     dp = pixmap(width, height, NULL);
     if (pixmap_valid(dp) == true) {
@@ -1852,11 +1853,11 @@ canvas_put_pixmap(
   int32_t height)
 {
   assert(c != NULL);
-  assert(c->surface != NULL);
+  assert(c->context != NULL);
   assert(sp != NULL);
   assert(pixmap_valid(*sp) == true);
 
-  pixmap_t dp = surface_get_raw_pixmap(c->surface);
+  pixmap_t dp = context_get_raw_pixmap(c->context);
   if (pixmap_valid(dp) == true) {
     pixmap_blit(&dp, dx, dy, sp, sx, sy, width, height);
   }
@@ -1870,10 +1871,10 @@ canvas_export_png(
   const char *filename) // as UTF-8
 {
   assert(c != NULL);
-  assert(c->surface != NULL);
+  assert(c->context != NULL);
   assert(filename != NULL);
 
-  const pixmap_t pm = surface_get_raw_pixmap((surface_t *)c->surface);
+  const pixmap_t pm = context_get_raw_pixmap((context_t *)c->context);
   if (pixmap_valid(pm) == false) {
     return false;
   }
@@ -1888,10 +1889,10 @@ canvas_import_png(
   const char *filename) // as UTF-8
 {
   assert(c != NULL);
-  assert(c->surface != NULL);
+  assert(c->context != NULL);
   assert(filename != NULL);
 
-  pixmap_t pm = surface_get_raw_pixmap(c->surface);
+  pixmap_t pm = context_get_raw_pixmap(c->context);
   if (pixmap_valid(pm) == false) {
     return false;
   }

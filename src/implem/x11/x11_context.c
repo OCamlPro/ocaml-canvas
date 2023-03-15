@@ -22,18 +22,17 @@
 #include "../config.h"
 #include "../color.h"
 #include "x11_backend_internal.h"
-#include "x11_window.h"
 #include "x11_target.h"
 
-typedef struct surface_impl_x11_t {
+typedef struct context_impl_x11_t {
   impl_type_t type;
   xcb_image_t *img;
   xcb_window_t wid;
   xcb_gcontext_t cid;
-} surface_impl_x11_t;
+} context_impl_x11_t;
 
 static xcb_image_t *
-_surface_create_x11_image(
+_context_create_x11_image(
   xcb_connection_t *c,
   uint8_t depth,
   int32_t width,
@@ -64,8 +63,8 @@ _surface_create_x11_image(
   return img;
 }
 
-surface_impl_x11_t *
-surface_create_x11_impl(
+context_impl_x11_t *
+context_create_x11_impl(
   x11_target_t *target,
   int32_t width,
   int32_t height,
@@ -78,15 +77,19 @@ surface_create_x11_impl(
   assert(data != NULL);
   assert(*data == NULL);
 
-  surface_impl_x11_t *impl =
-    (surface_impl_x11_t *)calloc(1, sizeof(surface_impl_x11_t));
+  context_impl_x11_t *impl =
+    (context_impl_x11_t *)calloc(1, sizeof(context_impl_x11_t));
   if (impl == NULL) {
     return NULL;
   }
 
+  xcb_gcontext_t cid = xcb_generate_id(x11_back->c);
+  xcb_create_gc(x11_back->c, cid, target->wid,
+                XCB_GC_GRAPHICS_EXPOSURES, (uint32_t[]){ 1 });
+
   // TODO: allow xcb / SHM
 
-  xcb_image_t *img = _surface_create_x11_image(x11_back->c,
+  xcb_image_t *img = _context_create_x11_image(x11_back->c,
                                                x11_back->screen->root_depth,
                                                width, height, data);
   if (img == NULL) {
@@ -96,26 +99,32 @@ surface_create_x11_impl(
 
   impl->type = IMPL_X11;
   impl->wid = target->wid;
-  impl->cid = target->cid;
+  impl->cid = cid;
   impl->img = img;
 
   return impl;
 }
 
 void
-surface_destroy_x11_impl(
-  surface_impl_x11_t *impl)
+context_destroy_x11_impl(
+  context_impl_x11_t *impl)
 {
   assert(impl != NULL);
   assert(impl->type == IMPL_X11);
 
-  if (impl->img) {
+  if (impl->img != NULL) {
     xcb_image_destroy(impl->img);
   }
+
+  if (impl->cid != XCB_NONE) {
+    xcb_free_gc(x11_back->c, impl->cid);
+  }
+
+  // free ?
 }
 
 static void
-_raw_surface_copy(
+_raw_context_copy(
   color_t_ *s_data,
   int32_t s_width,
   int32_t s_height,
@@ -140,8 +149,8 @@ _raw_surface_copy(
 }
 
 bool
-surface_resize_x11_impl(
-  surface_impl_x11_t *impl,
+context_resize_x11_impl(
+  context_impl_x11_t *impl,
   int32_t s_width,
   int32_t s_height,
   color_t_ **s_data,
@@ -159,14 +168,14 @@ surface_resize_x11_impl(
   assert(d_data != NULL);
   assert(*d_data == NULL);
 
-  xcb_image_t *img = _surface_create_x11_image(x11_back->c,
+  xcb_image_t *img = _context_create_x11_image(x11_back->c,
                                                x11_back->screen->root_depth,
                                                d_width, d_height, d_data);
   if (img == NULL) {
     return false;
   }
 
-  _raw_surface_copy(*s_data, s_width, s_height, *d_data, d_width, d_height);
+  _raw_context_copy(*s_data, s_width, s_height, *d_data, d_width, d_height);
 
   if (impl->img) {
     xcb_image_destroy(impl->img);
@@ -179,8 +188,8 @@ surface_resize_x11_impl(
 }
 
 void
-surface_present_x11_impl(
-  surface_impl_x11_t *impl,
+context_present_x11_impl(
+  context_impl_x11_t *impl,
   int32_t width,
   int32_t height,
   x11_present_data_t *present_data)
@@ -196,6 +205,6 @@ surface_present_x11_impl(
 
 #else
 
-const int x11_surface = 0;
+const int x11_context = 0;
 
 #endif /* HAS_X11 */

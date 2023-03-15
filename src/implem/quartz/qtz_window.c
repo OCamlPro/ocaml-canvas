@@ -21,13 +21,11 @@
 #include <Cocoa/Cocoa.h>
 
 #include "../util.h"
+#include "qtz_util.h"
 #include "qtz_backend.h"
 #include "qtz_backend_internal.h"
 #include "qtz_target.h"
 #include "qtz_window_internal.h"
-
-#define ALLOC_POOL NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init]
-#define RELEASE_POOL [pool release]
 
 @interface CanvasWindow : NSWindow <NSDraggingDestination>
 
@@ -158,36 +156,6 @@
 
 @end
 
-@interface CanvasView : NSView
-
-@end
-
-@implementation CanvasView { }
-
-- (BOOL)isFlipped
-{
-  return FALSE;
-}
-
-- (BOOL)preservesContentDuringLiveResize
-{
-  return TRUE;
-}
-
-- (void)drawRect:(NSRect)rect
-{
-  qtz_window_t *w = qtz_backend_get_window([self window]);
-  if (w != NULL) {
-    event_t evt;
-    evt.type = EVENT_PRESENT;
-    evt.time = qtz_get_time();
-    evt.target = (void *)w;
-    event_notify(qtz_back->listener, &evt);
-  }
-}
-
-@end
-
 
 
 static void
@@ -253,11 +221,6 @@ qtz_window_create(
     initWithContentRect:crect styleMask:mask
     backing:NSBackingStoreBuffered defer:NO];
 
-  NSRect frect = [window->nswin frameRectForContentRect:crect];
-  window->nsview = [[CanvasView alloc] initWithFrame:frect];
-  [window->nsview setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-  [window->nswin setContentView:window->nsview];
-
   if (maximize == false) {
     NSButton *b = [window->nswin standardWindowButton:NSWindowZoomButton];
     [b setEnabled:NO];
@@ -296,9 +259,9 @@ qtz_window_get_target(
   qtz_window_t *window)
 {
   assert(window != NULL);
-  assert(window->nsview != NULL);
+  assert(window->nswin != NULL);
 
-  return qtz_target_create(window->nsview);
+  return qtz_target_create(window->nswin);
 }
 
 void

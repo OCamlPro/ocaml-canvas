@@ -8,44 +8,20 @@
 /*                                                                        */
 /**************************************************************************/
 
-#ifndef __WL_SURFACE_H
-#define __WL_SURFACE_H
+#ifndef __CONTEXT_INTERNAL_H
+#define __CONTEXT_INTERNAL_H
 
 #include <stdint.h>
-#include <stdbool.h>
 
-#include "../color.h"
-#include "wl_target.h"
-#include "wl_present_data.h"
+#include "color.h"
 
-typedef struct surface_impl_wl_t surface_impl_wl_t;
+typedef struct context_impl_t context_impl_t;
 
-surface_impl_wl_t *
-surface_create_wl_impl(
-  wl_target_t *wl_target,
-  int32_t width,
-  int32_t height,
-  color_t_ **data);
+typedef struct context_t {
+  context_impl_t *impl;
+  color_t_ *data;
+  int32_t width;
+  int32_t height;
+} context_t;
 
-void
-surface_destroy_wl_impl(
-  surface_impl_wl_t *impl);
-
-bool
-surface_resize_wl_impl(
-  surface_impl_wl_t *impl,
-  int32_t s_width,
-  int32_t s_height,
-  color_t_ **s_data,
-  int32_t d_width,
-  int32_t d_height,
-  color_t_ **d_data);
-
-void
-surface_present_wl_impl(
-  surface_impl_wl_t *impl,
-  int32_t width,
-  int32_t height,
-  wl_present_data_t *present_data);
-
-#endif /* __WL_SURFACE_H */
+#endif /* __CONTEXT_INTERNAL_H */

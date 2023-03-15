@@ -8,8 +8,8 @@
 /*                                                                        */
 /**************************************************************************/
 
-#ifndef __SURFACE_H
-#define __SURFACE_H
+#ifndef __CONTEXT_H
+#define __CONTEXT_H
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -19,46 +19,46 @@
 #include "present_data.h"
 #include "pixmap.h"
 
-typedef struct surface_t surface_t;
+typedef struct context_t context_t;
 
-surface_t *
-surface_create(
+context_t *
+context_create(
   int32_t width,
   int32_t height);
 
-// Creates a surface from a pixmap
-// The data pointer is transfered to the surface
+// Creates a context from a pixmap
+// The data pointer is transfered to the context
 // (thus removed from the pixmap); if you kept
 // a copy, do NOT free it !
-surface_t *
-surface_create_from_pixmap(
+context_t *
+context_create_from_pixmap(
   pixmap_t *pixmap);
 
-surface_t *
-surface_create_onscreen(
+context_t *
+context_create_onscreen(
   target_t *target,
   int32_t width,
   int32_t height);
 
 void
-surface_destroy(
-  surface_t *s);
+context_destroy(
+  context_t *c);
 
 bool
-surface_resize(
-  surface_t *s,
+context_resize(
+  context_t *c,
   int32_t width,
   int32_t height);
 
 void
-surface_present(
-  surface_t *s,
+context_present(
+  context_t *c,
   present_data_t *present_data);
 
-// Direct access to the surface pixels
+// Direct access to the context pixels
 // Do NOT free the data pointer !
 pixmap_t
-surface_get_raw_pixmap(
-  surface_t *s);
+context_get_raw_pixmap(
+  context_t *c);
 
-#endif /* __SURFACE_H */
+#endif /* __CONTEXT_H */

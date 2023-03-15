@@ -18,7 +18,7 @@
 #include "hashtable.h"
 #include "event.h"
 #include "window.h"
-#include "surface.h"
+#include "context.h"
 #include "canvas.h"
 #include "canvas_internal.h"
 #include "poly_render.h"
@@ -71,7 +71,7 @@ _backend_process_event(
     case EVENT_PRESENT: /* internal event */
       if ((canvas->autocommit == true) || (canvas->committed == true)) {
         canvas->committed = false;
-        surface_present(canvas->surface, &event->desc.present.data);
+        context_present(canvas->context, &event->desc.present.data);
       }
       result = true;
       break;

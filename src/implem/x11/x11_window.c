@@ -146,11 +146,6 @@ x11_window_create(
                      // XCB_EVENT_MASK_OWNER_GRAB_BUTTON |
                           0 });
 
-  /* Create graphic context */
-  window->cid = xcb_generate_id(x11_back->c);
-  xcb_create_gc(x11_back->c, window->cid, window->wid,
-                XCB_GC_GRAPHICS_EXPOSURES, (uint32_t[]){ 1 });
-
   /* Set the title */
   const char *t = (title != NULL) ? title : "";
   _x11_window_set_wm_class(window, "OCaml-Canvas", "OCaml-Canvas");
@@ -248,7 +243,8 @@ x11_window_get_target(
 {
   assert(window != NULL);
   assert(window->wid != XCB_WINDOW_NONE);
-  return x11_target_create(window->wid, window->cid);
+
+  return x11_target_create(window->wid);
 }
 
 void

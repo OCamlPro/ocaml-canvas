@@ -23,13 +23,11 @@
 
 #include "../hashtable.h"
 #include "../event.h"
+#include "qtz_util.h"
 #include "qtz_keyboard.h"
 #include "qtz_window_internal.h"
 #include "qtz_backend.h"
 #include "qtz_backend_internal.h"
-
-#define ALLOC_POOL NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init]
-#define RELEASE_POOL [pool release]
 
 qtz_backend_t *qtz_back = NULL;
 
@@ -220,7 +218,7 @@ _qtz_render_all_windows(
       if (w->base.visible == true) {
         evt.target = (void *)w;
         if (event_notify(qtz_back->listener, &evt)) {
-          [w->nsview setNeedsDisplay:YES];
+          [[w->nswin contentView] setNeedsDisplay:YES];
         }
       }
     }
