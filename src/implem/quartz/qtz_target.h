@@ -14,12 +14,12 @@
 #include <Cocoa/Cocoa.h>
 
 typedef struct qtz_target_t {
-  NSView *nsview;
+  NSWindow *nswin;
 } qtz_target_t;
 
 qtz_target_t *
 qtz_target_create(
-  NSView *nsview);
+  NSWindow *nswin);
 
 void
 qtz_target_destroy(

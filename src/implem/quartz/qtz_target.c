@@ -19,16 +19,16 @@
 
 qtz_target_t *
 qtz_target_create(
-  NSView *nsview)
+  NSWindow *nswin)
 {
   assert(nsview != NULL);
   qtz_target_t *target = (qtz_target_t *)calloc(1, sizeof(qtz_target_t));
   if (target == NULL) {
     return NULL;
   }
-  target->nsview = nsview;
-  return target;
-}
+  target->nswin = nswin; // technically, should retain/release,
+  return target;         // but we're using target before the
+}                        // window can be destroyed
 
 void
 qtz_target_destroy(

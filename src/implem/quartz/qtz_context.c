@@ -20,18 +20,64 @@
 
 #include "../config.h"
 #include "../color.h"
+#include "qtz_util.h"
 #include "qtz_backend.h"
-#include "qtz_window.h"
 #include "qtz_target.h"
+#include "qtz_context.h"
 
-typedef struct surface_impl_qtz_t {
+@interface CanvasView : NSView
+{
+  @public context_impl_qtz_t *impl;
+}
+@end
+
+typedef struct context_impl_qtz_t {
   impl_type_t type;
   CGContextRef ctxt;
-  NSView *nsview;
-} surface_impl_qtz_t;
+  CanvasView *nsview;
+} context_impl_qtz_t;
+
+void
+context_present_qtz_impl2(
+  context_impl_qtz_t *impl,
+  int32_t width,
+  int32_t height,
+  qtz_present_data_t *present_data);
+
+@implementation CanvasView { }
+
+- (BOOL)isFlipped
+{
+  return FALSE;
+}
+
+- (BOOL)preservesContentDuringLiveResize
+{
+  return TRUE;
+}
+
+- (void)drawRect:(NSRect)rect // called after setNeedsDisplay:YES
+{
+/*
+  qtz_window_t *w = qtz_backend_get_window([self window]);
+  if (w != NULL) {
+    event_t evt;
+    evt.type = EVENT_PRESENT;
+    evt.time = qtz_get_time();
+    evt.target = (void *)w;
+    event_notify(qtz_back->listener, &evt);
+  }
+*/
+  qtz_present_data_t present_data = { 0 };
+
+  context_present_qtz_impl2(self->impl, 0, 0, &present_data);
+
+}
+
+@end
 
 static CGContextRef
-_surface_create_qtz_bitmap_context(
+_context_create_qtz_bitmap_context(
   int32_t width,
   int32_t height,
   color_t_ **data)
@@ -68,8 +114,8 @@ _surface_create_qtz_bitmap_context(
   return ctxt;
 }
 
-surface_impl_qtz_t *
-surface_create_qtz_impl(
+context_impl_qtz_t *
+context_create_qtz_impl(
   qtz_target_t *target,
   int32_t width,
   int32_t height,
@@ -82,40 +128,56 @@ surface_create_qtz_impl(
   assert(data != NULL);
   assert(*data == NULL);
 
-  surface_impl_qtz_t *impl =
-    (surface_impl_qtz_t *)calloc(1, sizeof(surface_impl_qtz_t));
+  context_impl_qtz_t *impl =
+    (context_impl_qtz_t *)calloc(1, sizeof(context_impl_qtz_t));
   if (impl == NULL) {
     return NULL;
   }
 
-  CGContextRef ctxt = _surface_create_qtz_bitmap_context(width, height, data);
+  ALLOC_POOL; // don't know if necessary here
+
+  CanvasView *nsview =
+    [[CanvasView alloc] initWithFrame:[target->nswin frame]];
+  [nsview setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+  [target->nswin setContentView:nsview];
+  nsview->impl = impl;
+
+  RELEASE_POOL;
+
+  CGContextRef ctxt =
+    _context_create_qtz_bitmap_context(width, height, data);
   if (ctxt == NULL) {
     free(impl);
     return NULL;
   }
 
   impl->type = IMPL_QUARTZ;
-  impl->nsview = target->nsview;
   impl->ctxt = ctxt;
+  impl->nsview = nsview;
 
   return impl;
 }
 
 void
-surface_destroy_qtz_impl(
-  surface_impl_qtz_t *impl)
+context_destroy_qtz_impl(
+  context_impl_qtz_t *impl)
 {
   assert(impl != NULL);
   assert(impl->type == IMPL_QUARTZ);
 
-  if (impl->ctxt) {
+  if (impl->ctxt != NULL) {
     // Note: does not free the underlying memory if explicitly given
     CGContextRelease(impl->ctxt);
   }
+
+  if (impl->nsview != NULL) {
+    [impl->nsview release];
+  }
+
 }
 
 static void
-_raw_surface_copy(
+_raw_context_copy(
   color_t_ *s_data,
   int32_t s_width,
   int32_t s_height,
@@ -140,8 +202,8 @@ _raw_surface_copy(
 }
 
 bool
-surface_resize_qtz_impl(
-  surface_impl_qtz_t *impl,
+context_resize_qtz_impl(
+  context_impl_qtz_t *impl,
   int32_t s_width,
   int32_t s_height,
   color_t_ **s_data,
@@ -160,12 +222,12 @@ surface_resize_qtz_impl(
   assert(*d_data == NULL);
 
   CGContextRef ctxt =
-    _surface_create_qtz_bitmap_context(d_width, d_height, d_data);
+    _context_create_qtz_bitmap_context(d_width, d_height, d_data);
   if (ctxt == NULL) {
     return false;
   }
 
-  _raw_surface_copy(*s_data, s_width, s_height, *d_data, d_width, d_height);
+  _raw_context_copy(*s_data, s_width, s_height, *d_data, d_width, d_height);
 
   if (impl->ctxt) {
     CGContextRelease(impl->ctxt);
@@ -177,8 +239,18 @@ surface_resize_qtz_impl(
 }
 
 void
-surface_present_qtz_impl(
-  surface_impl_qtz_t *impl,
+context_present_qtz_impl(
+  context_impl_qtz_t *impl,
+  int32_t width,
+  int32_t height,
+  qtz_present_data_t *present_data)
+{
+  // TODO
+}
+
+void
+context_present_qtz_impl2(
+  context_impl_qtz_t *impl,
   int32_t width,
   int32_t height,
   qtz_present_data_t *present_data)
@@ -196,6 +268,8 @@ surface_present_qtz_impl(
   // The underlying memory is copy-on write, so we should just create
   // this object before blitting and then release it immediately
   CGImageRef img = CGBitmapContextCreateImage(impl->ctxt);
+height = CGImageGetHeight(img);
+width = CGImageGetWidth(img);
   CGContextDrawImage(ctxt, CGRectMake(0, impl->nsview.frame.size.height - height, width, height), img);
 
   [[NSGraphicsContext currentContext] flushGraphics];
@@ -207,6 +281,6 @@ surface_present_qtz_impl(
 
 #else
 
-const int qtz_surface = 0;
+const int qtz_context = 0;
 
 #endif /* HAS_QUARTZ */

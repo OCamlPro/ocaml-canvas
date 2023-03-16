@@ -24,10 +24,8 @@
 #include "../polygonize.h"
 #include "../transform.h"
 #include "../font_desc_internal.h"
+#include "qtz_util.h"
 #include "qtz_font_internal.h"
-
-#define ALLOC_POOL NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init]
-#define RELEASE_POOL [pool release]
 
 static double
 _qtz_font_slant(

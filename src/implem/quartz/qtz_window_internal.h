@@ -22,7 +22,6 @@ typedef struct qtz_window_t {
 
   /* Specific to Quartz windows */
   NSWindow *nswin;
-  NSView *nsview;
 
 } qtz_window_t;
 
