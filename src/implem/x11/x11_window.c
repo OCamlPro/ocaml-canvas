@@ -64,10 +64,11 @@ _x11_window_update_position(
   assert(window != NULL);
   assert(window->wid != XCB_WINDOW_NONE);
 
+  window->pending_configures++;
+
   xcb_configure_window(x11_back->c, window->wid,
                        XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y,
                        (int32_t[]){ window->base.x, window->base.y });
-
   xcb_flush(x11_back->c);
 }
 
@@ -288,13 +289,15 @@ x11_window_set_size(
   assert(window != NULL);
   assert(window->wid != XCB_WINDOW_NONE);
 
-  width = clip_i32_to_i16(width);
-  height = clip_i32_to_i16(height);
+  window->pending_configures++;
+
+  window->base.width = clip_i32_to_i16(width);
+  window->base.height = clip_i32_to_i16(height);
 
   xcb_configure_window(x11_back->c, window->wid,
                        XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
-                       (uint32_t[]){ (uint32_t)width,
-                                     (uint32_t)height });
+                       (uint32_t[]){ (uint32_t)window->base.width,
+                                     (uint32_t)window->base.height });
 
   xcb_flush(x11_back->c);
 }
@@ -310,7 +313,6 @@ x11_window_set_position(
 
   window->base.x = clip_i32_to_i16(x);
   window->base.y = clip_i32_to_i16(y);
-
   _x11_window_update_position(window);
 }
 

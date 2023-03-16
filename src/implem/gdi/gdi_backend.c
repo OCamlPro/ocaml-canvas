@@ -425,28 +425,38 @@ _gdi_window_proc(
     case WM_SIZE:
       w = gdi_backend_get_window(hwnd);
       if (w != NULL) {
-        w->base.width = LOWORD(lparam);
-        w->base.height = HIWORD(lparam);
-        evt.type = EVENT_RESIZE;
-        evt.time = gdi_get_time();
-        evt.target = (void *)w;
-        evt.desc.resize.width = w->base.width;
-        evt.desc.resize.height = w->base.height;
-        event_notify(gdi_back->listener, &evt);
+        /* We do not want to notify resizes that were triggerd by code */
+        if (w->pending_resizes > 0) {
+          w->pending_resizes--;
+        } else {
+          w->base.width = LOWORD(lparam);
+          w->base.height = HIWORD(lparam);
+          evt.type = EVENT_RESIZE;
+          evt.time = gdi_get_time();
+          evt.target = (void *)w;
+          evt.desc.resize.width = w->base.width;
+          evt.desc.resize.height = w->base.height;
+          event_notify(gdi_back->listener, &evt);
+        }
       }
       return 0;
 
     case WM_MOVE:
       w = gdi_backend_get_window(hwnd);
       if (w != NULL) {
-        w->base.x = LOWORD(lparam);
-        w->base.y = HIWORD(lparam);
-        evt.type = EVENT_MOVE;
-        evt.time = gdi_get_time();
-        evt.target = (void *)w;
-        evt.desc.move.x = w->base.x;
-        evt.desc.move.y = w->base.y;
-        event_notify(gdi_back->listener, &evt);
+        /* We do not want to notify moves that were triggerd by code */
+        if (w->pending_moves > 0) {
+          w->pending_moves--;
+        } else {
+          w->base.x = LOWORD(lparam);
+          w->base.y = HIWORD(lparam);
+          evt.type = EVENT_MOVE;
+          evt.time = gdi_get_time();
+          evt.target = (void *)w;
+          evt.desc.move.x = w->base.x;
+          evt.desc.move.y = w->base.y;
+          event_notify(gdi_back->listener, &evt);
+        }
       }
       return 0;
 
