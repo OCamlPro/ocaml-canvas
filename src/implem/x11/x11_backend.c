@@ -602,27 +602,33 @@ x11_backend_run(
         case XCB_CONFIGURE_NOTIFY:
           w = x11_backend_get_window(e.configure_notify->window);
           if (w != NULL) {
-            if (w->base.width != e.configure_notify->width ||
-                w->base.height != e.configure_notify->height) {
-              w->base.width = e.configure_notify->width;
-              w->base.height = e.configure_notify->height;
-              evt.type = EVENT_RESIZE;
-              evt.time = x11_get_time();
-              evt.target = (void *)w;
-              evt.desc.resize.width = w->base.width;
-              evt.desc.resize.height = w->base.height;
-              event_notify(x11_back->listener, &evt);
-            }
-            if (w->base.x != e.configure_notify->x ||
-                w->base.y != e.configure_notify->y) {
-              w->base.x = e.configure_notify->x;
-              w->base.y = e.configure_notify->y;
-              evt.type = EVENT_MOVE;
-              evt.time = x11_get_time();
-              evt.target = (void *)w;
-              evt.desc.move.x = w->base.x;
-              evt.desc.move.y = w->base.y;
-              event_notify(x11_back->listener, &evt);
+            /* We do not want to notify resizes and
+               moves that were triggerd by code */
+            if (w->pending_configures > 0) {
+              w->pending_configures--;
+            } else {
+              if (w->base.width != e.configure_notify->width ||
+                  w->base.height != e.configure_notify->height) {
+                w->base.width = e.configure_notify->width;
+                w->base.height = e.configure_notify->height;
+                evt.type = EVENT_RESIZE;
+                evt.time = x11_get_time();
+                evt.target = (void *)w;
+                evt.desc.resize.width = w->base.width;
+                evt.desc.resize.height = w->base.height;
+                event_notify(x11_back->listener, &evt);
+              }
+              if (w->base.x != e.configure_notify->x ||
+                  w->base.y != e.configure_notify->y) {
+                w->base.x = e.configure_notify->x;
+                w->base.y = e.configure_notify->y;
+                evt.type = EVENT_MOVE;
+                evt.time = x11_get_time();
+                evt.target = (void *)w;
+                evt.desc.move.x = w->base.x;
+                evt.desc.move.y = w->base.y;
+                event_notify(x11_back->listener, &evt);
+              }
             }
           }
           break;

@@ -56,6 +56,8 @@ _gdi_window_update_position(
   assert(window != NULL);
   assert(window->hwnd != NULL);
 
+  window->pending_moves++;
+
   window_size_pos_t wsp = _gdi_window_size_pos(window);
   SetWindowPos(window->hwnd, NULL,
                wsp.x, wsp.y, wsp.width, wsp.height,
@@ -183,8 +185,11 @@ gdi_window_set_size(
   assert(window != NULL);
   assert(window->hwnd != NULL);
 
+  window->pending_resizes++;
+
   window->base.width = clip_i32_to_i16(width);
   window->base.height = clip_i32_to_i16(height);
+
   window_size_pos_t wsp = _gdi_window_size_pos(window);
   SetWindowPos(window->hwnd, NULL,
                wsp.x, wsp.y, wsp.width, wsp.height,

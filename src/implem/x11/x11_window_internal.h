@@ -23,6 +23,8 @@ typedef struct x11_window_t {
   /* Specific to X11 windows */
   xcb_window_t wid;
 
+  int32_t pending_configures;
+
 } x11_window_t;
 
 #define MWM_HINTS_FUNCTIONS     (1L << 0)
