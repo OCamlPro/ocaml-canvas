@@ -417,9 +417,7 @@ _canvas_set_size_internal(
 // should probably perform an internal present event instead
 // unless this is already requested internally
 // in particular, on macOS, we can't present when we want
-    present_data_t pd;
-    memset((void *)&pd, 0, sizeof(present_data_t));
-    context_present(canvas->context, &pd);
+    context_present(canvas->context);
   }
 }
 
@@ -947,7 +945,7 @@ canvas_get_shadow_color(
   assert(c != NULL);
   assert(c->state != NULL);
 
-  return c->state->shadow_color;
+  return c->state->shadow.color;
 }
 
 void
@@ -958,7 +956,7 @@ canvas_set_shadow_color(
   assert(c != NULL);
   assert(c->state != NULL);
 
-  c->state->shadow_color = color;
+  c->state->shadow.color = color;
 }
 
 double
@@ -968,7 +966,7 @@ canvas_get_shadow_blur(
   assert(c != NULL);
   assert(c->state != NULL);
 
-  return c->state->shadow_blur;
+  return c->state->shadow.blur;
 }
 
 void
@@ -979,7 +977,7 @@ canvas_set_shadow_blur(
   assert(c != NULL);
   assert(c->state != NULL);
 
-  c->state->shadow_blur = shadow_blur;
+  c->state->shadow.blur = shadow_blur;
 }
 
 pair_t(double)
@@ -989,7 +987,7 @@ canvas_get_shadow_offset(
   assert(c != NULL);
   assert(c->state != NULL);
 
-  return pair(double, c->state->shadow_offset_x, c->state->shadow_offset_y);
+  return pair(double, c->state->shadow.offset_x, c->state->shadow.offset_y);
 }
 
 void
@@ -1001,8 +999,8 @@ canvas_set_shadow_offset(
   assert(c != NULL);
   assert(c->state != NULL);
 
-  c->state->shadow_offset_x = x;
-  c->state->shadow_offset_y = y;
+  c->state->shadow.offset_x = x;
+  c->state->shadow.offset_y = y;
 }
 
 
@@ -1174,10 +1172,14 @@ _canvas_clip_fill_instr(
 
   draw_style_t white = (draw_style_t){ .type = DRAW_STYLE_COLOR,
                                        .content.color = color_white };
+  shadow_t noshadow = (shadow_t){
+    .offset_x = 0, .offset_y = 0, .blur = 0,
+    .color = color_transparent_black };
+
   rect_t bbox = rect(point(0.0, 0.0),
                      point((double)c->width, (double)c->height));
-  poly_render(&(c->clip_region), instr->poly, &bbox,
-              white, 1.0, color_transparent_black, 0, 0, 0,
+
+  poly_render(&(c->clip_region), instr->poly, &bbox, white, 1.0, &noshadow,
               ONE_MINUS_SRC, NULL, instr->non_zero, c->state->transform);
 }
 
@@ -1247,9 +1249,7 @@ canvas_fill(
     pixmap_t pm = context_get_raw_pixmap(c->context);
     poly_render(&pm, p, &bbox,
                 c->state->fill_style, c->state->global_alpha,
-                c->state->shadow_color, c->state->shadow_blur,
-                c->state->shadow_offset_x, c->state->shadow_offset_y,
-                c->state->global_composite_operation,
+                &c->state->shadow, c->state->global_composite_operation,
                 &(c->clip_region), non_zero, c->state->transform);
   }
 
@@ -1300,9 +1300,7 @@ canvas_fill_path(
     pixmap_t pm = context_get_raw_pixmap(c->context);
     poly_render(&pm, p, &bbox,
                 c->state->fill_style, c->state->global_alpha,
-                c->state->shadow_color, c->state->shadow_blur,
-                c->state->shadow_offset_x, c->state->shadow_offset_y,
-                c->state->global_composite_operation,
+                &c->state->shadow, c->state->global_composite_operation,
                 &(c->clip_region), non_zero, c->state->transform);
   }
 
@@ -1337,9 +1335,7 @@ canvas_stroke(
     pixmap_t pm = context_get_raw_pixmap(c->context);
     poly_render(&pm, p, &bbox,
                 c->state->stroke_style, c->state->global_alpha,
-                c->state->shadow_color, c->state->shadow_blur,
-                c->state->shadow_offset_x, c->state->shadow_offset_y,
-                c->state->global_composite_operation,
+                &c->state->shadow, c->state->global_composite_operation,
                 &(c->clip_region), true, c->state->transform);
   }
 
@@ -1375,9 +1371,7 @@ canvas_stroke_path(
     pixmap_t pm = context_get_raw_pixmap(c->context);
     poly_render(&pm, p, &bbox,
                 c->state->stroke_style, c->state->global_alpha,
-                c->state->shadow_color, c->state->shadow_blur,
-                c->state->shadow_offset_x, c->state->shadow_offset_y,
-                c->state->global_composite_operation,
+                &c->state->shadow, c->state->global_composite_operation,
                 &(c->clip_region), true, c->state->transform);
   }
 
@@ -1506,9 +1500,7 @@ canvas_fill_rect(
   pixmap_t pm = context_get_raw_pixmap(c->context);
   poly_render(&pm, p, &bbox,
               c->state->fill_style, c->state->global_alpha,
-              c->state->shadow_color, c->state->shadow_blur,
-              c->state->shadow_offset_x, c->state->shadow_offset_y,
-              c->state->global_composite_operation,
+              &c->state->shadow, c->state->global_composite_operation,
               &(c->clip_region), false, c->state->transform);
 
   polygon_destroy(p);
@@ -1551,9 +1543,7 @@ canvas_stroke_rect(
   pixmap_t pm = context_get_raw_pixmap(c->context);
   poly_render(&pm, tp, &bbox,
               c->state->stroke_style, c->state->global_alpha,
-              c->state->shadow_color, c->state->shadow_blur,
-              c->state->shadow_offset_x, c->state->shadow_offset_y,
-              c->state->global_composite_operation,
+              &c->state->shadow, c->state->global_composite_operation,
               &(c->clip_region), true, c->state->transform);
 
   polygon_destroy(tp);
@@ -1615,9 +1605,7 @@ canvas_fill_text(
       pixmap_t pm = context_get_raw_pixmap(c->context);
       poly_render(&pm, p, &bbox,
                   c->state->fill_style, c->state->global_alpha,
-                  c->state->shadow_color, c->state->shadow_blur,
-                  c->state->shadow_offset_x, c->state->shadow_offset_y,
-                  c->state->global_composite_operation,
+                  &c->state->shadow, c->state->global_composite_operation,
                   &(c->clip_region), true, c->state->transform);
     }
   }
@@ -1659,9 +1647,7 @@ canvas_stroke_text(
       pixmap_t pm = context_get_raw_pixmap(c->context);
       poly_render(&pm, p, &bbox,
                   c->state->stroke_style, c->state->global_alpha,
-                  c->state->shadow_color, c->state->shadow_blur,
-                  c->state->shadow_offset_x, c->state->shadow_offset_y,
-                  c->state->global_composite_operation,
+                  &c->state->shadow, c->state->global_composite_operation,
                   &(c->clip_region), true, c->state->transform);
     }
   }
@@ -1686,11 +1672,11 @@ canvas_blit(
   assert(sc->context != NULL);
 
   bool draw_shadows =
-    (dc->state->shadow_blur > 0.0 ||
-     dc->state->shadow_offset_x != 0.0 ||
-     dc->state->shadow_offset_y != 0.0) &&
+    (dc->state->shadow.blur > 0.0 ||
+     dc->state->shadow.offset_x != 0.0 ||
+     dc->state->shadow.offset_y != 0.0) &&
     dc->state->global_composite_operation != COPY &&
-    dc->state->shadow_color.a != 0;
+    dc->state->shadow.color.a != 0;
 
   const pixmap_t sp = context_get_raw_pixmap((context_t *)sc->context);
   pixmap_t dp = context_get_raw_pixmap(dc->context);
@@ -1766,9 +1752,7 @@ canvas_blit(
     pixmap_t pm = context_get_raw_pixmap((context_t *)dc->context);
     poly_render(&pm, p, &bbox,
                 draw_style, dc->state->global_alpha,
-                dc->state->shadow_color, dc->state->shadow_blur,
-                dc->state->shadow_offset_x, dc->state->shadow_offset_y,
-                dc->state->global_composite_operation,
+                &dc->state->shadow, dc->state->global_composite_operation,
                 &(dc->clip_region), false, temp_transform);
 
     polygon_destroy(p);

@@ -29,6 +29,7 @@
 #include "polygon_internal.h"
 #include "pixmap.h"
 #include "filters.h"
+#include "state.h" // just shadow
 
 // Mask array
 static uint64_t _masks[(9 * 9) * (9 * 9)] = { 0 };
@@ -492,10 +493,7 @@ _poly_render_layered(
   const rect_t *bbox,
   draw_style_t draw_style,
   composite_operation_t composite_operation,
-  color_t_ shadow_color,
-  double shadow_blur,
-  double shadow_offset_x,
-  double shadow_offset_y,
+  const shadow_t *shadow,
   double global_alpha,
   const pixmap_t *clip_region,
   bool non_zero,
@@ -509,16 +507,19 @@ _poly_render_layered(
          (draw_style.content.gradient != NULL));
   assert((draw_style.type != DRAW_STYLE_PATTERN) ||
          (draw_style.content.pattern != NULL));
+  assert(shadow != NULL);
   assert(transform != NULL);
 
   pixmap_t rendered_poly =
     _poly_render_pixmap(p, bbox, draw_style, transform, non_zero);
 
   // Compose shadows if any
-  if ((shadow_blur > 0.0 || shadow_offset_x != 0.0 || shadow_offset_y != 0.0) &&
-      composite_operation != COPY && shadow_color.a != 0) {
+  if ((shadow->blur > 0.0 ||
+       shadow->offset_x != 0.0 || shadow->offset_y != 0.0) &&
+      composite_operation != COPY && shadow->color.a != 0) {
 
-    int shadow_size_offset = (int)(sqrt(3.0 * shadow_blur * shadow_blur));
+    int shadow_size_offset =
+      (int)(sqrt(3.0 * shadow->blur * shadow->blur));
 
     pixmap_t shadow_poly =
       pixmap(rendered_poly.width + shadow_size_offset * 2,
@@ -533,19 +534,19 @@ _poly_render_layered(
     }
 
     pixmap_t blurred_shadow_poly;
-    if (shadow_blur == 0.0) {
+    if (shadow->blur == 0.0) {
       blurred_shadow_poly = shadow_poly;
     } else {
       blurred_shadow_poly =
-        filter_gaussian_blur_alpha(&shadow_poly, shadow_blur / 2.0);
+        filter_gaussian_blur_alpha(&shadow_poly, shadow->blur / 2.0);
       pixmap_destroy(shadow_poly);
     }
 
     rect_t sbbox =
-      rect(point(bbox->p1.x - shadow_size_offset + shadow_offset_x,
-                 bbox->p1.y - shadow_size_offset + shadow_offset_y),
-           point(bbox->p2.x + shadow_size_offset + shadow_offset_x,
-                 bbox->p2.y + shadow_size_offset + shadow_offset_y));
+      rect(point(bbox->p1.x - shadow_size_offset + shadow->offset_x,
+                 bbox->p1.y - shadow_size_offset + shadow->offset_y),
+           point(bbox->p2.x + shadow_size_offset + shadow->offset_x,
+                 bbox->p2.y + shadow_size_offset + shadow->offset_y));
 
     int32_t lower_bound_i = 0, upper_bound_i = pm->height;
     int32_t lower_bound_j = 0, upper_bound_j = pm->width;
@@ -564,8 +565,7 @@ _poly_render_layered(
             i < sbbox.p1.y || i > sbbox.p2.y) {
           pixmap_at(*pm, i, j) =
             comp_compose(color_transparent_black,
-                         pixmap_at(*pm, i, j), 0,
-                         composite_operation);
+                         pixmap_at(*pm, i, j), 0, composite_operation);
           continue;
         }
 
@@ -574,9 +574,9 @@ _poly_render_layered(
                     i - (int32_t)sbbox.p1.y,
                     j - (int32_t)sbbox.p1.x);
 
-        fill_color.r = shadow_color.r;
-        fill_color.g = shadow_color.g;
-        fill_color.b = shadow_color.b;
+        fill_color.r = shadow->color.r;
+        fill_color.g = shadow->color.g;
+        fill_color.b = shadow->color.b;
 
         double draw_alpha = fill_color.a;
 
@@ -587,8 +587,8 @@ _poly_render_layered(
 
         pixmap_at(*pm, i, j) =
           comp_compose(fill_color, pixmap_at(*pm, i, j),
-                       (int)(draw_alpha * shadow_color.a * global_alpha / 255),
-                       composite_operation);
+                       (int)(draw_alpha * shadow->color.a *
+                             global_alpha / 255), composite_operation);
       }
     }
 
@@ -613,8 +613,7 @@ _poly_render_layered(
           i < bbox->p1.y || i > bbox->p2.y) {
         pixmap_at(*pm, i, j) =
           comp_compose(color_transparent_black,
-                       pixmap_at(*pm, i, j), 0,
-                       composite_operation);
+                       pixmap_at(*pm, i, j), 0, composite_operation);
         continue;
       }
 
@@ -736,7 +735,8 @@ _poly_render_direct(
         _determine_base_color(&draw_style, (float)j, (float)i, inverse);
 
       int draw_alpha =
-        (alpha * fastround(global_alpha * 256.0) * color.a) / (256 * 255);
+        (alpha * fastround(global_alpha * 256.0) *
+         color.a) / (256 * 255);
       if ((clip_region != NULL) && (pixmap_valid(*clip_region) == true)) {
         draw_alpha *= 255 - pixmap_at(*clip_region, i, j).a;
         draw_alpha /= 255;
@@ -744,8 +744,9 @@ _poly_render_direct(
 
       // Apply the coverage to the pixel
       // Only do this logic if there's something to apply
-      pixmap_at(*pm, i, j) = comp_compose(color, pixmap_at(*pm, i, j),
-                                          draw_alpha, composite_operation);
+      pixmap_at(*pm, i, j) =
+        comp_compose(color, pixmap_at(*pm, i, j),
+                     draw_alpha, composite_operation);
     }
 
     free(complex);
@@ -766,20 +767,16 @@ poly_render(
   const rect_t *bbox,
   draw_style_t draw_style,
   double global_alpha,
-  color_t_ shadow_color,
-  double shadow_blur,
-  double shadow_offset_x,
-  double shadow_offset_y,
+  const shadow_t *shadow,
   composite_operation_t compose_op,
   const pixmap_t *clip_region,
   bool non_zero,
   const transform_t *transform)
 {
-  if ((shadow_blur > 0.0 || shadow_offset_x != 0.0 || shadow_offset_y != 0.0) &&
-      compose_op != COPY && shadow_color.a != 0) {
-    _poly_render_layered(s, p, bbox, draw_style, compose_op,
-                         shadow_color, shadow_blur,
-                         shadow_offset_x, shadow_offset_y,
+  if ((shadow->blur > 0.0 ||
+       shadow->offset_x != 0.0 || shadow->offset_y != 0.0) &&
+      compose_op != COPY && shadow->color.a != 0) {
+    _poly_render_layered(s, p, bbox, draw_style, compose_op, shadow,
                          global_alpha, clip_region, non_zero, transform);
   }
   else {

@@ -44,8 +44,6 @@ state_create(
     return NULL;
   }
 
-  s->line_dash = NULL;
-
   s->clip_path = list_new((free_val_fun_t *)path_fill_instr_destroy);
   if (s->clip_path == NULL) {
     transform_destroy(s->transform);
@@ -53,6 +51,8 @@ state_create(
     free(s);
     return NULL;
   }
+
+  s->line_dash = NULL;
 
   s->fill_style.type = DRAW_STYLE_COLOR;
   s->stroke_style.type = DRAW_STYLE_COLOR;
@@ -73,10 +73,10 @@ state_destroy(
 
   draw_style_destroy(&s->fill_style);
   draw_style_destroy(&s->stroke_style);
+  list_delete(s->clip_path);
   if (s->line_dash != NULL) {
     free(s->line_dash);
   }
-  list_delete(s->clip_path);
   font_desc_destroy(s->font_desc);
   transform_destroy(s->transform);
 
@@ -100,6 +100,17 @@ state_reset(
     free(s->line_dash);
   }
 
+  s->line_dash = NULL;
+  s->line_dash_len = 0;
+  s->line_dash_offset = 0;
+  s->line_width = 1.0;
+
+  s->join_type = JOIN_ROUND;
+  s->cap_type = CAP_BUTT;
+  s->miter_limit = 10.0;
+
+  s->global_alpha = 1.0;
+
   draw_style_destroy(&s->fill_style);
   s->fill_style.type = DRAW_STYLE_COLOR;
   s->fill_style.content.color = color_white;
@@ -108,18 +119,11 @@ state_reset(
   s->stroke_style.type = DRAW_STYLE_COLOR;
   s->stroke_style.content.color = color_black;
 
-  s->line_dash = NULL;
-  s->line_dash_len = 0;
-  s->line_dash_offset = 0;
-  s->line_width = 1.0;
-  s->global_alpha = 1.0;
-  s->shadow_blur = 0;
-  s->shadow_color = color_transparent_black;
-  s->shadow_offset_x = 0;
-  s->shadow_offset_y = 0;
-  s->miter_limit = 10.0;
-  s->join_type = JOIN_ROUND;
-  s->cap_type = CAP_BUTT;
+  s->shadow.offset_x = 0;
+  s->shadow.offset_y = 0;
+  s->shadow.blur = 0;
+  s->shadow.color = color_transparent_black;
+
   s->global_composite_operation = SOURCE_OVER;
 }
 
@@ -189,20 +193,25 @@ state_copy(
   }
   list_free_iterator(it);
 
-  sc->fill_style = draw_style_copy(&s->fill_style);
-  sc->stroke_style = draw_style_copy(&s->stroke_style);
-
   sc->line_dash_len = s->line_dash_len;
   sc->line_dash_offset = s->line_dash_offset;
   sc->line_width = s->line_width;
-  sc->global_alpha = s->global_alpha;
-  sc->shadow_blur = s->shadow_blur;
-  sc->shadow_color = s->shadow_color;
-  sc->shadow_offset_x = s->shadow_offset_x;
-  sc->shadow_offset_y = s->shadow_offset_y;
-  sc->miter_limit = s->miter_limit;
+
   sc->join_type = s->join_type;
   sc->cap_type = s->cap_type;
+  sc->miter_limit = s->miter_limit;
+
+  sc->global_alpha = s->global_alpha;
+
+  sc->fill_style = draw_style_copy(&s->fill_style);
+  sc->stroke_style = draw_style_copy(&s->stroke_style);
+
+  sc->shadow.offset_x = s->shadow.offset_x;
+  sc->shadow.offset_y = s->shadow.offset_y;
+  sc->shadow.blur = s->shadow.blur;
+  sc->shadow.color = s->shadow.color;
+
   sc->global_composite_operation = s->global_composite_operation;
+
   return sc;
 }

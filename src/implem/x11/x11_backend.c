@@ -389,7 +389,7 @@ _x11_present_window(
   if (w != NULL) {
     event_t evt;
     evt.type = EVENT_PRESENT;
-    evt.time = x11_get_time();
+    evt.time = x11_get_time(); // not needed
     evt.target = (void *)w;
     event_notify(x11_back->listener, &evt);
   }
@@ -617,17 +617,18 @@ x11_backend_run(
                 evt.desc.resize.width = w->base.width;
                 evt.desc.resize.height = w->base.height;
                 event_notify(x11_back->listener, &evt);
-              }
-              if (w->base.x != e.configure_notify->x ||
-                  w->base.y != e.configure_notify->y) {
-                w->base.x = e.configure_notify->x;
-                w->base.y = e.configure_notify->y;
-                evt.type = EVENT_MOVE;
-                evt.time = x11_get_time();
-                evt.target = (void *)w;
-                evt.desc.move.x = w->base.x;
-                evt.desc.move.y = w->base.y;
-                event_notify(x11_back->listener, &evt);
+              } else {
+                if (w->base.x != e.configure_notify->x ||
+                    w->base.y != e.configure_notify->y) {
+                  w->base.x = e.configure_notify->x;
+                  w->base.y = e.configure_notify->y;
+                  evt.type = EVENT_MOVE;
+                  evt.time = x11_get_time();
+                  evt.target = (void *)w;
+                  evt.desc.move.x = w->base.x;
+                  evt.desc.move.y = w->base.y;
+                  event_notify(x11_back->listener, &evt);
+                }
               }
             }
           }

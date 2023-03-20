@@ -71,7 +71,7 @@ _backend_process_event(
     case EVENT_PRESENT: /* internal event */
       if ((canvas->autocommit == true) || (canvas->committed == true)) {
         canvas->committed = false;
-        context_present(canvas->context, &event->desc.present.data);
+        context_present(canvas->context);
       }
       result = true;
       break;

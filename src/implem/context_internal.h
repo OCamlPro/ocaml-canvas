@@ -12,16 +12,22 @@
 #define __CONTEXT_INTERNAL_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "color.h"
 
-typedef struct context_impl_t context_impl_t;
-
 typedef struct context_t {
-  context_impl_t *impl;
+  bool offscreen;
   color_t_ *data;
   int32_t width;
   int32_t height;
 } context_t;
+
+void
+_context_copy_to_buffer(
+  context_t *c,
+  color_t_ *data,
+  int32_t width,
+  int32_t height);
 
 #endif /* __CONTEXT_INTERNAL_H */

@@ -24,9 +24,6 @@ typedef struct gdi_window_t {
   HWND hwnd;
   DWORD style;
 
-  int32_t pending_resizes;
-  int32_t pending_moves;
-
 } gdi_window_t;
 
 #endif /* __GDI_WINDOW_INTERNAL_H */

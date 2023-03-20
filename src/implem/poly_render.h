@@ -18,6 +18,7 @@
 #include "transform.h"
 #include "draw_style.h"
 #include "color_composition.h"
+#include "state.h" // just shadow
 #include "polygon.h"
 
 void
@@ -31,10 +32,7 @@ poly_render(
   const rect_t *bbox,
   draw_style_t draw_style,
   double global_alpha,
-  color_t_ shadow_color,
-  double shadow_blur,
-  double shadow_offset_x,
-  double shadow_offset_y,
+  const shadow_t *shadow,
   composite_operation_t compose_op,
   const pixmap_t *clip_region,
   bool non_zero,

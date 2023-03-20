@@ -50,18 +50,16 @@ _gdi_window_size_pos(
 }
 
 static void
-_gdi_window_update_position(
+_gdi_window_update_size_pos(
   gdi_window_t *window)
 {
   assert(window != NULL);
   assert(window->hwnd != NULL);
 
-  window->pending_moves++;
-
   window_size_pos_t wsp = _gdi_window_size_pos(window);
   SetWindowPos(window->hwnd, NULL,
                wsp.x, wsp.y, wsp.width, wsp.height,
-               SWP_NOSIZE | SWP_NOZORDER | SWP_NOREDRAW);
+               SWP_NOZORDER | SWP_NOREDRAW);
 }
 
 gdi_window_t *
@@ -185,15 +183,10 @@ gdi_window_set_size(
   assert(window != NULL);
   assert(window->hwnd != NULL);
 
-  window->pending_resizes++;
-
   window->base.width = clip_i32_to_i16(width);
   window->base.height = clip_i32_to_i16(height);
 
-  window_size_pos_t wsp = _gdi_window_size_pos(window);
-  SetWindowPos(window->hwnd, NULL,
-               wsp.x, wsp.y, wsp.width, wsp.height,
-               SWP_NOMOVE | SWP_NOZORDER | SWP_NOREDRAW);
+  _gdi_window_update_size_pos(window);
 }
 
 void
@@ -207,7 +200,8 @@ gdi_window_set_position(
 
   window->base.x = clip_i32_to_i16(x);
   window->base.y = clip_i32_to_i16(y);
-  _gdi_window_update_position(window);
+
+  _gdi_window_update_size_pos(window);
 }
 
 void
@@ -218,7 +212,6 @@ gdi_window_show(
   assert(window->hwnd != NULL);
 
   ShowWindow(window->hwnd, SW_SHOWNORMAL);
-  _gdi_window_update_position(window);
 }
 
 void

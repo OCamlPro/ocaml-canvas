@@ -23,7 +23,8 @@ event_notify(
 
   if (event_listener) {
     assert(event_listener->process_event != NULL);
-    return event_listener->process_event(event, event_listener->next_listener);
+    return event_listener->process_event(event,
+                                         event_listener->next_listener);
   } else {
     return false;
   }
