@@ -14,8 +14,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "present_data.h"
-
 #ifdef HAS_GDI
 #undef MOD_SHIFT
 #undef MOD_ALT
@@ -292,7 +290,7 @@ typedef struct {
 } event_cursor_t;
 
 typedef struct {
-  present_data_t data;
+  void *dummy;
 } event_present_t;
 
 typedef union {

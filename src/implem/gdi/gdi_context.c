@@ -20,15 +20,15 @@
 
 #include "../config.h"
 #include "../color.h"
-#include "gdi_backend.h"
+#include "../context_internal.h"
 #include "gdi_target.h"
 
-typedef struct context_impl_gdi_t {
-  impl_type_t type;
+typedef struct gdi_context_t {
+  context_t base;
   HBITMAP bmp;
   HDC hdc;
   HWND hwnd;
-} context_impl_gdi_t;
+} gdi_context_t;
 
 static HBITMAP
 _context_create_gdi_bitmap(
@@ -39,7 +39,7 @@ _context_create_gdi_bitmap(
 {
   assert(hdc != NULL);
   assert(width > 0);
-  assert(height  > 0);
+  assert(height > 0);
   assert(data != NULL);
   assert(*data == NULL);
 
@@ -72,153 +72,126 @@ _context_create_gdi_bitmap(
   return bmp;
 }
 
-context_impl_gdi_t *
-context_create_gdi_impl(
+gdi_context_t *
+gdi_context_create(
   gdi_target_t *target,
   int32_t width,
-  int32_t height,
-  color_t_ **data)
+  int32_t height)
 {
   assert(target != NULL);
   assert(target->hwnd != NULL);
   assert(width > 0);
   assert(height > 0);
-  assert(data != NULL);
-  assert(*data == NULL);
 
-  context_impl_gdi_t *impl =
-    (context_impl_gdi_t *)calloc(1, sizeof(context_impl_gdi_t));
-  if (impl == NULL) {
+  gdi_context_t *context =
+    (gdi_context_t *)calloc(1, sizeof(gdi_context_t));
+  if (context == NULL) {
     return NULL;
   }
 
   HDC hdc_wnd = GetDC(target->hwnd);
   if (hdc_wnd == NULL) {
-    free(impl);
+    free(context);
     return NULL;
   }
 
   HDC hdc = CreateCompatibleDC(hdc_wnd);
   ReleaseDC(target->hwnd, hdc_wnd);
   if (hdc == NULL) {
-    free(impl);
+    free(context);
     return NULL;
   }
 
-  HBITMAP bmp = _context_create_gdi_bitmap(hdc, width, height, data);
+  color_t_ *data = NULL;
+  HBITMAP bmp = _context_create_gdi_bitmap(hdc, width, height, &data);
   if (bmp == NULL) {
-    assert(*data == NULL);
+    assert(data == NULL);
     DeleteDC(hdc);
-    free(impl);
+    free(context);
     return NULL;
   }
+  assert(data != NULL);
 
-  impl->type = IMPL_GDI;
-  impl->bmp = bmp;
-  impl->hdc = hdc;
-  impl->hwnd = target->hwnd;
+  context->base.data = data;
+  context->base.width = width;
+  context->base.height = height;
+  context->bmp = bmp;
+  context->hdc = hdc;
+  context->hwnd = target->hwnd;
 
-  return impl;
+  return context;
 }
 
 void
-context_destroy_gdi_impl(
-  context_impl_gdi_t *impl)
+gdi_context_destroy(
+  gdi_context_t *context)
 {
-  assert(impl != NULL);
-  assert(impl->type == IMPL_GDI);
+  assert(context != NULL);
 
-  if (impl->bmp) {
-    DeleteDC(impl->hdc);
-    DeleteObject(impl->bmp);
+  if (context->bmp != NULL) {
+    DeleteObject(context->bmp); /* This also frees context->base.data */
   }
-}
 
-static void
-_raw_context_copy(
-  color_t_ *s_data,
-  int32_t s_width,
-  int32_t s_height,
-  color_t_ *d_data,
-  int32_t d_width,
-  int32_t d_height)
-{
-  assert(s_data != NULL);
-  assert(s_width > 0);
-  assert(s_height > 0);
-  assert(d_data != NULL);
-  assert(d_width > 0);
-  assert(d_height > 0);
-
-  uint32_t min_width = d_width < s_width ? d_width : s_width;
-  uint32_t min_height = d_height < s_height ? d_height : s_height;
-  for (size_t i = 0; i < min_height; ++i) {
-    for (size_t j = 0; j < min_width; ++j) {
-      d_data[i * d_width + j] = s_data[i * s_width + j];
-    }
+  if (context->hdc != NULL) {
+    DeleteDC(context->hdc);
   }
+
+  free(context);
 }
 
 bool
-context_resize_gdi_impl(
-  context_impl_gdi_t *impl,
-  int32_t s_width,
-  int32_t s_height,
-  color_t_ **s_data,
-  int32_t d_width,
-  int32_t d_height,
-  color_t_ **d_data)
+gdi_context_resize(
+  gdi_context_t *context,
+  int32_t width,
+  int32_t height)
 {
-  assert(impl != NULL);
-  assert(s_width > 0);
-  assert(s_height  > 0);
-  assert(s_data != NULL);
-  assert(*s_data != NULL);
-  assert(d_width > 0);
-  assert(d_height  > 0);
-  assert(d_data != NULL);
-  assert(*d_data == NULL);
+  assert(context != NULL);
+  assert(context->base.data != NULL);
+  assert(context->base.width > 0);
+  assert(context->base.height > 0);
+  assert(context->bmp != NULL);
+  assert(context->hdc != NULL);
+  assert(width > 0);
+  assert(height > 0);
 
+  color_t_ *data = NULL;
   HBITMAP bmp =
-    _context_create_gdi_bitmap(impl->hdc, d_width, d_height, d_data);
+    _context_create_gdi_bitmap(context->hdc, width, height, &data);
   if (bmp == NULL) {
+    assert(data == NULL);
     return false;
   }
+  assert(data != NULL);
 
-  _raw_context_copy(*s_data, s_width, s_height, *d_data, d_width, d_height);
+  _context_copy_to_buffer(&context->base, data, width, height);
 
-  if (impl->bmp) {
-    DeleteObject(impl->bmp);
-  }
+  DeleteObject(context->bmp);
 
-  impl->bmp = bmp;
+  context->base.data = data;
+  context->base.width = width;
+  context->base.height = height;
+  context->bmp = bmp;
 
   return true;
 }
 
 void
-context_present_gdi_impl(
-  context_impl_gdi_t *impl,
-  int32_t width,
-  int32_t height,
-  gdi_present_data_t *present_data)
+gdi_context_present(
+  gdi_context_t *context)
 {
-  assert(impl != NULL);
-  assert(present_data != NULL);
-  assert(width > 0);
-  assert(height  > 0);
+  assert(context != NULL);
+  assert(context->base.width > 0);
+  assert(context->base.height > 0);
+  assert(context->bmp != NULL);
+  assert(context->hdc != NULL);
+  assert(context->hwnd != NULL);
 
-  PAINTSTRUCT ps;
-  HDC hdc =
-    present_data->use_begin ? BeginPaint(impl->hwnd, &ps) : GetDC(impl->hwnd);
-  BitBlt(hdc, 0, 0, width, height, impl->hdc, 0, 0, SRCCOPY);
-  if (present_data->use_begin) {
-    EndPaint(impl->hwnd, &ps);
-  } else {
-    ReleaseDC(impl->hwnd, hdc);
-  }
+  HDC hdc = GetDC(context->hwnd);
+  BitBlt(hdc, 0, 0, context->base.width, context->base.height,
+         context->hdc, 0, 0, SRCCOPY);
+  ReleaseDC(context->hwnd, hdc);
   GdiFlush();
-  ValidateRect(impl->hwnd, NULL);
+  ValidateRect(context->hwnd, NULL);
 }
 
 #else

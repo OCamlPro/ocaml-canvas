@@ -20,29 +20,23 @@
 
 #include "../config.h"
 #include "../color.h"
+#include "../context_internal.h"
 #include "qtz_util.h"
-#include "qtz_backend.h"
+//#include "qtz_backend.h"
 #include "qtz_target.h"
 #include "qtz_context.h"
 
 @interface CanvasView : NSView
 {
-  @public context_impl_qtz_t *impl;
+  @public qtz_context_t *context;
 }
 @end
 
-typedef struct context_impl_qtz_t {
-  impl_type_t type;
+typedef struct qtz_context_t {
+  context_t base;
   CGContextRef ctxt;
   CanvasView *nsview;
-} context_impl_qtz_t;
-
-void
-context_present_qtz_impl2(
-  context_impl_qtz_t *impl,
-  int32_t width,
-  int32_t height,
-  qtz_present_data_t *present_data);
+} qtz_context_t;
 
 @implementation CanvasView { }
 
@@ -62,28 +56,27 @@ context_present_qtz_impl2(
   qtz_window_t *w = qtz_backend_get_window([self window]);
   if (w != NULL) {
     event_t evt;
-    evt.type = EVENT_PRESENT;
+    evt.type = EVENT_PRESENT; // not needed
     evt.time = qtz_get_time();
     evt.target = (void *)w;
     event_notify(qtz_back->listener, &evt);
   }
 */
-  qtz_present_data_t present_data = { 0 };
 
-  context_present_qtz_impl2(self->impl, 0, 0, &present_data);
+  qtz_context_present(self->context);
 
 }
 
 @end
 
 static CGContextRef
-_context_create_qtz_bitmap_context(
+_qtz_context_create_bitmap_context(
   int32_t width,
   int32_t height,
   color_t_ **data)
 {
   assert(width > 0);
-  assert(height  > 0);
+  assert(height > 0);
   assert(data != NULL);
 
   *data = (color_t_ *)calloc(width * height, sizeof(color_t_));
@@ -114,25 +107,32 @@ _context_create_qtz_bitmap_context(
   return ctxt;
 }
 
-context_impl_qtz_t *
-context_create_qtz_impl(
+qtz_context_t *
+qtz_context_create(
   qtz_target_t *target,
   int32_t width,
-  int32_t height,
-  color_t_ **data)
+  int32_t height)
 {
   assert(target != NULL);
-  assert(target->nsview != NULL);
+  assert(target->nswin != NULL);
   assert(width > 0);
-  assert(height  > 0);
-  assert(data != NULL);
-  assert(*data == NULL);
+  assert(height > 0);
 
-  context_impl_qtz_t *impl =
-    (context_impl_qtz_t *)calloc(1, sizeof(context_impl_qtz_t));
-  if (impl == NULL) {
+  qtz_context_t *context =
+    (qtz_context_t *)calloc(1, sizeof(qtz_context_t));
+  if (context == NULL) {
     return NULL;
   }
+
+  color_t_ *data = NULL;
+  CGContextRef ctxt =
+    _qtz_context_create_bitmap_context(width, height, &data);
+  if (ctxt == NULL) {
+    assert(data == NULL);
+    free(context);
+    return NULL;
+  }
+  assert(data != NULL);
 
   ALLOC_POOL; // don't know if necessary here
 
@@ -140,137 +140,98 @@ context_create_qtz_impl(
     [[CanvasView alloc] initWithFrame:[target->nswin frame]];
   [nsview setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
   [target->nswin setContentView:nsview];
-  nsview->impl = impl;
+  nsview->context = context;
 
   RELEASE_POOL;
 
-  CGContextRef ctxt =
-    _context_create_qtz_bitmap_context(width, height, data);
-  if (ctxt == NULL) {
-    free(impl);
-    return NULL;
-  }
+  context->base.data = data;
+  context->base.width = width;
+  context->base.height = height;
+  context->ctxt = ctxt;
+  context->nsview = nsview;
 
-  impl->type = IMPL_QUARTZ;
-  impl->ctxt = ctxt;
-  impl->nsview = nsview;
-
-  return impl;
+  return context;
 }
 
 void
-context_destroy_qtz_impl(
-  context_impl_qtz_t *impl)
+qtz_context_destroy(
+  qtz_context_t *context)
 {
-  assert(impl != NULL);
-  assert(impl->type == IMPL_QUARTZ);
+  assert(context != NULL);
 
-  if (impl->ctxt != NULL) {
-    // Note: does not free the underlying memory if explicitly given
-    CGContextRelease(impl->ctxt);
+  if (context->ctxt != NULL) {
+    CGContextRelease(context->ctxt);
+    free(context->base.data); /* We allocated it, we have to free it */
   }
 
-  if (impl->nsview != NULL) {
-    [impl->nsview release];
+  if (context->nsview != NULL) {
+//    [[context->nsview window] setContentView:nil];
+    [context->nsview release];
   }
 
-}
-
-static void
-_raw_context_copy(
-  color_t_ *s_data,
-  int32_t s_width,
-  int32_t s_height,
-  color_t_ *d_data,
-  int32_t d_width,
-  int32_t d_height)
-{
-  assert(s_data != NULL);
-  assert(s_width > 0);
-  assert(s_height > 0);
-  assert(d_data != NULL);
-  assert(d_width > 0);
-  assert(d_height > 0);
-
-  uint32_t min_width = d_width < s_width ? d_width : s_width;
-  uint32_t min_height = d_height < s_height ? d_height : s_height;
-  for (size_t i = 0; i < min_height; ++i) {
-    for (size_t j = 0; j < min_width; ++j) {
-      d_data[i * d_width + j] = s_data[i * s_width + j];
-    }
-  }
 }
 
 bool
-context_resize_qtz_impl(
-  context_impl_qtz_t *impl,
-  int32_t s_width,
-  int32_t s_height,
-  color_t_ **s_data,
-  int32_t d_width,
-  int32_t d_height,
-  color_t_ **d_data)
+qtz_context_resize(
+  qtz_context_t *context,
+  int32_t width,
+  int32_t height)
 {
-  assert(impl != NULL);
-  assert(s_width > 0);
-  assert(s_height  > 0);
-  assert(s_data != NULL);
-  assert(*s_data != NULL);
-  assert(d_width > 0);
-  assert(d_height  > 0);
-  assert(d_data != NULL);
-  assert(*d_data == NULL);
+  assert(context != NULL);
+  assert(context->base.data != NULL);
+  assert(context->base.width > 0);
+  assert(context->base.height > 0);
+  assert(context->ctxt != NULL);
+  assert(width > 0);
+  assert(height > 0);
 
+  color_t_ *data = NULL;
   CGContextRef ctxt =
-    _context_create_qtz_bitmap_context(d_width, d_height, d_data);
+    _qtz_context_create_bitmap_context(width, height, &data);
   if (ctxt == NULL) {
+    assert(data == NULL);
     return false;
   }
+  assert(data != NULL);
 
-  _raw_context_copy(*s_data, s_width, s_height, *d_data, d_width, d_height);
+  _context_copy_to_buffer(&context->base, data, width, height);
 
-  if (impl->ctxt) {
-    CGContextRelease(impl->ctxt);
-  }
+  CGContextRelease(context->ctxt);
 
-  impl->ctxt = ctxt;
+  context->base.data = data;
+  context->base.width = width;
+  context->base.height = height;
+  context->ctxt = ctxt;
 
   return true;
 }
 
 void
-context_present_qtz_impl(
-  context_impl_qtz_t *impl,
-  int32_t width,
-  int32_t height,
-  qtz_present_data_t *present_data)
+qtz_context_present(
+  qtz_context_t *context)
 {
-  // TODO
-}
+  assert(context != NULL);
+  assert(context->base.width > 0);
+  assert(context->base.height > 0);
+  assert(context->ctxt != NULL);
+  assert(context->nsview != NULL);
 
-void
-context_present_qtz_impl2(
-  context_impl_qtz_t *impl,
-  int32_t width,
-  int32_t height,
-  qtz_present_data_t *present_data)
-{
-  assert(impl != NULL);
-  assert(present_data != NULL);
-  assert(width > 0);
-  assert(height > 0);
+//+ (NSGraphicsContext *)graphicsContextWithWindow:(NSWindow *)window;
+//to attach a drawing context to a window
 
-  CGContextRef ctxt = [[NSGraphicsContext currentContext] CGContext];
   // CGContext on 10.10 and above, graphicsPort on 10.13 and below
+  CGContextRef ctxt = [[NSGraphicsContext currentContext] CGContext];
 
   CGContextSaveGState(ctxt);
 
   // The underlying memory is copy-on write, so we should just create
   // this object before blitting and then release it immediately
-  CGImageRef img = CGBitmapContextCreateImage(impl->ctxt);
-height = CGImageGetHeight(img);
-width = CGImageGetWidth(img);
-  CGContextDrawImage(ctxt, CGRectMake(0, impl->nsview.frame.size.height - height, width, height), img);
+  CGImageRef img = CGBitmapContextCreateImage(context->ctxt);
+
+  CGRect rect =
+    CGRectMake(0, context->nsview.frame.size.height - context->base.height,
+               context->base.width, context->base.height);
+  CGContextDrawImage(ctxt, rect, img);
 
   [[NSGraphicsContext currentContext] flushGraphics];
 

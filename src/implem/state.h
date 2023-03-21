@@ -22,25 +22,34 @@
 #include "path2d.h"
 #include "color_composition.h"
 
+typedef struct shadow_t {
+  double offset_x;
+  double offset_y;
+  double blur;
+  color_t_ color;
+} shadow_t;
+
 typedef struct state_t {
   transform_t *transform;
-  font_desc_t *font_desc; // font, textAlign, textBaseline, direction
+
+  /* Polygonizer state */
   list_t *clip_path;
-  double *line_dash;
+  font_desc_t *font_desc; // font, textAlign, textBaseline, direction
+  join_type_t join_type; // lineJoin
+  cap_type_t cap_type; // lineCap
   int32_t line_dash_len;
+  double *line_dash;
   double line_dash_offset;
   double line_width;
+  double miter_limit;
+
+  /* Polygon renderer state */
   double global_alpha; // 0.0 - 1.0
   draw_style_t fill_style;
   draw_style_t stroke_style;
-  color_t_ shadow_color;
-  double shadow_offset_x;
-  double shadow_offset_y;
-  double shadow_blur;
-  double miter_limit;
-  join_type_t join_type; // lineJoin
-  cap_type_t cap_type; // lineCap
+  shadow_t shadow;
   composite_operation_t global_composite_operation;
+
 } state_t;
 
 state_t *

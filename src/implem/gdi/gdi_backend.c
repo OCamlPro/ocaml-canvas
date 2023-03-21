@@ -204,14 +204,13 @@ gdi_backend_get_listener(
 
 static void
 _gdi_present_window(
-  gdi_window_t *w) // reac to WM_PAINT ?
+  gdi_window_t *w)
 {
   if (w != NULL) {
     event_t evt;
     evt.type = EVENT_PRESENT;
-    evt.time = gdi_get_time();
+    evt.time = gdi_get_time(); // technically not needed
     evt.target = (void *)w;
-    evt.desc.present.data.gdi.use_begin = false;
     event_notify(gdi_back->listener, &evt);
   }
 }
@@ -425,10 +424,12 @@ _gdi_window_proc(
     case WM_SIZE:
       w = gdi_backend_get_window(hwnd);
       if (w != NULL) {
-        /* We do not want to notify resizes that were triggerd by code */
-        if (w->pending_resizes > 0) {
-          w->pending_resizes--;
-        } else {
+        /* We only notify when the size actually changed ; this
+           allows to ignore code-triggered size modifications,
+           provided we set the correct size in the window
+           structure before making the system call */
+        if (w->base.width != LOWORD(lparam) ||
+            w->base.height != HIWORD(lparam)) {
           w->base.width = LOWORD(lparam);
           w->base.height = HIWORD(lparam);
           evt.type = EVENT_RESIZE;
@@ -444,10 +445,12 @@ _gdi_window_proc(
     case WM_MOVE:
       w = gdi_backend_get_window(hwnd);
       if (w != NULL) {
-        /* We do not want to notify moves that were triggerd by code */
-        if (w->pending_moves > 0) {
-          w->pending_moves--;
-        } else {
+        /* We only notify when the position actually changed ; this
+           allows to ignore code-triggered position modifications,
+           provided we set the correct position in the window
+           structure before making the system call */
+        if (w->base.x != LOWORD(lparam) ||
+            w->base.y != HIWORD(lparam)) {
           w->base.x = LOWORD(lparam);
           w->base.y = HIWORD(lparam);
           evt.type = EVENT_MOVE;

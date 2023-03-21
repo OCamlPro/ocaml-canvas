@@ -21,6 +21,7 @@ x11_target_t *
 x11_target_create(
   xcb_window_t wid)
 {
+  assert(wid != XCB_WINDOW_NONE);
   x11_target_t *target = (x11_target_t *)calloc(1, sizeof(x11_target_t));
   if (target == NULL) {
     return NULL;

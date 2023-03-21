@@ -21,18 +21,19 @@
 
 #include "../config.h"
 #include "../color.h"
+#include "../context_internal.h"
 #include "x11_backend_internal.h"
 #include "x11_target.h"
 
-typedef struct context_impl_x11_t {
-  impl_type_t type;
+typedef struct x11_context_t {
+  context_t base;
   xcb_image_t *img;
   xcb_window_t wid;
   xcb_gcontext_t cid;
-} context_impl_x11_t;
+} x11_context_t;
 
 static xcb_image_t *
-_context_create_x11_image(
+_x11_context_create_image(
   xcb_connection_t *c,
   uint8_t depth,
   int32_t width,
@@ -63,143 +64,116 @@ _context_create_x11_image(
   return img;
 }
 
-context_impl_x11_t *
-context_create_x11_impl(
+x11_context_t *
+x11_context_create(
   x11_target_t *target,
   int32_t width,
-  int32_t height,
-  color_t_ **data)
+  int32_t height)
 {
   assert(target != NULL);
   assert(target->wid != XCB_WINDOW_NONE);
   assert(width > 0);
   assert(height > 0);
-  assert(data != NULL);
-  assert(*data == NULL);
 
-  context_impl_x11_t *impl =
-    (context_impl_x11_t *)calloc(1, sizeof(context_impl_x11_t));
-  if (impl == NULL) {
+  x11_context_t *context =
+    (x11_context_t *)calloc(1, sizeof(x11_context_t));
+  if (context == NULL) {
     return NULL;
   }
+
+  // TODO: allow xcb / SHM
+  color_t_ *data = NULL;
+  xcb_image_t *img =
+    _x11_context_create_image(x11_back->c, x11_back->screen->root_depth,
+                              width, height, &data);
+  if (img == NULL) {
+    assert(data == NULL);
+    free(context);
+    return NULL;
+  }
+  assert(data != NULL);
 
   xcb_gcontext_t cid = xcb_generate_id(x11_back->c);
   xcb_create_gc(x11_back->c, cid, target->wid,
                 XCB_GC_GRAPHICS_EXPOSURES, (uint32_t[]){ 1 });
 
-  // TODO: allow xcb / SHM
+  context->base.data = data;
+  context->base.width = width;
+  context->base.height = height;
+  context->img = img;
+  context->wid = target->wid;
+  context->cid = cid;
 
-  xcb_image_t *img = _context_create_x11_image(x11_back->c,
-                                               x11_back->screen->root_depth,
-                                               width, height, data);
-  if (img == NULL) {
-    free(impl);
-    return NULL;
-  }
-
-  impl->type = IMPL_X11;
-  impl->wid = target->wid;
-  impl->cid = cid;
-  impl->img = img;
-
-  return impl;
+  return context;
 }
 
 void
-context_destroy_x11_impl(
-  context_impl_x11_t *impl)
+x11_context_destroy(
+  x11_context_t *context)
 {
-  assert(impl != NULL);
-  assert(impl->type == IMPL_X11);
+  assert(context != NULL);
 
-  if (impl->img != NULL) {
-    xcb_image_destroy(impl->img);
+  if (context->cid != XCB_NONE) {
+    xcb_free_gc(x11_back->c, context->cid);
   }
 
-  if (impl->cid != XCB_NONE) {
-    xcb_free_gc(x11_back->c, impl->cid);
+  if (context->img != NULL) {
+    xcb_image_destroy(context->img);
+    free(context->base.data); /* We allocated it, we have to free it */
   }
 
-  // free ?
-}
-
-static void
-_raw_context_copy(
-  color_t_ *s_data,
-  int32_t s_width,
-  int32_t s_height,
-  color_t_ *d_data,
-  int32_t d_width,
-  int32_t d_height)
-{
-  assert(s_data != NULL);
-  assert(s_width > 0);
-  assert(s_height > 0);
-  assert(d_data != NULL);
-  assert(d_width > 0);
-  assert(d_height > 0);
-
-  uint32_t min_width = d_width < s_width ? d_width : s_width;
-  uint32_t min_height = d_height < s_height ? d_height : s_height;
-  for (size_t i = 0; i < min_height; ++i) {
-    for (size_t j = 0; j < min_width; ++j) {
-      d_data[i * d_width + j] = s_data[i * s_width + j];
-    }
-  }
+  free(context);
 }
 
 bool
-context_resize_x11_impl(
-  context_impl_x11_t *impl,
-  int32_t s_width,
-  int32_t s_height,
-  color_t_ **s_data,
-  int32_t d_width,
-  int32_t d_height,
-  color_t_ **d_data)
+x11_context_resize(
+  x11_context_t *context,
+  int32_t width,
+  int32_t height)
 {
-  assert(impl != NULL);
-  assert(s_width > 0);
-  assert(s_height  > 0);
-  assert(s_data != NULL);
-  assert(*s_data != NULL);
-  assert(d_width > 0);
-  assert(d_height  > 0);
-  assert(d_data != NULL);
-  assert(*d_data == NULL);
+  assert(context != NULL);
+  assert(context->base.data != NULL);
+  assert(context->base.width > 0);
+  assert(context->base.height > 0);
+  assert(context->img != NULL);
+  assert(width > 0);
+  assert(height > 0);
 
-  xcb_image_t *img = _context_create_x11_image(x11_back->c,
-                                               x11_back->screen->root_depth,
-                                               d_width, d_height, d_data);
+  color_t_ *data = NULL;
+  xcb_image_t *img =
+    _x11_context_create_image(x11_back->c, x11_back->screen->root_depth,
+                              width, height, &data);
   if (img == NULL) {
+    assert(data == NULL);
     return false;
   }
+  assert(data != NULL);
 
-  _raw_context_copy(*s_data, s_width, s_height, *d_data, d_width, d_height);
+  _context_copy_to_buffer(&context->base, data, width, height);
 
-  if (impl->img) {
-    xcb_image_destroy(impl->img);
-  }
-  free(*s_data);
+  xcb_image_destroy(context->img);
 
-  impl->img = img;
+  context->base.data = data;
+  context->base.width = width;
+  context->base.height = height;
+  context->img = img;
 
   return true;
 }
 
 void
-context_present_x11_impl(
-  context_impl_x11_t *impl,
-  int32_t width,
-  int32_t height,
-  x11_present_data_t *present_data)
+x11_context_present(
+  x11_context_t *context)
 {
-  assert(impl != NULL);
-  assert(present_data != NULL);
-  assert(width > 0);
-  assert(height  > 0);
+  assert(context != NULL);
+  assert(context->base.width > 0);
+  assert(context->base.height > 0);
+  assert(context->img != NULL);
+  assert(context->wid != XCB_WINDOW_NONE);
+  assert(context->cid != XCB_NONE);
 
-  xcb_image_put(x11_back->c, impl->wid, impl->cid, impl->img, 0, 0, 0);
+  xcb_image_put(x11_back->c, context->wid, context->cid,
+                context->img, 0, 0, 0);
   xcb_flush(x11_back->c);
 }
 

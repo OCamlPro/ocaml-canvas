@@ -11,14 +11,12 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <math.h>
 #include <assert.h>
 
 #include "config.h"
 #include "target.h"
-#include "present_data.h"
-#include "color.h"
 #include "pixmap.h"
+#include "color.h"
 #include "context.h"
 #include "context_internal.h"
 
@@ -35,28 +33,6 @@
 #include "wayland/wl_context.h"
 #endif
 
-static context_t *
-_context_create_internal(
-  int32_t width,
-  int32_t height,
-  color_t_ *data) // May be NULL
-{
-  assert(width > 0);
-  assert(height > 0);
-
-  context_t *c = (context_t *)calloc(1, sizeof(context_t));
-  if (c == NULL) {
-    return NULL;
-  }
-
-  c->impl = NULL;
-  c->data = data;
-  c->width = width;
-  c->height = height;
-
-  return c;
-}
-
 context_t *
 context_create(
   int32_t width,
@@ -70,11 +46,16 @@ context_create(
     return NULL;
   }
 
-  context_t *c = _context_create_internal(width, height, data);
+  context_t *c = (context_t *)calloc(1, sizeof(context_t));
   if (c == NULL) {
     free(data);
     return NULL;
   }
+
+  c->offscreen = true;
+  c->data = data;
+  c->width = width;
+  c->height = height;
 
   return c;
 }
@@ -86,13 +67,19 @@ context_create_from_pixmap(
   assert(pixmap != NULL);
   assert(pixmap_valid(*pixmap) == true);
 
-  context_t *c =
-    _context_create_internal(pixmap->width, pixmap->height, pixmap->data);
-  if (c != NULL) {
-    pixmap->data = NULL;
-    pixmap->width = 0;
-    pixmap->height = 0;
+  context_t *c = (context_t *)calloc(1, sizeof(context_t));
+  if (c == NULL) {
+    return NULL;
   }
+
+  c->offscreen = true;
+  c->data = pixmap->data;
+  c->width = pixmap->width;
+  c->height = pixmap->height;
+
+  pixmap->data = NULL;
+  pixmap->width = 0;
+  pixmap->height = 0;
 
   return c;
 }
@@ -107,31 +94,22 @@ context_create_onscreen(
   assert(width > 0);
   assert(height > 0);
 
-  context_t *c = _context_create_internal(width, height, NULL);
+  context_t *c = NULL;
+  switch_IMPL() {
+    case_GDI(c = (context_t *)gdi_context_create((gdi_target_t *)target,
+                                                 width, height));
+    case_QUARTZ(c = (context_t *)qtz_context_create((qtz_target_t *)target,
+                                                    width, height));
+    case_X11(c = (context_t *)x11_context_create((x11_target_t *)target,
+                                                 width, height));
+    case_WAYLAND(c = (context_t *)wl_context_create((wl_target_t *)target,
+                                                    width, height));
+    default_fail();
+  }
   if (c == NULL) {
     return NULL;
   }
-
-  switch_IMPL() {
-    case_GDI(c->impl = (context_impl_t *)
-             context_create_gdi_impl((gdi_target_t *)target,
-                                     width, height, &c->data));
-    case_QUARTZ(c->impl = (context_impl_t *)
-                context_create_qtz_impl((qtz_target_t *)target,
-                                        width, height, &c->data));
-    case_X11(c->impl = (context_impl_t *)
-             context_create_x11_impl((x11_target_t *)target,
-                                     width, height, &c->data));
-    case_WAYLAND(c->impl = (context_impl_t *)
-                 context_create_wl_impl((wl_target_t *)target,
-                                        width, height, &c->data));
-    default_fail();
-  }
-  if (c->impl == NULL) {
-    free(c);
-    return NULL;
-  }
-  assert(c->data != NULL);
+  c->offscreen = false;
 
   return c;
 }
@@ -141,27 +119,23 @@ context_destroy(
   context_t *c)
 {
   assert(c != NULL);
+  assert(c->data != NULL);
 
-  if (c->impl != NULL) {
+  if (c->offscreen == true) {
+    free(c->data);
+    free(c);
+  } else {
     switch_IMPL() {
-      case_GDI(context_destroy_gdi_impl((context_impl_gdi_t *)c->impl);
-               c->data = NULL; /* freed but not nulled */);
-      case_QUARTZ(context_destroy_qtz_impl((context_impl_qtz_t *)c->impl));
-      case_X11(context_destroy_x11_impl((context_impl_x11_t *)c->impl));
-      case_WAYLAND(context_destroy_wl_impl((context_impl_wl_t *)c->impl));
+      case_GDI(gdi_context_destroy((gdi_context_t *)c));
+      case_QUARTZ(qtz_context_destroy((qtz_context_t *)c));
+      case_X11(x11_context_destroy((x11_context_t *)c));
+      case_WAYLAND(wl_context_destroy((wl_context_t *)c));
       default_fail();
     }
-    free(c->impl); // let the impl do that ?
   }
-
-  if (c->data) {
-    free(c->data);
-  }
-
-  free(c);
 }
 
-static void
+void
 _context_copy_to_buffer(
   context_t *c,
   color_t_ *data,
@@ -170,6 +144,8 @@ _context_copy_to_buffer(
 {
   assert(c != NULL);
   assert(c->data != NULL);
+  assert(c->width > 0);
+  assert(c->height > 0);
   assert(data != NULL);
   assert(width > 0);
   assert(height > 0);
@@ -191,18 +167,22 @@ context_resize(
 {
   assert(c != NULL);
   assert(c->data != NULL);
+  assert(c->width > 0);
+  assert(c->height > 0);
 
   if ((width <= 0) || (height <= 0)) {
     return false;
   }
 
-  color_t_ *data = NULL;
+  if ((width == c->width) && (height == c->height)) {
+    return true;
+  }
 
   // TODO: fill extra data with background color
 
-  if (c->impl == NULL) {
+  if (c->offscreen == true) {
 
-    data = (color_t_ *)calloc(width * height, sizeof(color_t_));
+    color_t_ *data = (color_t_ *)calloc(width * height, sizeof(color_t_));
     if (data == NULL) {
       return false;
     }
@@ -211,63 +191,47 @@ context_resize(
 
     free(c->data);
 
+    c->data = data;
+    c->width = width;
+    c->height = height;
+
+    return true;
+
   } else {
 
     bool result = false;
+
     switch_IMPL() {
       case_GDI(result =
-               context_resize_gdi_impl((context_impl_gdi_t *)c->impl,
-                                       c->width, c->height, &c->data,
-                                       width, height, &data));
+               gdi_context_resize((gdi_context_t *)c, width, height));
       case_QUARTZ(result =
-                  context_resize_qtz_impl((context_impl_qtz_t *)c->impl,
-                                          c->width, c->height, &c->data,
-                                          width, height, &data));
+                  qtz_context_resize((qtz_context_t *)c, width, height));
       case_X11(result =
-               context_resize_x11_impl((context_impl_x11_t *)c->impl,
-                                       c->width, c->height, &c->data,
-                                       width, height, &data));
+               x11_context_resize((x11_context_t *)c, width, height));
       case_WAYLAND(result =
-                   context_resize_wl_impl((context_impl_wl_t *)c->impl,
-                                          c->width, c->height, &c->data,
-                                          width, height, &data));
+                   wl_context_resize((wl_context_t *)c, width, height));
       default_fail();
     }
-    if (result == false) {
-      return false;
-    }
 
+    return result;
   }
-
-  c->data = data;
-  c->width = width;
-  c->height = height;
-
-  return true;
 }
 
 void
 context_present(
-  context_t *c,
-  present_data_t *present_data)
+  context_t *c)
 {
   assert(c != NULL);
-  assert(c->impl != NULL);
-  assert(present_data != NULL);
+  assert(c->offscreen == false);
+  assert(c->data != NULL);
+  assert(c->width > 0);
+  assert(c->height > 0);
 
   switch_IMPL() {
-    case_GDI(context_present_gdi_impl((context_impl_gdi_t *)c->impl,
-                                      c->width, c->height,
-                                      &present_data->gdi));
-    case_QUARTZ(context_present_qtz_impl((context_impl_qtz_t *)c->impl,
-                                         c->width, c->height,
-                                         &present_data->qtz));
-    case_X11(context_present_x11_impl((context_impl_x11_t *)c->impl,
-                                      c->width, c->height,
-                                      &present_data->x11));
-    case_WAYLAND(context_present_wl_impl((context_impl_wl_t *)c->impl,
-                                         c->width, c->height,
-                                         &present_data->wl));
+    case_GDI(gdi_context_present((gdi_context_t *)c));
+    case_QUARTZ(qtz_context_present((qtz_context_t *)c));
+    case_X11(x11_context_present((x11_context_t *)c));
+    case_WAYLAND(wl_context_present((wl_context_t *)c));
     default_fail();
   }
 }
@@ -278,6 +242,8 @@ context_get_raw_pixmap(
 {
   assert(c != NULL);
   assert(c->data != NULL);
+  assert(c->width > 0);
+  assert(c->height > 0);
 
   return pixmap(c->width, c->height, c->data);
 }

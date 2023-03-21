@@ -21,7 +21,7 @@ qtz_target_t *
 qtz_target_create(
   NSWindow *nswin)
 {
-  assert(nsview != NULL);
+  assert(nswin != NULL);
   qtz_target_t *target = (qtz_target_t *)calloc(1, sizeof(qtz_target_t));
   if (target == NULL) {
     return NULL;

@@ -14,40 +14,30 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include <Cocoa/Cocoa.h>
-
 #include "../color.h"
+#include "../context_internal.h"
 #include "qtz_target.h"
-#include "qtz_present_data.h"
 
-typedef struct context_impl_qtz_t context_impl_qtz_t;
+typedef struct qtz_context_t qtz_context_t;
 
-context_impl_qtz_t *
-context_create_qtz_impl(
+qtz_context_t *
+qtz_context_create(
   qtz_target_t *target,
   int32_t width,
-  int32_t height,
-  color_t_ **data);
+  int32_t height);
 
 void
-context_destroy_qtz_impl(
-  context_impl_qtz_t *impl);
+qtz_context_destroy(
+  qtz_context_t *context);
 
 bool
-context_resize_qtz_impl(
-  context_impl_qtz_t *impl,
-  int32_t s_width,
-  int32_t s_height,
-  color_t_ **s_data,
-  int32_t d_width,
-  int32_t d_height,
-  color_t_ **d_data);
+qtz_context_resize(
+  qtz_context_t *context,
+  int32_t width,
+  int32_t height);
 
 void
-context_present_qtz_impl(
-  context_impl_qtz_t *impl,
-  int32_t width,
-  int32_t height,
-  qtz_present_data_t *present_data);
+qtz_context_present(
+  qtz_context_t *context);
 
 #endif /* __QTZ_CONTEXT_H */

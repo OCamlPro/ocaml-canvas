@@ -14,9 +14,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "config.h"
 #include "target.h"
-#include "present_data.h"
 #include "pixmap.h"
 
 typedef struct context_t context_t;
@@ -52,8 +50,7 @@ context_resize(
 
 void
 context_present(
-  context_t *c,
-  present_data_t *present_data);
+  context_t *c);
 
 // Direct access to the context pixels
 // Do NOT free the data pointer !

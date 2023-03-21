@@ -15,49 +15,40 @@
 #include <stdbool.h>
 
 #include "../config.h"
-#include "../color.h"
+#include "../context_internal.h"
 #include "wl_target.h"
-#include "wl_present_data.h"
 
-typedef struct context_impl_wl_t {
-  impl_type_t type;
-} context_impl_wl_t;
+typedef struct wl_context_t {
+  context_t base;
+} wl_context_t;
 
-context_impl_wl_t *
-context_create_wl_impl(
-  wl_target_t *wl_target,
+wl_context_t *
+wl_context_create(
+  wl_target_t *target,
   int32_t width,
-  int32_t height,
-  color_t_ **data)
+  int32_t height)
 {
   return NULL;
 }
 
 void
-context_destroy_wl_impl(
-  context_impl_wl_t *impl)
+wl_context_destroy(
+  wl_context_t *context)
 {
 }
 
 bool
-context_resize_wl_impl(
-  context_impl_wl_t *impl,
-  int32_t s_width,
-  int32_t s_height,
-  color_t_ **s_data,
-  int32_t d_width,
-  int32_t d_height,
-  color_t_ **d_data)
+wl_context_resize(
+  wl_context_t *context,
+  int32_t width,
+  int32_t height)
 {
   return false;
 }
 
 void
-context_present_wl_impl(
-  context_impl_wl_t *impl,
-  int32_t width,
-  int32_t height,
-  wl_present_data_t *present_data)
+wl_context_present(
+  wl_context_t *context)
 {
 }
 

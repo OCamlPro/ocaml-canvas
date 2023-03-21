@@ -14,40 +14,29 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include <xcb/xcb.h>
-
 #include "../color.h"
 #include "x11_target.h"
-#include "x11_present_data.h"
 
-typedef struct context_impl_x11_t context_impl_x11_t;
+typedef struct x11_context_t x11_context_t;
 
-context_impl_x11_t *
-context_create_x11_impl(
+x11_context_t *
+x11_context_create(
   x11_target_t *target,
   int32_t width,
-  int32_t height,
-  color_t_ **data);
+  int32_t height);
 
 void
-context_destroy_x11_impl(
-  context_impl_x11_t *impl);
+x11_context_destroy(
+  x11_context_t *context);
 
 bool
-context_resize_x11_impl(
-  context_impl_x11_t *impl,
-  int32_t s_width,
-  int32_t s_height,
-  color_t_ **s_data,
-  int32_t d_width,
-  int32_t d_height,
-  color_t_ **d_data);
+x11_context_resize(
+  x11_context_t *context,
+  int32_t width,
+  int32_t height);
 
 void
-context_present_x11_impl(
-  context_impl_x11_t *impl,
-  int32_t width,
-  int32_t height,
-  x11_present_data_t *present_data);
+x11_context_present(
+  x11_context_t *context);
 
 #endif /* __X11_CONTEXT_H */
