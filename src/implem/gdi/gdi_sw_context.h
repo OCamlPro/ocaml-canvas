@@ -8,56 +8,34 @@
 /*                                                                        */
 /**************************************************************************/
 
+#ifndef __GDI_SW_CONTEXT_H
+#define __GDI_SW_CONTEXT_H
+
+#include <stdint.h>
 #include <stdbool.h>
-#include <assert.h>
 
-#include "config.h"
+#include "gdi_target.h"
 
-static impl_type_t
-_impl_type = IMPL_NONE;
+typedef struct gdi_sw_context_t gdi_sw_context_t;
+
+gdi_sw_context_t *
+gdi_sw_context_create(
+  gdi_target_t *target,
+  int32_t width,
+  int32_t height);
 
 void
-set_impl_type(
-  impl_type_t it)
-{
-#ifndef HAS_GDI
-  assert(it != IMPL_GDI);
-#endif
-#ifndef HAS_QUARTZ
-  assert(it != IMPL_QUARTZ);
-#endif
-#ifndef HAS_X11
-  assert(it != IMPL_X11);
-#endif
-#ifndef HAS_WAYLAND
-  assert(it != IMPL_WAYLAND);
-#endif
-  _impl_type = it;
-}
-
-impl_type_t
-get_impl_type(
-  void)
-{
-  return _impl_type;
-}
+gdi_sw_context_destroy(
+  gdi_sw_context_t *context);
 
 bool
-has_hardware_accel(
-  void)
-{
-  return false;
-}
+gdi_sw_context_resize(
+  gdi_sw_context_t *context,
+  int32_t width,
+  int32_t height);
 
-os_type_t
-get_os_type(
-  void)
-{
-#if defined(_WIN32) || defined(_WIN64)
-  return OS_WIN32;
-#elif defined(__APPLE__) && defined(__MACH__)
-  return OS_OSX;
-#else
-  return OS_UNIX;
-#endif
-}
+void
+gdi_sw_context_present(
+  gdi_sw_context_t *context);
+
+#endif /* __GDI_SW_CONTEXT_H */

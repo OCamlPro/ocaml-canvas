@@ -21,22 +21,24 @@
 #include "../config.h"
 #include "../color.h"
 #include "../context_internal.h"
-#include "qtz_util.h"
-//#include "qtz_backend.h"
+#include "../sw_context_internal.h"
+#include "qtz_sw_context.h"
 #include "qtz_target.h"
-#include "qtz_context.h"
+#include "qtz_util.h"
+
+@class CanvasView;
+
+typedef struct qtz_sw_context_t {
+  sw_context_t base;
+  CGContextRef ctxt;
+  CanvasView *nsview;
+} qtz_sw_context_t;
 
 @interface CanvasView : NSView
 {
-  @public qtz_context_t *context;
+  @public qtz_sw_context_t *context;
 }
 @end
-
-typedef struct qtz_context_t {
-  context_t base;
-  CGContextRef ctxt;
-  CanvasView *nsview;
-} qtz_context_t;
 
 @implementation CanvasView { }
 
@@ -63,14 +65,14 @@ typedef struct qtz_context_t {
   }
 */
 
-  qtz_context_present(self->context);
+  qtz_sw_context_present(self->context);
 
 }
 
 @end
 
 static CGContextRef
-_qtz_context_create_bitmap_context(
+_qtz_sw_context_create_bitmap_context(
   int32_t width,
   int32_t height,
   color_t_ **data)
@@ -107,8 +109,8 @@ _qtz_context_create_bitmap_context(
   return ctxt;
 }
 
-qtz_context_t *
-qtz_context_create(
+qtz_sw_context_t *
+qtz_sw_context_create(
   qtz_target_t *target,
   int32_t width,
   int32_t height)
@@ -118,15 +120,15 @@ qtz_context_create(
   assert(width > 0);
   assert(height > 0);
 
-  qtz_context_t *context =
-    (qtz_context_t *)calloc(1, sizeof(qtz_context_t));
+  qtz_sw_context_t *context =
+    (qtz_sw_context_t *)calloc(1, sizeof(qtz_sw_context_t));
   if (context == NULL) {
     return NULL;
   }
 
   color_t_ *data = NULL;
   CGContextRef ctxt =
-    _qtz_context_create_bitmap_context(width, height, &data);
+    _qtz_sw_context_create_bitmap_context(width, height, &data);
   if (ctxt == NULL) {
     assert(data == NULL);
     free(context);
@@ -144,9 +146,9 @@ qtz_context_create(
 
   RELEASE_POOL;
 
+  context->base.base.width = width;
+  context->base.base.height = height;
   context->base.data = data;
-  context->base.width = width;
-  context->base.height = height;
   context->ctxt = ctxt;
   context->nsview = nsview;
 
@@ -154,8 +156,8 @@ qtz_context_create(
 }
 
 void
-qtz_context_destroy(
-  qtz_context_t *context)
+qtz_sw_context_destroy(
+  qtz_sw_context_t *context)
 {
   assert(context != NULL);
 
@@ -172,47 +174,47 @@ qtz_context_destroy(
 }
 
 bool
-qtz_context_resize(
-  qtz_context_t *context,
+qtz_sw_context_resize(
+  qtz_sw_context_t *context,
   int32_t width,
   int32_t height)
 {
   assert(context != NULL);
+  assert(context->base.base.width > 0);
+  assert(context->base.base.height > 0);
   assert(context->base.data != NULL);
-  assert(context->base.width > 0);
-  assert(context->base.height > 0);
   assert(context->ctxt != NULL);
   assert(width > 0);
   assert(height > 0);
 
   color_t_ *data = NULL;
   CGContextRef ctxt =
-    _qtz_context_create_bitmap_context(width, height, &data);
+    _qtz_sw_context_create_bitmap_context(width, height, &data);
   if (ctxt == NULL) {
     assert(data == NULL);
     return false;
   }
   assert(data != NULL);
 
-  _context_copy_to_buffer(&context->base, data, width, height);
+  _sw_context_copy_to_buffer(&context->base, data, width, height);
 
   CGContextRelease(context->ctxt);
 
+  context->base.base.width = width;
+  context->base.base.height = height;
   context->base.data = data;
-  context->base.width = width;
-  context->base.height = height;
   context->ctxt = ctxt;
 
   return true;
 }
 
 void
-qtz_context_present(
-  qtz_context_t *context)
+qtz_sw_context_present(
+  qtz_sw_context_t *context)
 {
   assert(context != NULL);
-  assert(context->base.width > 0);
-  assert(context->base.height > 0);
+  assert(context->base.base.width > 0);
+  assert(context->base.base.height > 0);
   assert(context->ctxt != NULL);
   assert(context->nsview != NULL);
 
@@ -229,8 +231,8 @@ qtz_context_present(
   CGImageRef img = CGBitmapContextCreateImage(context->ctxt);
 
   CGRect rect =
-    CGRectMake(0, context->nsview.frame.size.height - context->base.height,
-               context->base.width, context->base.height);
+    CGRectMake(0, context->nsview.frame.size.height - context->base.base.height,
+               context->base.base.width, context->base.base.height);
   CGContextDrawImage(ctxt, rect, img);
 
   [[NSGraphicsContext currentContext] flushGraphics];
@@ -242,6 +244,6 @@ qtz_context_present(
 
 #else
 
-const int qtz_context = 0;
+const int qtz_sw_context = 0;
 
 #endif /* HAS_QUARTZ */

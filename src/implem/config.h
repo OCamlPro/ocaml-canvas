@@ -23,11 +23,10 @@ typedef enum os_type_t {
 
 typedef enum impl_type_t {
   IMPL_NONE    = 0,
-  IMPL_CANVAS  = 1,
-  IMPL_GDI     = 2,
-  IMPL_QUARTZ  = 3,
-  IMPL_X11     = 4,
-  IMPL_WAYLAND = 5
+  IMPL_GDI     = 1,
+  IMPL_QUARTZ  = 2,
+  IMPL_X11     = 3,
+  IMPL_WAYLAND = 4
 } impl_type_t;
 
 #define switch_IMPL() switch (get_impl_type())
@@ -59,9 +58,30 @@ typedef enum impl_type_t {
 #define default_fail() default: assert(!"Missing implementation"); break
 #define default_ignore() default: break
 
-void set_impl_type(impl_type_t it);
-impl_type_t get_impl_type();
+#ifdef HAS_ACCEL
+#define switch_ACCEL() switch (has_hardware_accel())
+#define case_HW(s) case true: { s; } break
+#define case_SW(s) case false: { s; } break
+#else
+#define switch_ACCEL()
+#define case_HW(s)
+#define case_SW(s) s
+#endif
 
-os_type_t get_os_type();
+void
+set_impl_type(
+  impl_type_t it);
+
+impl_type_t
+get_impl_type(
+  void);
+
+bool
+has_hardware_accel(
+  void);
+
+os_type_t
+get_os_type(
+  void);
 
 #endif /* __CONFIG_H */

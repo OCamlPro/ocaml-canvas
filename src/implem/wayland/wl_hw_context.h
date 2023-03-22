@@ -8,52 +8,34 @@
 /*                                                                        */
 /**************************************************************************/
 
-#ifdef HAS_WAYLAND
+#ifndef __WL_HW_CONTEXT_H
+#define __WL_HW_CONTEXT_H
 
-#include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "../config.h"
-#include "../context_internal.h"
 #include "wl_target.h"
 
-typedef struct wl_context_t {
-  context_t base;
-} wl_context_t;
+typedef struct wl_hw_context_t wl_hw_context_t;
 
-wl_context_t *
-wl_context_create(
+wl_hw_context_t *
+wl_hw_context_create(
   wl_target_t *target,
   int32_t width,
-  int32_t height)
-{
-  return NULL;
-}
+  int32_t height);
 
 void
-wl_context_destroy(
-  wl_context_t *context)
-{
-}
+wl_hw_context_destroy(
+  wl_hw_context_t *context);
 
 bool
-wl_context_resize(
-  wl_context_t *context,
+wl_hw_context_resize(
+  wl_hw_context_t *context,
   int32_t width,
-  int32_t height)
-{
-  return false;
-}
+  int32_t height);
 
 void
-wl_context_present(
-  wl_context_t *context)
-{
-}
+wl_hw_context_present(
+  wl_hw_context_t *context);
 
-#else
-
-const int wl_context = 0;
-
-#endif /* HAS_WAYLAND */
+#endif /* __WL_HW_CONTEXT_H */

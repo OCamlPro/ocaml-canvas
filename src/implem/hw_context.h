@@ -8,8 +8,8 @@
 /*                                                                        */
 /**************************************************************************/
 
-#ifndef __CONTEXT_H
-#define __CONTEXT_H
+#ifndef __HW_CONTEXT_H
+#define __HW_CONTEXT_H
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -24,10 +24,10 @@
 #include "list.h"
 #include "state.h" // for shadow_t
 
-typedef struct context_t context_t;
+typedef struct hw_context_t hw_context_t;
 
-context_t *
-context_create(
+hw_context_t *
+hw_context_create(
   int32_t width,
   int32_t height);
 
@@ -35,43 +35,43 @@ context_create(
 // The data pointer is transfered to the context
 // (thus removed from the pixmap); if you kept
 // a copy, do NOT free it !
-context_t *
-context_create_from_pixmap(
+hw_context_t *
+hw_context_create_from_pixmap(
   pixmap_t *pixmap);
 
-context_t *
-context_create_onscreen(
+hw_context_t *
+hw_context_create_onscreen(
   target_t *target,
   int32_t width,
   int32_t height);
 
 void
-context_destroy(
-  context_t *c);
+hw_context_destroy(
+  hw_context_t *c);
 
 bool
-context_resize(
-  context_t *c,
+hw_context_resize(
+  hw_context_t *c,
   int32_t width,
   int32_t height);
 
 void
-context_present(
-  context_t *c);
+hw_context_present(
+  hw_context_t *c);
 
 bool
-context_clip(
-  context_t *c,
+hw_context_clip(
+  hw_context_t *c,
   list_t *clip_path,
   const transform_t *transform);
 
 void
-context_clear_clip(
-  context_t *c);
+hw_context_clear_clip(
+  hw_context_t *c);
 
 void
-context_render_polygon(
-  context_t *c,
+hw_context_render_polygon(
+  hw_context_t *c,
   const polygon_t *p,
   const rect_t *bbox,
   draw_style_t draw_style,
@@ -82,11 +82,11 @@ context_render_polygon(
   const transform_t *transform);
 
 void
-context_blit(
-  context_t *dc,
+hw_context_blit(
+  hw_context_t *dc,
   int32_t dx,
   int32_t dy,
-  const context_t *sc,
+  const hw_context_t *sc,
   int32_t sx,
   int32_t sy,
   int32_t width,
@@ -97,29 +97,29 @@ context_blit(
   const transform_t *transform);
 
 color_t_
-context_get_pixel(
-  const context_t *c,
+hw_context_get_pixel(
+  const hw_context_t *c,
   int32_t x,
   int32_t y);
 
 void
-context_put_pixel(
-  context_t *c,
+hw_context_put_pixel(
+  hw_context_t *c,
   int32_t x,
   int32_t y,
   color_t_ color);
 
 pixmap_t
-context_get_pixmap(
-  const context_t *c,
+hw_context_get_pixmap(
+  const hw_context_t *c,
   int32_t sx,
   int32_t sy,
   int32_t width,
   int32_t height);
 
 void
-context_put_pixmap(
-  context_t *c,
+hw_context_put_pixmap(
+  hw_context_t *c,
   int32_t dx,
   int32_t dy,
   const pixmap_t *sp,
@@ -129,15 +129,15 @@ context_put_pixmap(
   int32_t height);
 
 bool
-context_export_png(
-  const context_t *c,
+hw_context_export_png(
+  const hw_context_t *c,
   const char *filename); // as UTF-8
 
 bool
-context_import_png(
-  context_t *c,
+hw_context_import_png(
+  hw_context_t *c,
   int32_t x,
   int32_t y,
   const char *filename); // as UTF-8
 
-#endif /* __CONTEXT_H */
+#endif /* __HW_CONTEXT_H */
