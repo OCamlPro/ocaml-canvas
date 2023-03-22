@@ -137,7 +137,6 @@ _canvas_create_internal(
   canvas->font = NULL;
   canvas->width = width;
   canvas->height = height;
-  canvas->clip_region = pixmap_null();
   canvas->clip_region_dirty = false;
 
   canvas->autocommit = autocommit;
@@ -266,10 +265,6 @@ _canvas_destroy(
     font_destroy(canvas->font);
   }
 
-  if (pixmap_valid(canvas->clip_region) == true) {
-    pixmap_destroy(canvas->clip_region);
-  }
-
   path2d_release(canvas->path_2d);
   list_delete(canvas->state_stack);
   state_destroy(canvas->state);
@@ -386,10 +381,9 @@ _canvas_reset_state(
   state_reset(canvas->state);
   list_reset(canvas->state_stack);
   path2d_reset(canvas->path_2d);
-  if (pixmap_valid(canvas->clip_region) == true) {
-    pixmap_destroy(canvas->clip_region);
-    canvas->clip_region_dirty = false;
-  }
+
+  context_clear_clip(canvas->context);
+  canvas->clip_region_dirty = false;
 }
 
 void
@@ -503,9 +497,7 @@ canvas_restore(
   if (s != NULL) {
     state_destroy(canvas->state);
     canvas->state = s;
-    if (pixmap_valid(canvas->clip_region) == true) {
-      pixmap_destroy(canvas->clip_region);
-    }
+    context_clear_clip(canvas->context);
     canvas->clip_region_dirty = !list_is_empty(canvas->state->clip_path);
   }
 }
@@ -1100,7 +1092,8 @@ canvas_quadratic_curve_to(
   assert(c->path_2d != NULL);
   assert(c->state != NULL);
 
-  path2d_quadratic_curve_to(c->path_2d, cpx, cpy, x, y, c->state->transform);
+  path2d_quadratic_curve_to(c->path_2d, cpx, cpy, x, y,
+                            c->state->transform);
 }
 
 void
@@ -1152,36 +1145,13 @@ canvas_ellipse(
   assert(c->path_2d != NULL);
   assert(c->state != NULL);
 
-  path2d_ellipse(c->path_2d, x, y, rx, ry, r, di, df, ccw, c->state->transform);
+  path2d_ellipse(c->path_2d, x, y, rx, ry, r, di, df, ccw,
+                 c->state->transform);
 }
 
 
 
 /* Path stroking/filling */
-
-static void
-_canvas_clip_fill_instr(
-  canvas_t *c,
-  const path_fill_instr_t *instr)
-{
-  assert(c != NULL);
-  assert(c->state != NULL);
-  assert(pixmap_valid(c->clip_region) == true);
-  assert(instr != NULL);
-  assert(instr->poly != NULL);
-
-  draw_style_t white = (draw_style_t){ .type = DRAW_STYLE_COLOR,
-                                       .content.color = color_white };
-  shadow_t noshadow = (shadow_t){
-    .offset_x = 0, .offset_y = 0, .blur = 0,
-    .color = color_transparent_black };
-
-  rect_t bbox = rect(point(0.0, 0.0),
-                     point((double)c->width, (double)c->height));
-
-  poly_render(&(c->clip_region), instr->poly, &bbox, white, 1.0, &noshadow,
-              ONE_MINUS_SRC, NULL, instr->non_zero, c->state->transform);
-}
 
 static bool
 _canvas_clip_region_ensure(
@@ -1195,36 +1165,15 @@ _canvas_clip_region_ensure(
     return true;
   }
 
-  if (pixmap_valid(c->clip_region) == false) {
-    c->clip_region = pixmap(c->width, c->height, NULL);
-    if (pixmap_valid(c->clip_region) == false) {
-      return false;
-    }
-  }
-
-  for (int32_t j = 0; j < c->height; ++j) {
-    for (int32_t i = 0; i < c->width; ++i) {
-      pixmap_at(c->clip_region, j, i) = color_transparent_black;
-    }
-  }
-
-  list_iterator_t *it = list_get_iterator(c->state->clip_path);
-  if (it == NULL) {
+  if (context_clip(c->context, c->state->clip_path,
+                   c->state->transform) == false) {
     return false;
   }
-
-  path_fill_instr_t *instr = NULL;
-  while ((instr = (path_fill_instr_t *)list_iterator_next(it)) != NULL) {
-    _canvas_clip_fill_instr(c, instr);
-  }
-
-  list_free_iterator(it);
 
   c->clip_region_dirty = false;
 
   return true;
 }
-
 
 void
 canvas_fill(
@@ -1238,7 +1187,7 @@ canvas_fill(
 
   _canvas_clip_region_ensure(c);
 
-  // TODO: initial size according to number of primitive
+// TODO: initial size according to number of primitive
   polygon_t *p = polygon_create(1024, 16);
   if (p == NULL) {
     return;
@@ -1246,11 +1195,10 @@ canvas_fill(
 
   rect_t bbox = { 0 };
   if (polygonize(path2d_get_path(c->path_2d), p, &bbox) == true) {
-    pixmap_t pm = context_get_raw_pixmap(c->context);
-    poly_render(&pm, p, &bbox,
-                c->state->fill_style, c->state->global_alpha,
-                &c->state->shadow, c->state->global_composite_operation,
-                &(c->clip_region), non_zero, c->state->transform);
+    context_render_polygon(c->context, p, &bbox, c->state->fill_style,
+                           c->state->global_alpha, &c->state->shadow,
+                           c->state->global_composite_operation,
+                           non_zero, c->state->transform);
   }
 
   polygon_destroy(p);
@@ -1269,7 +1217,7 @@ canvas_fill_path(
 
   _canvas_clip_region_ensure(c);
 
-  // TODO: initial size according to number of primitive
+// TODO: initial size according to number of primitive
   polygon_t *p = polygon_create(1024, 16);
   if (p == NULL) {
     return;
@@ -1297,11 +1245,10 @@ canvas_fill_path(
     bbox.p1 = point(xmin, ymin);
     bbox.p2 = point(xmax, ymax);
 
-    pixmap_t pm = context_get_raw_pixmap(c->context);
-    poly_render(&pm, p, &bbox,
-                c->state->fill_style, c->state->global_alpha,
-                &c->state->shadow, c->state->global_composite_operation,
-                &(c->clip_region), non_zero, c->state->transform);
+    context_render_polygon(c->context, p, &bbox, c->state->fill_style,
+                           c->state->global_alpha, &c->state->shadow,
+                           c->state->global_composite_operation,
+                           non_zero, c->state->transform);
   }
 
   polygon_destroy(p);
@@ -1318,7 +1265,7 @@ canvas_stroke(
 
   _canvas_clip_region_ensure(c);
 
-  // TODO: initial size according to number of primitive
+// TODO: initial size according to number of primitive
   polygon_t *p = polygon_create(1024, 16);
   if (p == NULL) {
     return;
@@ -1332,11 +1279,10 @@ canvas_stroke(
                          c->state->transform, true,
                          c->state->line_dash, c->state->line_dash_len,
                          c->state->line_dash_offset) == true) {
-    pixmap_t pm = context_get_raw_pixmap(c->context);
-    poly_render(&pm, p, &bbox,
-                c->state->stroke_style, c->state->global_alpha,
-                &c->state->shadow, c->state->global_composite_operation,
-                &(c->clip_region), true, c->state->transform);
+    context_render_polygon(c->context, p, &bbox, c->state->stroke_style,
+                           c->state->global_alpha, &c->state->shadow,
+                           c->state->global_composite_operation,
+                           true, c->state->transform);
   }
 
   polygon_destroy(p);
@@ -1354,7 +1300,7 @@ canvas_stroke_path(
 
   _canvas_clip_region_ensure(c);
 
-  // TODO: initial size according to number of primitive
+// TODO: initial size according to number of primitive
   polygon_t *p = polygon_create(1024, 16);
   if (p == NULL) {
     return;
@@ -1368,11 +1314,10 @@ canvas_stroke_path(
                          c->state->transform, false,
                          c->state->line_dash, c->state->line_dash_len,
                          c->state->line_dash_offset) == true) {
-    pixmap_t pm = context_get_raw_pixmap(c->context);
-    poly_render(&pm, p, &bbox,
-                c->state->stroke_style, c->state->global_alpha,
-                &c->state->shadow, c->state->global_composite_operation,
-                &(c->clip_region), true, c->state->transform);
+    context_render_polygon(c->context, p, &bbox, c->state->stroke_style,
+                           c->state->global_alpha, &c->state->shadow,
+                           c->state->global_composite_operation,
+                           true, c->state->transform);
   }
 
   polygon_destroy(p);
@@ -1388,7 +1333,7 @@ canvas_clip(
   assert(c->state != NULL);
   assert(c->state->clip_path != NULL);
 
-  // TODO: initial size according to number of primitive
+// TODO: initial size according to number of primitive
   polygon_t *p = polygon_create(1024, 16);
   if (p == NULL) {
     return;
@@ -1414,7 +1359,7 @@ canvas_clip_path(
   assert(c->state != NULL);
   assert(path != NULL);
 
-  // TODO: initial size according to number of primitive
+// TODO: initial size according to number of primitive
   polygon_t *p = polygon_create(1024, 16);
   if (p == NULL) {
     return;
@@ -1497,11 +1442,10 @@ canvas_fill_rect(
     return;
   }
 
-  pixmap_t pm = context_get_raw_pixmap(c->context);
-  poly_render(&pm, p, &bbox,
-              c->state->fill_style, c->state->global_alpha,
-              &c->state->shadow, c->state->global_composite_operation,
-              &(c->clip_region), false, c->state->transform);
+  context_render_polygon(c->context, p, &bbox, c->state->fill_style,
+                         c->state->global_alpha, &c->state->shadow,
+                         c->state->global_composite_operation,
+                         false, c->state->transform);
 
   polygon_destroy(p);
 }
@@ -1540,11 +1484,10 @@ canvas_stroke_rect(
                  c->state->transform, true, c->state->line_dash,
                  c->state->line_dash_len, c->state->line_dash_offset);
 
-  pixmap_t pm = context_get_raw_pixmap(c->context);
-  poly_render(&pm, tp, &bbox,
-              c->state->stroke_style, c->state->global_alpha,
-              &c->state->shadow, c->state->global_composite_operation,
-              &(c->clip_region), true, c->state->transform);
+  context_render_polygon(c->context, p, &bbox, c->state->stroke_style,
+                         c->state->global_alpha, &c->state->shadow,
+                         c->state->global_composite_operation,
+                         true, c->state->transform);
 
   polygon_destroy(tp);
   polygon_destroy(p);
@@ -1582,7 +1525,7 @@ canvas_fill_text(
   assert(c->state != NULL);
   assert(text != NULL);
 
-  // TODO: handle both vector and bitmap fonts
+// TODO: handle both vector and bitmap fonts
 
   _canvas_clip_region_ensure(c);
 
@@ -1602,11 +1545,10 @@ canvas_fill_text(
     rect_t bbox = { 0 };
     if (font_char_as_poly(c->font, c->state->transform,
                           chr, &pen, p, &bbox) == true) {
-      pixmap_t pm = context_get_raw_pixmap(c->context);
-      poly_render(&pm, p, &bbox,
-                  c->state->fill_style, c->state->global_alpha,
-                  &c->state->shadow, c->state->global_composite_operation,
-                  &(c->clip_region), true, c->state->transform);
+      context_render_polygon(c->context, p, &bbox, c->state->fill_style,
+                             c->state->global_alpha, &c->state->shadow,
+                             c->state->global_composite_operation,
+                             true, c->state->transform);
     }
   }
 
@@ -1644,11 +1586,10 @@ canvas_stroke_text(
     if (font_char_as_poly_outline(c->font, c->state->transform,
                                   chr, c->state->line_width,
                                   &pen, p, &bbox) == true) {
-      pixmap_t pm = context_get_raw_pixmap(c->context);
-      poly_render(&pm, p, &bbox,
-                  c->state->stroke_style, c->state->global_alpha,
-                  &c->state->shadow, c->state->global_composite_operation,
-                  &(c->clip_region), true, c->state->transform);
+      context_render_polygon(c->context, p, &bbox, c->state->stroke_style,
+                             c->state->global_alpha, &c->state->shadow,
+                             c->state->global_composite_operation,
+                             true, c->state->transform);
     }
   }
 
@@ -1668,96 +1609,16 @@ canvas_blit(
 {
   assert(dc != NULL);
   assert(dc->context != NULL);
+  assert(dc->state != NULL);
+  assert(dc->state->transform != NULL);
   assert(sc != NULL);
   assert(sc->context != NULL);
 
-  bool draw_shadows =
-    (dc->state->shadow.blur > 0.0 ||
-     dc->state->shadow.offset_x != 0.0 ||
-     dc->state->shadow.offset_y != 0.0) &&
-    dc->state->global_composite_operation != COPY &&
-    dc->state->shadow.color.a != 0;
-
-  const pixmap_t sp = context_get_raw_pixmap((context_t *)sc->context);
-  pixmap_t dp = context_get_raw_pixmap(dc->context);
-
-  if ((transform_is_pure_translation(dc->state->transform) == true) &&
-      (draw_shadows == false)) {
-
-    double tx = 0.0, ty = 0.0;
-    transform_extract_translation(dc->state->transform, &tx, &ty);
-
-    int32_t lo_x = max(dx + (int32_t)tx, 0);
-    int32_t hi_x = min(dx + (int32_t)tx + width, dc->width);
-    int32_t lo_y = max(dy + (int32_t)ty, 0);
-    int32_t hi_y = min(dy + (int32_t)ty + height, dc->height);
-
-    for (int32_t i = lo_x; i < hi_x; i++) {
-      for (int32_t j = lo_y; j < hi_y; j++) {
-
-        int32_t uvx = i + sx - dx - (int32_t)tx;
-        int32_t uvy = j + sy - dy - (int32_t)ty;
-        if (uvx < 0 || uvx >= sc->width ||
-            uvy < 0 || uvy >= sc->height) {
-          continue;
-        }
-
-        color_t_ fill_color = pixmap_at(sp, uvy, uvx);
-        int draw_alpha = fill_color.a;
-        if (pixmap_valid(dc->clip_region) == true) {
-          draw_alpha *= 255 - pixmap_at(dc->clip_region, j, i).a;
-          draw_alpha /= 255;
-        }
-
-        pixmap_at(dp, j, i) =
-          comp_compose(fill_color, pixmap_at(dp, j, i), draw_alpha,
-                       dc->state->global_composite_operation);
-      }
-    }
-
-  } else {
-
-    draw_style_t draw_style = (draw_style_t){ .type = DRAW_STYLE_PIXMAP,
-                                              .content.pixmap = &sp };
-
-    polygon_t *p = polygon_create(8, 1);
-    if (p == NULL) {
-      return;
-    }
-
-    point_t p1 = point((double)dx, (double)dy);
-    point_t p2 = point((double)(dx + width), (double)dy);
-    point_t p3 = point((double)(dx + width), (double)(dy + height));
-    point_t p4 = point((double)dx, (double)(dy + height));
-
-    transform_apply(dc->state->transform, &p1);
-    transform_apply(dc->state->transform, &p2);
-    transform_apply(dc->state->transform, &p3);
-    transform_apply(dc->state->transform, &p4);
-
-    polygon_add_point(p, p1);
-    polygon_add_point(p, p2);
-    polygon_add_point(p, p3);
-    polygon_add_point(p, p4);
-    polygon_end_subpoly(p, true);
-
-    rect_t bbox = rect(point(min4(p1.x, p2.x, p3.x, p4.x),
-                             min4(p1.y, p2.y, p3.y, p4.y)),
-                       point(max4(p1.x, p2.x, p3.x, p4.x),
-                             max4(p1.y, p2.y, p3.y, p4.y)));
-
-    transform_t *temp_transform = transform_copy(dc->state->transform);
-    transform_translate(temp_transform, dx - sx, dy - sy);
-
-    pixmap_t pm = context_get_raw_pixmap((context_t *)dc->context);
-    poly_render(&pm, p, &bbox,
-                draw_style, dc->state->global_alpha,
-                &dc->state->shadow, dc->state->global_composite_operation,
-                &(dc->clip_region), false, temp_transform);
-
-    polygon_destroy(p);
-    transform_destroy(temp_transform);
-  }
+  context_blit(dc->context, dx, dy,
+               sc->context, sx, sy, width, height,
+               dc->state->global_alpha, &dc->state->shadow,
+               dc->state->global_composite_operation,
+               dc->state->transform);
 }
 
 /* Direct pixel access */
@@ -1771,16 +1632,7 @@ canvas_get_pixel(
   assert(c != NULL);
   assert(c->context != NULL);
 
-  color_t_ color = color_black;
-
-  const pixmap_t pm = context_get_raw_pixmap((context_t *)c->context);
-  if (pixmap_valid(pm) == true) {
-    if ((x >= 0) && (x < pm.width) && (y >= 0) && (y < pm.height)) {
-      color = pixmap_at(pm, y, x);
-    }
-  }
-
-  return color;
+  return context_get_pixel(c->context, x, y);
 }
 
 void
@@ -1793,12 +1645,7 @@ canvas_put_pixel(
   assert(c != NULL);
   assert(c->context != NULL);
 
-  pixmap_t pm = context_get_raw_pixmap(c->context);
-  if (pixmap_valid(pm) == true) {
-    if ((x >= 0) && (x < pm.width) && (y >= 0) && (y < pm.height)) {
-      pixmap_at(pm, y, x) = color;
-    }
-  }
+  context_put_pixel(c->context, x, y, color);
 }
 
 pixmap_t
@@ -1812,17 +1659,7 @@ canvas_get_pixmap(
   assert(c != NULL);
   assert(c->context != NULL);
 
-  pixmap_t dp = { 0 };
-
-  const pixmap_t sp = context_get_raw_pixmap((context_t *)c->context);
-  if (pixmap_valid(sp) == true) {
-    dp = pixmap(width, height, NULL);
-    if (pixmap_valid(dp) == true) {
-      pixmap_blit(&dp, 0, 0, &sp, sx, sy, width, height);
-    }
-  }
-
-  return dp;
+  return context_get_pixmap(c->context, sx, sy, width, height);
 }
 
 void
@@ -1841,10 +1678,7 @@ canvas_put_pixmap(
   assert(sp != NULL);
   assert(pixmap_valid(*sp) == true);
 
-  pixmap_t dp = context_get_raw_pixmap(c->context);
-  if (pixmap_valid(dp) == true) {
-    pixmap_blit(&dp, dx, dy, sp, sx, sy, width, height);
-  }
+  context_put_pixmap(c->context, dx, dy, sp, sx, sy, width, height);
 }
 
 /* Import / export functions */
@@ -1858,11 +1692,7 @@ canvas_export_png(
   assert(c->context != NULL);
   assert(filename != NULL);
 
-  const pixmap_t pm = context_get_raw_pixmap((context_t *)c->context);
-  if (pixmap_valid(pm) == false) {
-    return false;
-  }
-  return impexp_export_png(&pm, filename);
+  return context_export_png(c->context, filename);
 }
 
 bool
@@ -1876,9 +1706,5 @@ canvas_import_png(
   assert(c->context != NULL);
   assert(filename != NULL);
 
-  pixmap_t pm = context_get_raw_pixmap(c->context);
-  if (pixmap_valid(pm) == false) {
-    return false;
-  }
-  return impexp_import_png(&pm, x, y, filename);
+  return context_import_png(c->context, x, y, filename);
 }

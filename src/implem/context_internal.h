@@ -15,12 +15,15 @@
 #include <stdbool.h>
 
 #include "color.h"
+#include "pixmap.h"
 
 typedef struct context_t {
   bool offscreen;
   color_t_ *data;
   int32_t width;
   int32_t height;
+
+  pixmap_t clip_region; // temporary
 } context_t;
 
 void

@@ -44,7 +44,7 @@ typedef struct state_t {
   double miter_limit;
 
   /* Polygon renderer state */
-  double global_alpha; // 0.0 - 1.0
+  double global_alpha; // 0.0 - 1.0    Should this be a float ?
   draw_style_t fill_style;
   draw_style_t stroke_style;
   shadow_t shadow;
