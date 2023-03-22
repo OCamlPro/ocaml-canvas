@@ -13,6 +13,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "util.h"
 #include "color.h"
@@ -36,6 +37,9 @@ typedef struct pixmap_t {
                         (color_t_ *)memdup((p).data, (p).width * \
                                            (p).height * COLOR_SIZE), \
                .width = (p).width, .height = (p).height })
+
+#define pixmap_clear(p) \
+  (memset((p).data, 0, (p).width * (p).height * COLOR_SIZE))
 
 #define pixmap_destroy(p) \
   do { \
