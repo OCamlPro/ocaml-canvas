@@ -8,35 +8,34 @@
 /*                                                                        */
 /**************************************************************************/
 
-#ifndef __X11_CONTEXT_H
-#define __X11_CONTEXT_H
+#ifndef __WL_SW_CONTEXT_H
+#define __WL_SW_CONTEXT_H
 
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "../color.h"
-#include "x11_target.h"
+#include "wl_target.h"
 
-typedef struct x11_context_t x11_context_t;
+typedef struct wl_sw_context_t wl_sw_context_t;
 
-x11_context_t *
-x11_context_create(
-  x11_target_t *target,
+wl_sw_context_t *
+wl_sw_context_create(
+  wl_target_t *target,
   int32_t width,
   int32_t height);
 
 void
-x11_context_destroy(
-  x11_context_t *context);
+wl_sw_context_destroy(
+  wl_sw_context_t *context);
 
 bool
-x11_context_resize(
-  x11_context_t *context,
+wl_sw_context_resize(
+  wl_sw_context_t *context,
   int32_t width,
   int32_t height);
 
 void
-x11_context_present(
-  x11_context_t *context);
+wl_sw_context_present(
+  wl_sw_context_t *context);
 
-#endif /* __X11_CONTEXT_H */
+#endif /* __WL_SW_CONTEXT_H */

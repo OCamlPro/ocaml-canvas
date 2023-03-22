@@ -8,36 +8,26 @@
 /*                                                                        */
 /**************************************************************************/
 
-#ifndef __QTZ_CONTEXT_H
-#define __QTZ_CONTEXT_H
+#ifndef __SW_CONTEXT_INTERNAL_H
+#define __SW_CONTEXT_INTERNAL_H
 
 #include <stdint.h>
-#include <stdbool.h>
 
-#include "../color.h"
-#include "../context_internal.h"
-#include "qtz_target.h"
+#include "color.h"
+#include "pixmap.h"
+#include "context_internal.h"
 
-typedef struct qtz_context_t qtz_context_t;
+typedef struct sw_context_t {
+  context_t base;
+  color_t_ *data;
+  pixmap_t clip_region; // temporary
+} sw_context_t;
 
-qtz_context_t *
-qtz_context_create(
-  qtz_target_t *target,
+void
+_sw_context_copy_to_buffer(
+  sw_context_t *c,
+  color_t_ *data,
   int32_t width,
   int32_t height);
 
-void
-qtz_context_destroy(
-  qtz_context_t *context);
-
-bool
-qtz_context_resize(
-  qtz_context_t *context,
-  int32_t width,
-  int32_t height);
-
-void
-qtz_context_present(
-  qtz_context_t *context);
-
-#endif /* __QTZ_CONTEXT_H */
+#endif /* __SW_CONTEXT_INTERNAL_H */

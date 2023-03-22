@@ -22,18 +22,19 @@
 #include "../config.h"
 #include "../color.h"
 #include "../context_internal.h"
+#include "../sw_context_internal.h"
 #include "x11_backend_internal.h"
 #include "x11_target.h"
 
-typedef struct x11_context_t {
-  context_t base;
+typedef struct x11_sw_context_t {
+  sw_context_t base;
   xcb_image_t *img;
   xcb_window_t wid;
   xcb_gcontext_t cid;
-} x11_context_t;
+} x11_sw_context_t;
 
 static xcb_image_t *
-_x11_context_create_image(
+_x11_sw_context_create_image(
   xcb_connection_t *c,
   uint8_t depth,
   int32_t width,
@@ -64,8 +65,8 @@ _x11_context_create_image(
   return img;
 }
 
-x11_context_t *
-x11_context_create(
+x11_sw_context_t *
+x11_sw_context_create(
   x11_target_t *target,
   int32_t width,
   int32_t height)
@@ -75,8 +76,8 @@ x11_context_create(
   assert(width > 0);
   assert(height > 0);
 
-  x11_context_t *context =
-    (x11_context_t *)calloc(1, sizeof(x11_context_t));
+  x11_sw_context_t *context =
+    (x11_sw_context_t *)calloc(1, sizeof(x11_sw_context_t));
   if (context == NULL) {
     return NULL;
   }
@@ -84,7 +85,7 @@ x11_context_create(
   // TODO: allow xcb / SHM
   color_t_ *data = NULL;
   xcb_image_t *img =
-    _x11_context_create_image(x11_back->c, x11_back->screen->root_depth,
+    _x11_sw_context_create_image(x11_back->c, x11_back->screen->root_depth,
                               width, height, &data);
   if (img == NULL) {
     assert(data == NULL);
@@ -97,9 +98,9 @@ x11_context_create(
   xcb_create_gc(x11_back->c, cid, target->wid,
                 XCB_GC_GRAPHICS_EXPOSURES, (uint32_t[]){ 1 });
 
+  context->base.base.width = width;
+  context->base.base.height = height;
   context->base.data = data;
-  context->base.width = width;
-  context->base.height = height;
   context->img = img;
   context->wid = target->wid;
   context->cid = cid;
@@ -108,8 +109,8 @@ x11_context_create(
 }
 
 void
-x11_context_destroy(
-  x11_context_t *context)
+x11_sw_context_destroy(
+  x11_sw_context_t *context)
 {
   assert(context != NULL);
 
@@ -126,48 +127,48 @@ x11_context_destroy(
 }
 
 bool
-x11_context_resize(
-  x11_context_t *context,
+x11_sw_context_resize(
+  x11_sw_context_t *context,
   int32_t width,
   int32_t height)
 {
   assert(context != NULL);
+  assert(context->base.base.width > 0);
+  assert(context->base.base.height > 0);
   assert(context->base.data != NULL);
-  assert(context->base.width > 0);
-  assert(context->base.height > 0);
   assert(context->img != NULL);
   assert(width > 0);
   assert(height > 0);
 
   color_t_ *data = NULL;
   xcb_image_t *img =
-    _x11_context_create_image(x11_back->c, x11_back->screen->root_depth,
-                              width, height, &data);
+    _x11_sw_context_create_image(x11_back->c, x11_back->screen->root_depth,
+                                 width, height, &data);
   if (img == NULL) {
     assert(data == NULL);
     return false;
   }
   assert(data != NULL);
 
-  _context_copy_to_buffer(&context->base, data, width, height);
+  _sw_context_copy_to_buffer(&context->base, data, width, height);
 
   xcb_image_destroy(context->img);
 
+  context->base.base.width = width;
+  context->base.base.height = height;
   context->base.data = data;
-  context->base.width = width;
-  context->base.height = height;
   context->img = img;
 
   return true;
 }
 
 void
-x11_context_present(
-  x11_context_t *context)
+x11_sw_context_present(
+  x11_sw_context_t *context)
 {
   assert(context != NULL);
-  assert(context->base.width > 0);
-  assert(context->base.height > 0);
+  assert(context->base.base.width > 0);
+  assert(context->base.base.height > 0);
   assert(context->img != NULL);
   assert(context->wid != XCB_WINDOW_NONE);
   assert(context->cid != XCB_NONE);
@@ -179,6 +180,6 @@ x11_context_present(
 
 #else
 
-const int x11_context = 0;
+const int x11_sw_context = 0;
 
 #endif /* HAS_X11 */

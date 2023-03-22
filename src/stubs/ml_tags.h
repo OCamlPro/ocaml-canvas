@@ -260,12 +260,4 @@ typedef enum comp_op_tag_t {
   TAG_OP_LUMINOSITY       = 25
 } comp_op_tag_t;
 
-typedef enum backend_tag_t {
-  TAG_CANVAS  = 0,
-  TAG_GDI     = 1,
-  TAG_QUARTZ  = 2,
-  TAG_X11     = 3,
-  TAG_WAYLAND = 4
-} backend_tag_t;
-
 #endif /* __ML_TAGS_H */
