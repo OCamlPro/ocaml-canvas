@@ -8,51 +8,16 @@
 /*                                                                        */
 /**************************************************************************/
 
-#ifndef __WL_BACKEND_H
-#define __WL_BACKEND_H
+#ifndef __WL_KEYBOARD_H
+#define __WL_KEYBOARD_H
 
 #include <stdint.h>
-#include <stdbool.h>
-
-#include <wayland-client.h>
-
-#include "xdg-shell-client-protocol.h"
 
 #include "../event.h"
-#include "wl_window.h"
 
-typedef struct wl_backend_t wl_backend_t;
+key_code_t
+wl_translate_sym_to_keycode(
+  uint8_t sym
+);
 
-int64_t
-wl_get_time(
-  void);
-
-bool
-wl_backend_init(
-  void);
-
-void
-wl_backend_terminate(
-  void);
-
-void
-wl_backend_add_window(
-  wl_window_t *w);
-
-void
-wl_backend_set_listener(
-  event_listener_t *listener);
-
-event_listener_t *
-wl_backend_get_listener(
-  void);
-
-void
-wl_backend_run(
-  void);
-
-void
-wl_backend_stop(
-  void);
-
-#endif /* __WL_BACKEND_H */
+#endif /* __WL_KEYBOARD_H */

@@ -127,7 +127,7 @@ int64_t
 x11_get_time(
   void)
 {
-  struct timespec ts;
+  struct timespec ts = { 0 };
   clock_gettime(CLOCK_MONOTONIC, &ts);
   return ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
 }
