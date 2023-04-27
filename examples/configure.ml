@@ -69,3 +69,4 @@ let () =
   add_executable "demo4" [];
   add_executable "demo5" [];
   add_executable "demo6" [];
+  add_executable "saucisse" [];
