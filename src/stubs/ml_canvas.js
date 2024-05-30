@@ -51,6 +51,10 @@ var _move = {
   prev_y: 0
 }
 
+//Provides: _resize
+//Requires: _resize_handler
+var _resize = new window.ResizeObserver(_resize_handler);
+
 //Provides: _make_key_event
 //Requires: _focus, keyname_to_keycode, Val_key_code, Val_key_state, EVENT_TAG
 //Requires: caml_int64_of_float
@@ -167,6 +171,20 @@ function _move_handler(e) {
                 [0, e.offsetX, e.offsetY]]];
     _ml_canvas_process_event(evt);
   }
+  return false;
+}
+
+//Provides: _resize_handler
+//Requires: _ml_canvas_process_event, EVENT_TAG
+//Requires: caml_int64_of_float
+function _resize_handler(entries) {
+  entries.forEach(e => {
+    var evt = [EVENT_TAG.CANVAS_RESIZED,
+               [0, e.target.canvas,
+                caml_int64_of_float(e.timeStamp * 1000.0),
+                [0, e.target.clientWidth, e.target.clientHeight]]];
+    _ml_canvas_process_event(evt);
+  });
   return false;
 }
 
@@ -588,7 +606,7 @@ var _next_id = 0;
 
 //Provides: _ml_canvas_decorate
 //Requires: caml_jsstring_of_string
-function _ml_canvas_decorate(header, resizeable, minimize,
+function _ml_canvas_decorate(header, minimize,
                              maximize, close, title) {
   var width = header.width;
   var ctxt = header.getContext("2d");
@@ -613,7 +631,8 @@ function _ml_canvas_decorate(header, resizeable, minimize,
 }
 
 //Provides: ml_canvas_create_onscreen
-//Requires: _ml_canvas_ensure_initialized, _ml_canvas_valid_canvas_size, _next_id, _header_down_handler, _surface_down_handler, _up_handler, _move_handler, _ml_canvas_decorate, Optional_bool_val, Optional_val
+//Requires: _ml_canvas_ensure_initialized, _ml_canvas_valid_canvas_size, _resize, _next_id, _header_down_handler
+//Requires: _surface_down_handler, _up_handler, _move_handler, _ml_canvas_decorate, Optional_bool_val, Optional_val
 //Requires: caml_invalid_argument
 function ml_canvas_create_onscreen(autocmmit, decorated, resizeable, minimize,
                                    maximize, close, title, pos, size) {
@@ -631,7 +650,7 @@ function ml_canvas_create_onscreen(autocmmit, decorated, resizeable, minimize,
   var y = pos[2];
 
   var autocommit = Optional_bool_val(autocommit, true);
-  var decorated = Optional_bool_val(decorated, true);
+  var decorated = false; // Optional_bool_val(decorated, true);
   var resizeable = Optional_bool_val(resizeable, true);
   var minimize = Optional_bool_val(minimize, true);
   var maximize = Optional_bool_val(maximize, true);
@@ -661,12 +680,14 @@ function ml_canvas_create_onscreen(autocmmit, decorated, resizeable, minimize,
 
   var frame = document.createElement("div");
   frame.id = "f" + id;
-  frame.style.width = width + "px";
-  frame.style.height = height + header_height + "px";
+  if (resizeable == true) {
+    frame.style.width = "100%";
+    frame.style.height = "100%";
+  } else {
+    frame.style.width = width + "px";
+    frame.style.height = height + header_height + "px";
+  }
   frame.style.visibility = "hidden";
-  frame.style.position = "absolute";
-  frame.style.left = x + "px";
-  frame.style.top = y + "px";
   frame.oncontextmenu = function() { return false; }
   frame.canvas = canvas;
   canvas.frame = frame;
@@ -679,8 +700,7 @@ function ml_canvas_create_onscreen(autocmmit, decorated, resizeable, minimize,
     header.id = "h" + id;
     header.width = width;
     header.height = 30;
-    header.style.position = "absolute";
-    _ml_canvas_decorate(header, resizeable, minimize, maximize, close, title);
+    _ml_canvas_decorate(header, minimize, maximize, close, title);
     header.onmousedown = _header_down_handler;
     header.canvas = canvas;
     canvas.header = header;
@@ -691,14 +711,20 @@ function ml_canvas_create_onscreen(autocmmit, decorated, resizeable, minimize,
   surface.id = "s" + id;
   surface.width = width;
   surface.height = height;
-  surface.style.position = "absolute"
-  surface.style.top = header_height + "px";
   surface.onmousedown = _surface_down_handler;
   surface.canvas = canvas;
   canvas.surface = surface;
   frame.appendChild(surface);
 
-  var ctxt = surface.getContext("2d");
+  if (resizeable === true) {
+    surface.style.width = "100%";
+    surface.style.height = "100%";
+    _resize.observe(surface);
+  }
+
+  // willReadFrequently needed to avoid warning on getImageData
+  var ctxt = surface.getContext("2d", {willReadFrequently: true});
+  ctxt.will
   ctxt.globalAlpha = 1.0;
   ctxt.lineWidth = 1.0;
   ctxt.fillStyle = "white";
@@ -907,7 +933,7 @@ function ml_canvas_set_size(canvas, size) {
   var img = canvas.ctxt.getImageData(0, 0, canvas.width, canvas.height);
   if (canvas.header !== null) {
       canvas.header.width = width;
-      _ml_canvas_decorate(canvas.header, canvas.resizeable, canvas.minimize,
+      _ml_canvas_decorate(canvas.header, canvas.minimize,
                           canvas.maximize, canvas.close, canvas.name);
   }
   canvas.surface.width = canvas.width = width;
@@ -1551,8 +1577,8 @@ function ml_canvas_key_of_int(keycode) {
 /* Backend */
 
 //Provides: ml_canvas_init
-//Requires: _key_down_handler, _key_up_handler, _up_handler, _move_handler, _frame_handler, _ml_canvas_initialized
-//Requires: caml_list_to_js_array
+//Requires: _key_down_handler, _key_up_handler, _up_handler, _move_handler, _resize_handler, _frame_handler
+//Requires: _ml_canvas_initialized, caml_list_to_js_array
 function ml_canvas_init() {
   if (_ml_canvas_initialized === true) {
     return 0;
