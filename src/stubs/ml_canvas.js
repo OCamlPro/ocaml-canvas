@@ -1589,10 +1589,10 @@ function ml_canvas_init() {
   if (_ml_canvas_initialized === true) {
     return 0;
   }
-  document.onkeydown = _key_down_handler;
-  document.onkeyup = _key_up_handler;
-  document.onmouseup = _up_handler;
-  document.onmousemove = _move_handler;
+  document.addEventListener("keydown", _key_down_handler, {passive: true});
+  document.addEventListener("keyup", _key_up_handler, {passive: true});
+  document.addEventListener("mouseup", _up_handler, {passive: true});
+  document.addEventListener("mousemove", _move_handler, {passive: true});
   window.requestAnimationFrame(_frame_handler);
   _ml_canvas_initialized = true;
   return 0;
