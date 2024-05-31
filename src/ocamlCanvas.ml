@@ -542,7 +542,7 @@ module V1 = struct
     external createOnscreen :
       ?autocommit:bool -> ?decorated:bool -> ?resizeable:bool ->
       ?minimize:bool -> ?maximize:bool -> ?close:bool -> ?title:string ->
-      ?pos:(int * int) -> size:(int * int) -> unit -> t
+      ?target:string -> ?pos:(int * int) -> size:(int * int) -> unit -> t
       = "ml_canvas_create_onscreen" "ml_canvas_create_onscreen_n"
 
     external createOffscreen : size:(int * int) -> unit -> t

@@ -112,7 +112,7 @@ function _header_down_handler(e) {
     _move.target = e.target.canvas.frame;
     _move.prev_x = e.pageX;
     _move.prev_y = e.pageY;
-    document.body.insertBefore(_move.target, null);
+    e.target.canvas.target.insertBefore(_move.target, null);
   }
   return false;
 }
@@ -123,7 +123,7 @@ function _header_down_handler(e) {
 function _surface_down_handler(e) {
   if (e.target !== null) {
     _focus = e.target.canvas;
-    document.body.insertBefore(e.target.canvas.frame, null);
+    e.target.canvas.target.insertBefore(e.target.canvas.frame, null);
     var evt = [EVENT_TAG.BUTTON_ACTION,
                [0, e.target.canvas,
                 caml_int64_of_float(e.timeStamp * 1000.0),
@@ -634,8 +634,8 @@ function _ml_canvas_decorate(header, minimize,
 //Requires: _ml_canvas_ensure_initialized, _ml_canvas_valid_canvas_size, _resize, _next_id, _header_down_handler
 //Requires: _surface_down_handler, _up_handler, _move_handler, _ml_canvas_decorate, Optional_bool_val, Optional_val
 //Requires: caml_invalid_argument
-function ml_canvas_create_onscreen(autocmmit, decorated, resizeable, minimize,
-                                   maximize, close, title, pos, size) {
+function ml_canvas_create_onscreen(autocommit, decorated, resizeable, minimize,
+                                   maximize, close, title, target, pos, size) {
 
   _ml_canvas_ensure_initialized();
 
@@ -656,11 +656,17 @@ function ml_canvas_create_onscreen(autocmmit, decorated, resizeable, minimize,
   var maximize = Optional_bool_val(maximize, true);
   var close = Optional_bool_val(close, true);
   var title = Optional_val(title, null);
+  var target = Optional_val(target, null);
+  target = document.getElementById(target);
+  if(target == null) {
+    target = document.body;
+  }
 
   var id = ++_next_id;
 
   var canvas = {
     name: title,
+    target: target,
     frame: null,
     header: null,
     surface: null,
@@ -691,7 +697,7 @@ function ml_canvas_create_onscreen(autocmmit, decorated, resizeable, minimize,
   frame.oncontextmenu = function() { return false; }
   frame.canvas = canvas;
   canvas.frame = frame;
-  document.body.appendChild(frame);
+  target.appendChild(frame);
 
   var header = null;
   if (decorated === true) {
