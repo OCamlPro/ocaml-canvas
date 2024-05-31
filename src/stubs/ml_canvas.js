@@ -178,7 +178,7 @@ function _move_handler(e) {
 //Requires: _ml_canvas_process_event, EVENT_TAG
 //Requires: caml_int64_of_float
 function _resize_handler(entries) {
-  entries.forEach(e => {
+  entries.forEach(function (e) {
     var evt = [EVENT_TAG.CANVAS_RESIZED,
                [0, e.target.canvas,
                 caml_int64_of_float(e.timeStamp * 1000.0),
