@@ -728,9 +728,7 @@ function ml_canvas_create_onscreen(autocommit, decorated, resizeable, minimize,
     _resize.observe(surface);
   }
 
-  // willReadFrequently needed to avoid warning on getImageData
-  var ctxt = surface.getContext("2d", {willReadFrequently: true});
-  ctxt.will
+  var ctxt = surface.getContext("2d");
   ctxt.globalAlpha = 1.0;
   ctxt.lineWidth = 1.0;
   ctxt.fillStyle = "white";
