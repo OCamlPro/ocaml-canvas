@@ -62,6 +62,7 @@ let () =
   add_executable "spritesheet" [ "spritesheet.png" ];
   add_executable "draw" [ "colors.png" ];
   add_executable "window_with_textbox" [];
+  add_executable "suncities" [];
 
   add_executable "demo1" [];
   add_executable "demo2" [];

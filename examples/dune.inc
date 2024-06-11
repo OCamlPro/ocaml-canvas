@@ -176,6 +176,14 @@
 
 
 (executable
+ (name suncities)
+ (public_name ocaml-canvas-suncities)
+ (modes byte_complete native js)
+ (modules suncities)
+ (libraries ocaml-canvas react))
+
+
+(executable
  (name demo1)
  (public_name ocaml-canvas-demo1)
  (modes byte_complete native js)
