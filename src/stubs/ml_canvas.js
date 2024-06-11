@@ -55,6 +55,13 @@ var _move = {
 //Requires: _resize_handler
 var _resize = new window.ResizeObserver(_resize_handler);
 
+//Provides: _event_canvas_scale
+function _event_canvas_scale(e) {
+    return { scaleX : e.target.canvas.width / e.target.clientWidth,
+             scaleY : e.target.canvas.height / e.target.clientHeight
+           }
+}
+
 //Provides: _make_key_event
 //Requires: _focus, keyname_to_keycode, Val_key_code, Val_key_state, EVENT_TAG
 //Requires: caml_int64_of_float
@@ -118,38 +125,40 @@ function _header_down_handler(e) {
 }
 
 //Provides: _surface_down_handler
-//Requires: _focus, _ml_canvas_process_event, EVENT_TAG
+//Requires: _focus, _ml_canvas_process_event, _event_canvas_scale, EVENT_TAG
 //Requires: caml_int64_of_float
 function _surface_down_handler(e) {
   if (e.target !== null) {
     _focus = e.target.canvas;
     e.target.canvas.target.insertBefore(e.target.canvas.frame, null);
+    var s = _event_canvas_scale(e);
     var evt = [EVENT_TAG.BUTTON_ACTION,
                [0, e.target.canvas,
                 caml_int64_of_float(e.timeStamp * 1000.0),
-                [0, e.offsetX, e.offsetY], e.button + 1, 1]];
+                [0, e.offsetX*s.scaleX, e.offsetY*s.scaleY], e.button + 1, 1]];
     _ml_canvas_process_event(evt);
   }
   return false;
 }
 
 //Provides: _up_handler
-//Requires: _move, _ml_canvas_process_event, EVENT_TAG
+//Requires: _move, _ml_canvas_process_event, _event_canvas_scale, EVENT_TAG
 //Requires: caml_int64_of_float
 function _up_handler(e) {
   _move.moving = false;
   if (e.target.canvas !== undefined) {
+    var s = _event_canvas_scale(e);
     var evt = [EVENT_TAG.BUTTON_ACTION,
                [0, e.target.canvas,
                 caml_int64_of_float(e.timeStamp * 1000.0),
-                [0, e.offsetX, e.offsetY], e.button + 1, 0]];
+                [0, e.offsetX*s.scaleX, e.offsetY*s.scaleY], e.button + 1, 0]];
     _ml_canvas_process_event(evt);
   }
   return false; // = prevent default behavior
 }
 
 //Provides: _move_handler
-//Requires: _move, _ml_canvas_process_event, EVENT_TAG
+//Requires: _move, _ml_canvas_process_event, _event_canvas_scale, EVENT_TAG
 //Requires: caml_int64_of_float
 function _move_handler(e) {
   if (_move.moving) {
@@ -165,10 +174,11 @@ function _move_handler(e) {
     _move.target.style.left = canvas.x + "px";
     _move.target.style.top = canvas.y + "px";
   } else if (e.target.canvas !== undefined) {
+    var s = _event_canvas_scale(e);
     var evt = [EVENT_TAG.MOUSE_MOVE,
                [0, e.target.canvas,
                 caml_int64_of_float(e.timeStamp * 1000.0),
-                [0, e.offsetX, e.offsetY]]];
+                [0, e.offsetX*s.scaleX, e.offsetY*s.scaleY]]];
     _ml_canvas_process_event(evt);
   }
   return false;
