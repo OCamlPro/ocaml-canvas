@@ -26,6 +26,11 @@ doc-common: build
 	mkdir -p _build/docs
 	rsync -auv docs/. _build/docs/.
 
+doc-examples: build
+	mkdir -p _build/docs/examples
+	cp _build/default/examples/*.js _build/docs/examples/.
+	cp _build/default/examples/*.html _build/docs/examples/.
+
 sphinx: doc-common
 	sphinx-build sphinx ${SPHINX_TARGET}
 
@@ -34,7 +39,7 @@ odoc: doc-common
 	opam exec -- dune build @doc
 	rsync -auv --delete _build/default/_doc/_html/. ${ODOC_TARGET}
 
-doc: doc-common odoc sphinx
+doc: doc-common doc-examples odoc sphinx
 
 view:
 	xdg-open file://$$(pwd)/_build/docs/index.html
