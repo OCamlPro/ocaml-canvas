@@ -766,9 +766,9 @@ module V1 : sig
     val createOnscreen :
       ?autocommit:bool -> ?decorated:bool -> ?resizeable:bool ->
       ?minimize:bool -> ?maximize:bool -> ?close:bool -> ?title:string ->
-      ?pos:(int * int) -> size:(int * int) -> unit -> t
+      ?target:string -> ?pos:(int * int) -> size:(int * int) -> unit -> t
     (** [createOnscreen ?autocommit ?decorated ?resizeable ?minimize
-        ?maximize ?close ?title ?pos ~size ()] creates a windowed
+        ?maximize ?close ?title ?target ?pos ~size()] creates a windowed
         canvas of size [size]. The window title and position can be
         specified using the optional arguments [title] and [pos].
         The window decorations, which are active by default, can
@@ -777,6 +777,9 @@ module V1 : sig
         The [decorated] argument has a higher priority: if set to false,
         all other decoration arguments will be ignored (considered to be
         false), and all decorations will be removed from the window.
+        The [target] option is relevant only for the Javascript backend.
+        It indicates the element id in which the canvas should be placed,
+        default to the html body.
         The [autocommit] option, which is active by default, indicates whether
         the canvas should be automatically presented after each frame event.
         See {!Canvas.commit} for more info on [autocommit].

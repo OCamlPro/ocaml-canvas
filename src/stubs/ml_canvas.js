@@ -51,6 +51,17 @@ var _move = {
   prev_y: 0
 }
 
+//Provides: _resize
+//Requires: _resize_handler
+var _resize = new window.ResizeObserver(_resize_handler);
+
+//Provides: _event_canvas_scale
+function _event_canvas_scale(e) {
+    return { scaleX : e.target.canvas.width / e.target.clientWidth,
+             scaleY : e.target.canvas.height / e.target.clientHeight
+           }
+}
+
 //Provides: _make_key_event
 //Requires: _focus, keyname_to_keycode, Val_key_code, Val_key_state, EVENT_TAG
 //Requires: caml_int64_of_float
@@ -108,44 +119,46 @@ function _header_down_handler(e) {
     _move.target = e.target.canvas.frame;
     _move.prev_x = e.pageX;
     _move.prev_y = e.pageY;
-    document.body.insertBefore(_move.target, null);
+    e.target.canvas.target.insertBefore(_move.target, null);
   }
   return false;
 }
 
 //Provides: _surface_down_handler
-//Requires: _focus, _ml_canvas_process_event, EVENT_TAG
+//Requires: _focus, _ml_canvas_process_event, _event_canvas_scale, EVENT_TAG
 //Requires: caml_int64_of_float
 function _surface_down_handler(e) {
   if (e.target !== null) {
     _focus = e.target.canvas;
-    document.body.insertBefore(e.target.canvas.frame, null);
+    e.target.canvas.target.insertBefore(e.target.canvas.frame, null);
+    var s = _event_canvas_scale(e);
     var evt = [EVENT_TAG.BUTTON_ACTION,
                [0, e.target.canvas,
                 caml_int64_of_float(e.timeStamp * 1000.0),
-                [0, e.offsetX, e.offsetY], e.button + 1, 1]];
+                [0, e.offsetX*s.scaleX, e.offsetY*s.scaleY], e.button + 1, 1]];
     _ml_canvas_process_event(evt);
   }
   return false;
 }
 
 //Provides: _up_handler
-//Requires: _move, _ml_canvas_process_event, EVENT_TAG
+//Requires: _move, _ml_canvas_process_event, _event_canvas_scale, EVENT_TAG
 //Requires: caml_int64_of_float
 function _up_handler(e) {
   _move.moving = false;
   if (e.target.canvas !== undefined) {
+    var s = _event_canvas_scale(e);
     var evt = [EVENT_TAG.BUTTON_ACTION,
                [0, e.target.canvas,
                 caml_int64_of_float(e.timeStamp * 1000.0),
-                [0, e.offsetX, e.offsetY], e.button + 1, 0]];
+                [0, e.offsetX*s.scaleX, e.offsetY*s.scaleY], e.button + 1, 0]];
     _ml_canvas_process_event(evt);
   }
   return false; // = prevent default behavior
 }
 
 //Provides: _move_handler
-//Requires: _move, _ml_canvas_process_event, EVENT_TAG
+//Requires: _move, _ml_canvas_process_event, _event_canvas_scale, EVENT_TAG
 //Requires: caml_int64_of_float
 function _move_handler(e) {
   if (_move.moving) {
@@ -161,12 +174,27 @@ function _move_handler(e) {
     _move.target.style.left = canvas.x + "px";
     _move.target.style.top = canvas.y + "px";
   } else if (e.target.canvas !== undefined) {
+    var s = _event_canvas_scale(e);
     var evt = [EVENT_TAG.MOUSE_MOVE,
                [0, e.target.canvas,
                 caml_int64_of_float(e.timeStamp * 1000.0),
-                [0, e.offsetX, e.offsetY]]];
+                [0, e.offsetX*s.scaleX, e.offsetY*s.scaleY]]];
     _ml_canvas_process_event(evt);
   }
+  return false;
+}
+
+//Provides: _resize_handler
+//Requires: _ml_canvas_process_event, EVENT_TAG
+//Requires: caml_int64_of_float
+function _resize_handler(entries) {
+  entries.forEach(function (e) {
+    var evt = [EVENT_TAG.CANVAS_RESIZED,
+               [0, e.target.canvas,
+                caml_int64_of_float(e.timeStamp * 1000.0),
+                [0, e.target.clientWidth, e.target.clientHeight]]];
+    _ml_canvas_process_event(evt);
+  });
   return false;
 }
 
@@ -588,7 +616,7 @@ var _next_id = 0;
 
 //Provides: _ml_canvas_decorate
 //Requires: caml_jsstring_of_string
-function _ml_canvas_decorate(header, resizeable, minimize,
+function _ml_canvas_decorate(header, minimize,
                              maximize, close, title) {
   var width = header.width;
   var ctxt = header.getContext("2d");
@@ -613,10 +641,11 @@ function _ml_canvas_decorate(header, resizeable, minimize,
 }
 
 //Provides: ml_canvas_create_onscreen
-//Requires: _ml_canvas_ensure_initialized, _ml_canvas_valid_canvas_size, _next_id, _header_down_handler, _surface_down_handler, _up_handler, _move_handler, _ml_canvas_decorate, Optional_bool_val, Optional_val
+//Requires: _ml_canvas_ensure_initialized, _ml_canvas_valid_canvas_size, _resize, _next_id, _header_down_handler
+//Requires: _surface_down_handler, _up_handler, _move_handler, _ml_canvas_decorate, Optional_bool_val, Optional_val
 //Requires: caml_invalid_argument
-function ml_canvas_create_onscreen(autocmmit, decorated, resizeable, minimize,
-                                   maximize, close, title, pos, size) {
+function ml_canvas_create_onscreen(autocommit, decorated, resizeable, minimize,
+                                   maximize, close, title, target, pos, size) {
 
   _ml_canvas_ensure_initialized();
 
@@ -631,17 +660,23 @@ function ml_canvas_create_onscreen(autocmmit, decorated, resizeable, minimize,
   var y = pos[2];
 
   var autocommit = Optional_bool_val(autocommit, true);
-  var decorated = Optional_bool_val(decorated, true);
+  var decorated = false; // Optional_bool_val(decorated, true);
   var resizeable = Optional_bool_val(resizeable, true);
   var minimize = Optional_bool_val(minimize, true);
   var maximize = Optional_bool_val(maximize, true);
   var close = Optional_bool_val(close, true);
   var title = Optional_val(title, null);
+  var target = Optional_val(target, null);
+  target = document.getElementById(target);
+  if(target == null) {
+    target = document.body;
+  }
 
   var id = ++_next_id;
 
   var canvas = {
     name: title,
+    target: target,
     frame: null,
     header: null,
     surface: null,
@@ -661,16 +696,18 @@ function ml_canvas_create_onscreen(autocmmit, decorated, resizeable, minimize,
 
   var frame = document.createElement("div");
   frame.id = "f" + id;
-  frame.style.width = width + "px";
-  frame.style.height = height + header_height + "px";
+  if (resizeable == true) {
+    frame.style.width = "100%";
+    frame.style.height = "100%";
+  } else {
+    frame.style.width = width + "px";
+    frame.style.height = height + header_height + "px";
+  }
   frame.style.visibility = "hidden";
-  frame.style.position = "absolute";
-  frame.style.left = x + "px";
-  frame.style.top = y + "px";
   frame.oncontextmenu = function() { return false; }
   frame.canvas = canvas;
   canvas.frame = frame;
-  document.body.appendChild(frame);
+  target.appendChild(frame);
 
   var header = null;
   if (decorated === true) {
@@ -679,8 +716,7 @@ function ml_canvas_create_onscreen(autocmmit, decorated, resizeable, minimize,
     header.id = "h" + id;
     header.width = width;
     header.height = 30;
-    header.style.position = "absolute";
-    _ml_canvas_decorate(header, resizeable, minimize, maximize, close, title);
+    _ml_canvas_decorate(header, minimize, maximize, close, title);
     header.onmousedown = _header_down_handler;
     header.canvas = canvas;
     canvas.header = header;
@@ -691,12 +727,16 @@ function ml_canvas_create_onscreen(autocmmit, decorated, resizeable, minimize,
   surface.id = "s" + id;
   surface.width = width;
   surface.height = height;
-  surface.style.position = "absolute"
-  surface.style.top = header_height + "px";
   surface.onmousedown = _surface_down_handler;
   surface.canvas = canvas;
   canvas.surface = surface;
   frame.appendChild(surface);
+
+  if (resizeable === true) {
+    surface.style.width = "100%";
+    surface.style.height = "100%";
+    _resize.observe(surface);
+  }
 
   var ctxt = surface.getContext("2d");
   ctxt.globalAlpha = 1.0;
@@ -907,7 +947,7 @@ function ml_canvas_set_size(canvas, size) {
   var img = canvas.ctxt.getImageData(0, 0, canvas.width, canvas.height);
   if (canvas.header !== null) {
       canvas.header.width = width;
-      _ml_canvas_decorate(canvas.header, canvas.resizeable, canvas.minimize,
+      _ml_canvas_decorate(canvas.header, canvas.minimize,
                           canvas.maximize, canvas.close, canvas.name);
   }
   canvas.surface.width = canvas.width = width;
@@ -1551,16 +1591,16 @@ function ml_canvas_key_of_int(keycode) {
 /* Backend */
 
 //Provides: ml_canvas_init
-//Requires: _key_down_handler, _key_up_handler, _up_handler, _move_handler, _frame_handler, _ml_canvas_initialized
-//Requires: caml_list_to_js_array
+//Requires: _key_down_handler, _key_up_handler, _up_handler, _move_handler, _resize_handler, _frame_handler
+//Requires: _ml_canvas_initialized, caml_list_to_js_array
 function ml_canvas_init() {
   if (_ml_canvas_initialized === true) {
     return 0;
   }
-  document.onkeydown = _key_down_handler;
-  document.onkeyup = _key_up_handler;
-  document.onmouseup = _up_handler;
-  document.onmousemove = _move_handler;
+  document.addEventListener("keydown", _key_down_handler, {passive: true});
+  document.addEventListener("keyup", _key_up_handler, {passive: true});
+  document.addEventListener("mouseup", _up_handler, {passive: true});
+  document.addEventListener("mousemove", _move_handler, {passive: true});
   window.requestAnimationFrame(_frame_handler);
   _ml_canvas_initialized = true;
   return 0;

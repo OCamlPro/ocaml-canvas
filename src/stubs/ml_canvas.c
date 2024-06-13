@@ -673,12 +673,14 @@ ml_canvas_create_onscreen_n(
   value mlMaximize,   /* bool, optional, default = true */
   value mlClose,      /* bool, optional, default = true */
   value mlTitle,      /* string, optional, default = "" */
+  value mlTarget,     /* string, optional */
   value mlPos,        /* (int * int), optional */
   value mlSize,       /* (int * int), non-optional */
   value mlUnit)
 {
   CAMLparam5(mlAutocommit, mlDecorated, mlResizeable, mlMinimize, mlMaximize);
-  CAMLxparam5(mlClose, mlTitle, mlPos, mlSize, mlUnit);
+  CAMLxparam5(mlClose, mlTitle, mlTarget, mlPos, mlSize);
+  CAMLxparam1(mlUnit);
   CAMLlocal1(mlCanvas);
   _ml_canvas_ensure_initialized();
   int32_t width = Int31_val_clip(Field(mlSize, 0));
@@ -708,7 +710,7 @@ ml_canvas_create_onscreen_n(
   CAMLreturn(mlCanvas);
 }
 
-BYTECODE_STUB_10(ml_canvas_create_onscreen)
+BYTECODE_STUB_11(ml_canvas_create_onscreen)
 
 CAMLprim value
 ml_canvas_create_offscreen(
