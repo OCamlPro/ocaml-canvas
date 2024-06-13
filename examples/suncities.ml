@@ -404,7 +404,7 @@ let scene =
     sun_angle_z;
     blocks;
     shadows = [];
-    projection = fun Coord.{x;y;_} -> (x,y);
+    projection = fun ({x;y;_} : Coord.t) -> (x,y);
   }
   in
   let shadows = shadow_plane scene in
@@ -486,14 +486,14 @@ let () =
   Canvas.show c;
 
   let ev_regen = React.E.map
-    (fun Event.{ data = { Event.key; char = _; flags = _ }; _ } ->
+    (fun ({ data = { Event.key; char = _; flags = _ }; _ } : _ Event.canvas_event) ->
       if key = KeySpacebar then
         (regen (); draw_scene c)
     ) Event.key_down
   in
 
   let ev_resize = React.E.map
-    (fun Event.{ data = size; _ } ->
+    (fun ({ data = size; _ } : _ Event.canvas_event) ->
      (Canvas.setSize c size; compute_projection c; draw_scene c)
     ) Event.resize
   in
@@ -501,7 +501,7 @@ let () =
   let mpos = ref NoAction in
 
   let ev_mousedown = React.E.map
-    (fun Event.{ data = { position = (x,y); button }; _ } ->
+    (fun ({ data = { position = (x,y); button }; _ } : Event.button_data Event.canvas_event) ->
       match button with
       | ButtonLeft -> mpos := ViewRot (x,y)
       | ButtonRight -> mpos := LightRot (x,y)
@@ -510,13 +510,13 @@ let () =
   in
 
   let ev_mouseup = React.E.map
-    (fun Event.{ data = { button = _; _ }; _ } ->
+    (fun ({ data = { button = _; _ }; _ } : Event.button_data Event.canvas_event) ->
       mpos := NoAction
     ) Event.button_up
   in
 
   let ev_mouse = React.E.map
-    (fun Event.{ data = (x, y); _ } ->
+    (fun ({ data = (x, y); _ } : _ Event.canvas_event) ->
       match !mpos with
       | NoAction -> ()
       | ViewRot (ox, oy) ->
