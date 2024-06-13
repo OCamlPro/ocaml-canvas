@@ -217,14 +217,15 @@ function _frame_handler(timestamp) {
 /* Image Data (aka Pixmaps) */
 
 //Provides: _ml_canvas_image_of_png_file
-//Requires: caml_read_file_content
+//Requires: caml_read_file_content, caml_raise_with_string, caml_named_value
 function _ml_canvas_image_of_png_file(filename) {
   var file = caml_read_file_content(filename);
   if (file === null) {
     return null;
   }
   var fc = caml_read_file_content(filename);
-  var data = window.btoa(fc.toUft16 === undefined ? fc.c : fc);
+  // Test for mlBytes or JS-string
+  var data = window.btoa(fc.c === undefined ? fc : fc.c);
   var img = new window.Image();
   img.loading = 'eager';
   img.decoding = 'sync';
@@ -293,8 +294,6 @@ function ml_canvas_image_data_create_from_png(filename, onload) {
   img[0].then(function (__img) {
     var ba = _ml_canvas_ba_of_img(img[1]);
     onload(ba);
-    return 0;
-  }, function (__err) {
     return 0;
   });
   return 0;
@@ -439,8 +438,6 @@ function ml_canvas_image_data_import_png(data, pos, filename, onload) {
       dta[i] = sta[i];
     }
     onload(data);
-    return 0;
-  }, function (__err) {
     return 0;
   });
   return 0;
@@ -849,8 +846,6 @@ function ml_canvas_create_offscreen_from_png(filename, onload) {
     }
     canvas.ctxt.drawImage(img[1], 0, 0);
     onload(canvas);
-    return 0;
-  }, function (__err) {
     return 0;
   });
   return 0;
@@ -1549,8 +1544,6 @@ function ml_canvas_import_png(canvas, pos, filename, onload) {
     canvas.ctxt.drawImage(img[1], pos[1], pos[2]);
     // image, sx, sy, sWitdh, sHeight, dx, dy, dWidth, dHeight
     onload(canvas);
-    return 0;
-  }, function (__err) {
     return 0;
   });
   return 0;
