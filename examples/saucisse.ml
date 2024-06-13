@@ -1,5 +1,7 @@
 open OcamlCanvas.V1
 
+let option_iter f o = match o with None -> () | Some e -> f e
+
 let sw = 800
 let sh = 800
 
@@ -39,8 +41,8 @@ let scale v (x, y) =
   v *. x, v *. y
 
 let disc ?color ?gradient center radius =
-  Option.iter (Canvas.setFillColor c) color;
-  Option.iter (Canvas.setFillGradient c) gradient;
+  option_iter (Canvas.setFillColor c) color;
+  option_iter (Canvas.setFillGradient c) gradient;
   Canvas.clearPath c;
   Canvas.arc c ~center
     ~radius ~theta1:0.0 ~theta2:(2.0 *. Const.pi) ~ccw:false;
