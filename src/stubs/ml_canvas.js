@@ -189,19 +189,24 @@ function _frame_handler(timestamp) {
 /* Image Data (aka Pixmaps) */
 
 //Provides: _ml_canvas_image_of_png_file
-//Requires: caml_read_file_content
+//Requires: caml_read_file_content, caml_raise_with_string, caml_named_value
 function _ml_canvas_image_of_png_file(filename) {
   var file = caml_read_file_content(filename);
   if (file === null) {
     return null;
   }
   var fc = caml_read_file_content(filename);
-  var data = window.btoa(fc.toUft16 === undefined ? fc.c : fc);
+  // Test for mlBytes or JS-string
+  var data = window.btoa(fc.c === undefined ? fc : fc.c);
   var img = new window.Image();
   img.loading = 'eager';
   img.decoding = 'sync';
   img.src = 'data:image/png;base64,' + data;
-  return [img.decode(), img];
+  var dimg = img.decode();
+  dimg.catch(function (err) {
+    caml_raise_with_string(caml_named_value("Read_png_failed"), err.message);
+  });
+  return [dimg, img];
 }
 
 //Provides: _ml_canvas_ba_of_img
