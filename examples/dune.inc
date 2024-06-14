@@ -1,10 +1,4 @@
 
-(rule
-  (target index.html)
-  (deps (glob_files *.js))
-  (action (run ./make_index/make_index.exe %{target})))
-
-
 (executable
  (name hello)
  (public_name ocaml-canvas-hello)
@@ -18,7 +12,6 @@
  (target hello-extfs.js)
  (action (run js_of_ocaml build-fs -o %{target} -I ../assets
           frog.png:/static/assets/)))
-
 
 (executable
  (name ppm_dump)
@@ -83,7 +76,6 @@
           fabric.png:/static/assets/
           dragon.png:/static/assets/)))
 
-
 (executable
  (name aim_with_mouse)
  (public_name ocaml-canvas-aim_with_mouse)
@@ -106,7 +98,6 @@
  (action (run js_of_ocaml build-fs -o %{target} -I ../assets
           dragon.png:/static/assets/)))
 
-
 (executable
  (name hexagon_grid)
  (public_name ocaml-canvas-hexagon_grid)
@@ -120,7 +111,6 @@
  (target hexagon_grid-extfs.js)
  (action (run js_of_ocaml build-fs -o %{target} -I ../assets
           hexagon.png:/static/assets/)))
-
 
 (executable
  (name ball)
@@ -136,7 +126,6 @@
  (action (run js_of_ocaml build-fs -o %{target} -I ../assets
           dragon.png:/static/assets/)))
 
-
 (executable
  (name spritesheet)
  (public_name ocaml-canvas-spritesheet)
@@ -151,7 +140,6 @@
  (action (run js_of_ocaml build-fs -o %{target} -I ../assets
           spritesheet.png:/static/assets/)))
 
-
 (executable
  (name draw)
  (public_name ocaml-canvas-draw)
@@ -165,7 +153,6 @@
  (target draw-extfs.js)
  (action (run js_of_ocaml build-fs -o %{target} -I ../assets
           colors.png:/static/assets/)))
-
 
 (executable
  (name window_with_textbox)
@@ -237,4 +224,10 @@
  (modes byte_complete native js)
  (modules saucisse)
  (libraries ocaml-canvas react))
+
+
+(rule
+  (targets index.html saucisse.html demo6.html demo5.html demo4.html demo3.html demo2.html demo1.html window_with_textbox.html draw.html spritesheet.html ball.html hexagon_grid.html clipping.html aim_with_mouse.html compositions.html dashing_line.html thicklines.html snake.html gradients.html arcs.html ppm_dump.html hello.html)
+  (deps (glob_files *.js))
+  (action (run ./make_index/make_index.exe %{targets})))
 
