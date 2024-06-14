@@ -222,3 +222,11 @@
  (modules demo6)
  (libraries ocaml-canvas react))
 
+
+(executable
+ (name saucisse)
+ (public_name ocaml-canvas-saucisse)
+ (modes byte_complete native js)
+ (modules saucisse)
+ (libraries ocaml-canvas react))
+
