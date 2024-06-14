@@ -1,16 +1,18 @@
 
 let gen_sample_index file =
-  let tl = open_in "sample_template.html" in
-  let out = open_out (file ^ ".html") in
-  try
-    while true do
-      let l = input_line tl in
-      let l' = Str.global_replace (Str.regexp_string "%%FILE%%") file l in
-      Printf.fprintf out "%s\n" l'
-    done;
-  with End_of_file ->
-    close_in tl;
-    close_out out
+  let filename = file ^ ".html" in
+  if Sys.file_exists filename then () else
+    let tl = open_in "sample_template.html" in
+    let out = open_out filename in
+    try
+      while true do
+        let l = input_line tl in
+        let l' = Str.global_replace (Str.regexp_string "%%FILE%%") file l in
+        Printf.fprintf out "%s\n" l'
+      done;
+    with End_of_file ->
+      close_in tl;
+      close_out out
 
 let gen_global_index file files =
   let tl = open_in "global_template.html" in
