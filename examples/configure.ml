@@ -11,7 +11,11 @@ let has_jsoo =
     maj > 3 || maj = 3 && min >= 6
   with _ -> false
 
-let add_executable name assets =
+let htmls = ref []
+
+let add_executable ?(custom_html=false) name assets =
+  if not custom_html then
+    htmls := (name^".html")::!htmls;
   Printf.printf {|
 (executable
  (name %s)
@@ -27,7 +31,6 @@ let add_executable name assets =
 (rule
  (target %s-extfs.js)
  (action (run js_of_ocaml build-fs -o %%{target} -I ../assets%t)))
-
 |} name name (fun oc ->
         List.iter (fun a ->
             Printf.printf {|
@@ -39,14 +42,6 @@ let add_executable name assets =
 
 let () =
   set_binary_mode_out stdout true;
-  if has_jsoo then
-    Printf.printf {|
-(rule
-  (target index.html)
-  (deps (glob_files *.js))
-  (action (run ./make_index/make_index.exe %%{target})))
-
-|};
   add_executable "hello" [ "frog.png" ];
   add_executable "ppm_dump" [];
   add_executable "arcs" [];
@@ -62,7 +57,7 @@ let () =
   add_executable "spritesheet" [ "spritesheet.png" ];
   add_executable "draw" [ "colors.png" ];
   add_executable "window_with_textbox" [];
-  add_executable "suncities" [];
+  add_executable ~custom_html:true "suncities" [];
 
   add_executable "demo1" [];
   add_executable "demo2" [];
@@ -71,3 +66,13 @@ let () =
   add_executable "demo5" [];
   add_executable "demo6" [];
   add_executable "saucisse" [];
+
+  if has_jsoo then
+    Printf.printf {|
+(rule
+  (targets index.html %s)
+  (deps (glob_files *.js))
+  (action (run ./make_index/make_index.exe %%{targets})))
+
+|}
+ (String.concat " " !htmls);
