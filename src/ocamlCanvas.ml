@@ -1078,6 +1078,10 @@ module V1 = struct
     external key_of_int : int -> key
       = "ml_canvas_key_of_int"
 
+    let held_events = ref []
+
+    let hold (e : unit React.event) = held_events := e::!held_events
+
   end
 
   module InternalEvent = struct
@@ -1184,6 +1188,7 @@ module V1 = struct
     let run k =
       let open InternalEvent in
       let open Event in
+      let k () = held_events := []; k () in
       let h e =
         (match e with
         | FrameCycle { timestamp } ->

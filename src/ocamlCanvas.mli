@@ -1498,6 +1498,11 @@ module V1 : sig
         {ul
         {- {!Invalid_argument} if [i] < 0 or [i] > 255}} *)
 
+    val hold : unit React.event -> unit
+    (** [hold e] ensures that effectful React event [e] won't be
+        collected early by the GC. In particular, in the case of the
+        Javascript backend where a global reference might not be
+        enough. *)
 
   end
 

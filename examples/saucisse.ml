@@ -266,41 +266,36 @@ let draw () =
   Canvas.show c
 
 let () =
-  draw ()
+  draw ();
 
-let e_move =
-  React.E.map (fun { Event.canvas = _; timestamp = _; data = (x, y) } ->
+  Event.hold @@ React.E.map (fun { Event.canvas = _; timestamp = _; data = (x, y) } ->
       p3 := (float_of_int x, float_of_int y)
-    ) Event.mouse_move
+    ) Event.mouse_move;
 
-let e1 =
-  React.E.map (fun { Event.canvas = _; timestamp = _; data = () } ->
+  Event.hold @@ React.E.map (fun { Event.canvas = _; timestamp = _; data = () } ->
       Backend.stop ()
-    ) Event.close
+    ) Event.close;
 
-let e2 =
-  React.E.map (fun { Event.canvas = _; timestamp = _;
+  Event.hold @@ React.E.map (fun { Event.canvas = _; timestamp = _;
                      data = { Event.key; char = _; flags = _ }; _ } ->
                 if key = KeyEscape then
                   Backend.stop ()
-              ) Event.key_down
+              ) Event.key_down;
 
-let e3 =
-  React.E.map (fun { Event.canvas = _; timestamp = _;
+  Event.hold @@ React.E.map (fun { Event.canvas = _; timestamp = _;
                      data = { Event.position = (x, y); _ } } ->
                 point (float_of_int x, float_of_int y);
               ) Event.button_down
 
 let frames = ref 0L
-
-let e_frame =
-  React.E.map (fun { Event.canvas = _; timestamp = _; _ } ->
-      Canvas.setFillColor c Color.white;
-      Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(float_of_int sw, float_of_int sh);
-
-      draw ();
-      frames := Int64.add !frames Int64.one
-    ) Event.frame
+    
+let () = Event.hold @@ React.E.map (fun { Event.canvas = _; timestamp = _; _ } ->
+    Canvas.setFillColor c Color.white;
+    Canvas.fillRect c ~pos:(0.0, 0.0) ~size:(float_of_int sw, float_of_int sh);
+    
+    draw ();
+    frames := Int64.add !frames Int64.one
+  ) Event.frame
 
 let () =
   if Array.length Sys.argv >= 2 && Sys.argv.(1) = "bench" then
@@ -309,9 +304,5 @@ let () =
     done
   else
     Backend.run (fun () ->
-        ignore (Sys.opaque_identity e_frame);
-        ignore (Sys.opaque_identity e_move);
-        ignore (Sys.opaque_identity (e1, e2));
-        ignore (Sys.opaque_identity (e3));
         Printf.printf "\nDisplayed %Ld frames. Goodbye !\n" !frames)
 

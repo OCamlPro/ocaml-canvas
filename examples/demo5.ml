@@ -12,22 +12,17 @@ let () =
 
   Canvas.show c;
 
-  let e1 =
-    React.E.map (fun { Event.canvas = _; timestamp = _; data = () } ->
+    Event.hold @@ React.E.map (fun { Event.canvas = _; timestamp = _; data = () } ->
         Backend.stop ()
-      ) Event.close
-  in
+      ) Event.close;
 
-  let e2 =
-    React.E.map (fun { Event.canvas = _; timestamp = _;
+    Event.hold @@ React.E.map (fun { Event.canvas = _; timestamp = _;
                        data = { Event.key; char = _; flags = _ } } ->
         if key = KeyEscape then
           Backend.stop ()
-      ) Event.key_down
-  in
+      ) Event.key_down;
 
-  let e3 =
-    React.E.map (fun { Event.canvas = _; timestamp = t; data = () } ->
+    Event.hold @@ React.E.map (fun { Event.canvas = _; timestamp = t; data = () } ->
         let theta, last = !state in
 
         let theta = theta +. (Int64.to_float (Int64.sub t last)) *. -0.000005 in
@@ -52,7 +47,6 @@ let () =
         Canvas.restore c;
 
         state := (theta, t)
-      ) Event.frame
-  in
+      ) Event.frame;
 
-  Backend.run (fun () -> ignore e1; ignore e2; ignore e3)
+  Backend.run (fun () -> ())

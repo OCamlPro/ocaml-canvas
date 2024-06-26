@@ -13,22 +13,17 @@ let () =
 
   Canvas.show c;
 
-  let e1 =
-    React.E.map (fun { Event.canvas = _; timestamp = _; data = () } ->
+  Event.hold @@ React.E.map (fun { Event.canvas = _; timestamp = _; data = () } ->
         Backend.stop ()
-      ) Event.close
-  in
+      ) Event.close;
 
-  let e2 =
-    React.E.map (fun { Event.canvas = _; timestamp = _;
+  Event.hold @@ React.E.map (fun { Event.canvas = _; timestamp = _;
                        data = { Event.key; char = _; flags = _ } } ->
         if key = KeyEscape then
           Backend.stop ()
-      ) Event.key_down
-  in
+      ) Event.key_down;
 
-  let e3 =
-    React.E.map (fun { Event.canvas = _; timestamp = _;
+  Event.hold @@ React.E.map (fun { Event.canvas = _; timestamp = _;
                        data = { Event.position; button } } ->
         let color =
           match button with
@@ -45,13 +40,10 @@ let () =
         Canvas.arc c ~center ~radius:10.0 ~theta1:0.0
           ~theta2:(2.0 *. Const.pi) ~ccw:false;
         Canvas.fill c ~nonzero:false;
-      ) Event.button_down
-  in
+      ) Event.button_down;
 
-  let e4 =
-    React.E.map (fun { Event.canvas = _; timestamp = _; data = () } ->
+  Event.hold @@ React.E.map (fun { Event.canvas = _; timestamp = _; data = () } ->
         ()
-      ) Event.frame
-  in
+      ) Event.frame;
 
-  Backend.run (fun () -> ignore e1; ignore e2; ignore e3; ignore e4)
+  Backend.run (fun () -> ())
