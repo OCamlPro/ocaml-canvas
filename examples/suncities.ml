@@ -463,9 +463,6 @@ let rotate_light c x _y =
   scene := { !scene with sun_angle_xy; sun_angle_z };
   regen_shadows ()
 
-let stored_ev = ref []
-
-let store ev = stored_ev := ev::!stored_ev
 
 type maction =
   | NoAction
@@ -485,37 +482,33 @@ let () =
   draw_scene c;
   Canvas.show c;
 
-  let ev_regen = React.E.map
+  Event.hold @@ React.E.map
     (fun ({ data = { Event.key; char = _; flags = _ }; _ } : _ Event.canvas_event) ->
       if key = KeySpacebar then
         (regen (); draw_scene c)
-    ) Event.key_down
-  in
+    ) Event.key_down;
 
-  let ev_resize = React.E.map
+  Event.hold @@ React.E.map
     (fun ({ data = size; _ } : _ Event.canvas_event) ->
      (Canvas.setSize c size; compute_projection c; draw_scene c)
-    ) Event.resize
-  in
+    ) Event.resize;
 
   let mpos = ref NoAction in
 
-  let ev_mousedown = React.E.map
+  Event.hold @@ React.E.map
     (fun ({ data = { position = (x,y); button }; _ } : Event.button_data Event.canvas_event) ->
       match button with
       | ButtonLeft -> mpos := ViewRot (x,y)
       | ButtonRight -> mpos := LightRot (x,y)
       | _ -> ()
-    ) Event.button_down
-  in
+    ) Event.button_down;
 
-  let ev_mouseup = React.E.map
+  Event.hold @@ React.E.map
     (fun ({ data = { button = _; _ }; _ } : Event.button_data Event.canvas_event) ->
       mpos := NoAction
-    ) Event.button_up
-  in
+    ) Event.button_up;
 
-  let ev_mouse = React.E.map
+  Event.hold @@ React.E.map
     (fun ({ data = (x, y); _ } : _ Event.canvas_event) ->
       match !mpos with
       | NoAction -> ()
@@ -527,9 +520,6 @@ let () =
         mpos := LightRot (x,y);
         rotate_light c (ox-x) (y-oy);
         draw_scene c)
-    Event.mouse_move
-  in
-
-  List.iter store [ev_resize; ev_regen; ev_mouse; ev_mousedown; ev_mouseup];
+    Event.mouse_move;
 
   Backend.run (fun () -> ())
